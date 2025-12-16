@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Inventario Pro (V93 - Master AI Ultimate)</title>
+    <title>Gestión Stocks & Logistica Luciano </title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,12 +14,27 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        
+        /* 🎨 TEMA OSCURO/CLARO */
+        :root {
+            --bg-primary: #ffffff; --bg-secondary: #f1f5f9; --bg-tertiary: #e2e8f0;
+            --text-primary: #1e293b; --text-secondary: #64748b; --border-color: #cbd5e1;
+            --header-bg: #ffffff; --card-bg: #ffffff;
+        }
+        body.dark-theme {
+            --bg-primary: #0f172a; --bg-secondary: #1e293b; --bg-tertiary: #334155;
+            --text-primary: #f1f5f9; --text-secondary: #cbd5e1; --border-color: #475569;
+            --header-bg: #1e293b; --card-bg: #1e293b;
+        }
+        
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-secondary); color: var(--text-primary); transition: background-color 0.3s ease, color 0.3s ease; }
         [x-cloak] { display: none !important; }
 
         th { background-color: #1e293b; color: white; font-size: 10px; text-transform: uppercase; position: sticky; top: 0; z-index: 10; white-space: nowrap; padding: 8px; }
-        td { font-size: 11px; border-bottom: 1px solid #e2e8f0; padding: 4px 8px; white-space: nowrap; color: #334155; position: relative; height: 35px; }
+        td { font-size: 11px; border-bottom: 1px solid var(--border-color); padding: 4px 8px; white-space: nowrap; color: var(--text-primary); position: relative; height: 35px; }
         tr:hover td { background-color: #f0f9ff; cursor: pointer; }
+        body.dark-theme tr:hover td { background-color: #1f2937; }
+        header { background-color: var(--header-bg) !important; color: var(--text-primary) !important; border-color: var(--border-color) !important; }
 
         .data-bar-bg { position: absolute; left: 0; top: 2px; bottom: 2px; z-index: 0; opacity: 0.25; pointer-events: none; transition: width 0.3s ease; }
         .cell-content { position: relative; z-index: 1; display: flex; align-items: center; height: 100%; width: 100%; }
@@ -27,13 +42,13 @@
         .sparkline-container { width: 60px; height: 25px; display: flex; align-items: center; justify-content: center; margin-right: 8px; flex-shrink: 0; }
         .sparkline-container svg { display: block; width: 100%; height: 100%; }
 
-        .sticky-left { position: sticky; left: 0; z-index: 20; background-color: inherit; border-right: 2px solid #cbd5e1; }
-        .tab-active { background: #fff; border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: bold; }
-        .tab-inactive { color: #64748b; background: transparent; }
+        .sticky-left { position: sticky; left: 0; z-index: 20; background-color: inherit; border-right: 2px solid var(--border-color); }
+        .tab-active { background: var(--card-bg); border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: bold; }
+        .tab-inactive { color: var(--text-secondary); background: transparent; }
         .table-container { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
         .scrollbar-thin::-webkit-scrollbar { width: 6px; }
-        .scrollbar-thin::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
-        .filter-dropdown { position: absolute; top: 100%; left: 0; background: white; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 4px; padding: 8px; z-index: 50; min-width: 180px; max-height: 250px; overflow-y: auto; color: #334155; font-weight: normal; text-transform: none; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 3px; }
+        .filter-dropdown { position: absolute; top: 100%; left: 0; background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 4px; padding: 8px; z-index: 50; min-width: 180px; max-height: 250px; overflow-y: auto; color: var(--text-primary); font-weight: normal; text-transform: none; }
 
         .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); cursor: pointer; transition: all 0.2s ease-in-out; }
 
@@ -58,24 +73,51 @@
 
 <body class="h-screen flex flex-col overflow-hidden" x-data="inventoryApp()" x-init="initApp()" x-cloak>
 
-    <header class="bg-white border-b px-4 py-2 flex justify-between items-center shadow-sm shrink-0 z-30">
+    <header class="bg-white border-b px-4 py-2 flex justify-between items-center shadow-sm shrink-0 z-30" :style="`background-color: var(--header-bg); border-color: var(--border-color);`">
         <div class="flex items-center gap-3">
-            <div class="bg-indigo-700 text-white font-bold px-2 py-1 rounded text-xs shadow">INV PRO V93</div>
+            <div class="bg-indigo-700 text-white font-bold px-2 py-1 rounded text-xs shadow">STOCKS LOGISTICA</div>
             <div>
-                <h1 class="text-sm font-bold text-slate-800">Dashboard</h1>
-                <div class="text-[10px] text-slate-500 flex items-center gap-1" x-show="lastUpdate">
+                <h1 class="text-sm font-bold" :style="`color: var(--text-primary);`">Dashboard</h1>
+                <div class="text-[10px] flex items-center gap-1" x-show="lastUpdate" :style="`color: var(--text-secondary);`">
                     <span>🕒 Datos al:</span>
                     <span class="font-bold text-indigo-600" x-text="lastUpdate"></span>
                 </div>
             </div>
         </div>
 
-        <div class="flex items-center gap-4 bg-slate-50 px-3 py-1 rounded border border-slate-200" x-show="dataReady">
+        <div class="flex items-center gap-2">
+            <button @click="toggleTheme()" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition text-lg" title="Alternar tema oscuro/claro">
+                <span x-show="!darkMode">🌙</span>
+                <span x-show="darkMode">☀️</span>
+            </button>
+        </div>
+
+        <div class="flex items-center gap-4 px-3 py-1 rounded border" x-show="dataReady" :style="`background-color: var(--bg-tertiary); border-color: var(--border-color);`">
             <div class="flex flex-col" x-show="currentTab !== 'otros_depositos'">
-                <label class="text-[9px] font-bold text-slate-500 uppercase">Cobertura Compra</label>
+                <label class="text-[9px] font-bold uppercase" :style="`color: var(--text-secondary);`">Cobertura Compra</label>
                 <div class="flex items-center gap-1">
                     <input type="number" x-model.number="params.diasCompra" @change="recalculateGlobal" class="w-12 text-xs border rounded text-center font-bold text-emerald-600" min="1">
                     <span class="text-[10px]">días</span>
+                </div>
+            </div>
+            <div class="w-px h-6 bg-slate-300" x-show="currentTab !== 'otros_depositos'"></div>
+            
+            <!-- 🔄 SWITCH: Método de cálculo VTAR vs VPD -->
+            <div class="flex flex-col" x-show="currentTab !== 'otros_depositos'">
+                <label class="text-[9px] font-bold uppercase" :style="`color: var(--text-secondary);`">Base Compra</label>
+                <div class="flex items-center gap-1">
+                    <button @click="calcMethod = 'vtar'; recalculateGlobal()" 
+                        class="px-2 py-0.5 text-[10px] font-bold rounded-l border transition-all"
+                        :class="calcMethod === 'vtar' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-500 border-slate-300 hover:bg-slate-100'"
+                        title="VTAR: Venta Real Promedio Histórica">
+                        VTAR
+                    </button>
+                    <button @click="calcMethod = 'vpd'; recalculateGlobal()" 
+                        class="px-2 py-0.5 text-[10px] font-bold rounded-r border-t border-r border-b transition-all"
+                        :class="calcMethod === 'vpd' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-slate-500 border-slate-300 hover:bg-slate-100'"
+                        title="VPD_Cpra: Venta Proyectada Diaria">
+                        VPD
+                    </button>
                 </div>
             </div>
             <div class="w-px h-6 bg-slate-300" x-show="currentTab !== 'otros_depositos'"></div>
@@ -144,7 +186,7 @@
                 </template>
             </div>
 
-            <div class="bg-indigo-50 border-b px-4 py-2 flex justify-between items-center text-xs sticky top-0 z-20" x-show="currentTab !== 'metricas'">
+            <div class="bg-indigo-50 border-b px-4 py-2 flex justify-between items-center text-xs sticky top-0 z-20" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard'">
                 <div class="font-bold text-indigo-800 uppercase tracking-wide flex items-center gap-2">
                     <span class="text-lg">📍</span> <span x-text="getHeaderTitle()"></span>
                 </div>
@@ -153,7 +195,7 @@
                 </div>
             </div>
 
-            <div class="p-2 border-b bg-white flex gap-3 items-center shrink-0" x-show="currentTab !== 'metricas'">
+            <div class="p-2 border-b bg-white flex gap-3 items-center shrink-0" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard'">
                 <div class="relative">
                     <span class="absolute left-2 top-1.5 text-slate-400">🔍</span>
                     <input type="text" x-model="search" placeholder="Buscar SKU, Nombre, Marca, Proveedor..." class="border rounded pl-7 pr-3 py-1.5 text-xs w-64 focus:outline-none focus:border-blue-400 shadow-sm">
@@ -236,7 +278,7 @@
                 </div>
             </div>
 
-            <div class="flex-1 overflow-auto table-container relative bg-white" x-show="currentTab !== 'metricas'">
+            <div class="flex-1 overflow-auto table-container relative bg-white" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard'">
                 <div x-show="filterOpportunityCost" class="bg-red-50 text-red-800 px-4 py-2 text-xs font-bold border-b border-red-100 flex justify-between items-center animate-in slide-in-from-top duration-300">
                     <div class="flex items-center gap-2">
                         <span class="text-lg animate-pulse">🔥</span>
@@ -267,6 +309,16 @@
                         <span>OPORTUNIDAD ARBITRAJE: Mostrando SKUs para enviar urgente (Hay en Central -> Falta en Full).</span>
                     </div>
                     <button @click="filterArbitrage = false" class="text-[10px] underline hover:text-purple-950 bg-white px-2 py-1 rounded border border-purple-100 hover:bg-purple-50 transition">
+                        Mostrar Todo
+                    </button>
+                </div>
+
+                <div x-show="kpiFilter === 'criticos'" class="bg-red-100 text-red-900 px-4 py-2 text-xs font-bold border-b border-red-200 flex justify-between items-center animate-in slide-in-from-top duration-300">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg animate-pulse">🔴</span>
+                        <span>FILTRO KPI DASHBOARD: Mostrando SKUs CRÍTICOS (Stock < 5 días + Demanda alta).</span>
+                    </div>
+                    <button @click="kpiFilter = null" class="text-[10px] underline hover:text-red-950 bg-white px-2 py-1 rounded border border-red-200 hover:bg-red-50 transition">
                         Mostrar Todo
                     </button>
                 </div>
@@ -310,10 +362,19 @@
                     </thead>
                     <tbody>
                         <template x-for="row in paginatedData" :key="row.id + '_' + (row.comprarU||0) + '_' + (row.diasEstrategia || 'def') + '_' + row.stockGrafana">
-                            <tr class="group transition-colors hover:bg-blue-50" :class="selectedIds.includes(row.id) ? 'bg-blue-100' : ''">
+                            <tr class="group transition-colors hover:bg-blue-50 border-l-4" 
+                                :class="[
+                                    selectedIds.includes(row.id) ? 'bg-blue-100' : '',
+                                    row.alerta?.nivel === 'CRÍTICO' ? 'border-l-red-600 bg-red-50' : 
+                                    row.alerta?.nivel === 'ATENCIÓN' ? 'border-l-yellow-500 bg-yellow-50' : 
+                                    'border-l-green-500 bg-green-50'
+                                ]">
                                 
                                 <td class="sticky-left bg-inherit border-r border-slate-200 text-center px-2">
-                                    <input type="checkbox" :value="row.id" x-model="selectedIds" class="rounded border-slate-300 text-blue-600 focus:ring-0">
+                                    <div class="flex items-center gap-2">
+                                        <input type="checkbox" :value="row.id" x-model="selectedIds" class="rounded border-slate-300 text-blue-600 focus:ring-0">
+                                        <span class="text-lg" :title="row.alerta?.texto" x-text="row.alerta?.icono"></span>
+                                    </div>
                                 </td>
 
                                 <template x-for="col in getColumns()">
@@ -374,6 +435,408 @@
                 <button @click="applyBulkEdit('seasonalMult')" class="hover:text-orange-300 text-xs font-bold">❄️ Multiplicador</button>
                 <div class="h-4 w-px bg-slate-600"></div>
                 <button @click="selectedIds = []" class="text-slate-400 hover:text-white text-xs">Cancelar</button>
+            </div>
+
+            <!-- 🎯 DASHBOARD KPI EJECUTIVO -->
+            <div class="flex-1 overflow-y-auto bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6" x-show="currentTab === 'dashboard'">
+                <div class="max-w-7xl mx-auto">
+                    <h1 class="text-3xl font-bold text-white mb-2">📊 Dashboard Ejecutivo</h1>
+                    <p class="text-slate-400 text-sm mb-6">Indicadores clave y acciones recomendadas</p>
+
+                    <!-- KPI WIDGETS (2 grandes) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <!-- Críticos -->
+                        <div @click="goToCriticos()" 
+                             class="bg-gradient-to-br from-red-600 to-red-700 rounded-lg p-6 shadow-lg text-white cursor-pointer hover:scale-[1.02] hover:shadow-2xl transition-all duration-200"
+                             title="Click para ver detalle de SKUs críticos">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <p class="text-red-100 text-sm font-medium">🔴 SKUs CRÍTICOS</p>
+                                    <p class="text-4xl font-bold mt-2" x-text="kpiDashboard?.criticos || 0"></p>
+                                </div>
+                                <div class="bg-red-500 bg-opacity-30 p-3 rounded-lg">⚠️</div>
+                            </div>
+                            <p class="text-xs text-red-100">Stock < 5 días + Demanda alta</p>
+                            <p class="text-[10px] text-red-200 mt-2 opacity-80">👆 Click para ver detalle</p>
+                        </div>
+
+                        <!-- Stock Viejo > 45 días -->
+                        <div @click="goToStockViejo()" 
+                             class="bg-gradient-to-br from-orange-600 to-orange-700 rounded-lg p-6 shadow-lg text-white cursor-pointer hover:scale-[1.02] hover:shadow-2xl transition-all duration-200"
+                             title="Click para ver stock inmovilizado">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <p class="text-orange-100 text-sm font-medium">💰 STOCK VIEJO (>45D)</p>
+                                    <p class="text-3xl font-bold mt-2">$<span x-text="Math.round(kpiDashboard?.dineroViejo || 0).toLocaleString()"></span></p>
+                                </div>
+                                <div class="bg-orange-500 bg-opacity-30 p-3 rounded-lg">🧊</div>
+                            </div>
+                            <p class="text-xs text-orange-100">Unidades × Costo Unitario (General)</p>
+                            <p class="text-[10px] text-orange-200 mt-2 opacity-80">👆 Click para ver detalle</p>
+                        </div>
+                    </div>
+
+                    <!-- ANÁLISIS COMPARATIVO CON GRÁFICAS -->
+                    <div class="mb-8 bg-slate-800 rounded-lg p-6 shadow-lg">
+                        <h2 class="text-xl font-bold text-white mb-4">📊 Análisis Comparativo (Últimos 60 días)</h2>
+                        
+                        <!-- Selector de tipo de análisis -->
+                        <div class="mb-6">
+                            <label class="text-white text-sm font-bold block mb-2">📌 Analizar por:</label>
+                            <div class="flex gap-3">
+                                <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+                                    <input type="radio" x-model="dashboardAnalysisType" value="sku" @change="dashboardSearchText=''; dashboardSearchResults=[]; updateDashboardAnalysis()" class="w-4 h-4">
+                                    <span>SKU Individual</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+                                    <input type="radio" x-model="dashboardAnalysisType" value="marca" @change="dashboardSearchText=''; dashboardSearchResults=[]; updateDashboardAnalysis()" class="w-4 h-4">
+                                    <span>Marca</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
+                                    <input type="radio" x-model="dashboardAnalysisType" value="proveedor" @change="dashboardSearchText=''; dashboardSearchResults=[]; updateDashboardAnalysis()" class="w-4 h-4">
+                                    <span>Proveedor</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Buscador con autocomplete -->
+                        <div class="mb-6">
+                            <label class="text-white text-sm font-bold block mb-2 flex justify-between items-center">
+                                <span>
+                                    🔍 Buscar y agregar (1-5): 
+                                    <span class="text-slate-400 text-xs font-normal">
+                                        Por SKU / Descripción / Marca / Proveedor
+                                    </span>
+                                </span>
+                                <div class="flex gap-2 items-center">
+                                    <span x-show="(this.masterData?.length || 0) === 0 && (this.rawData?.grafana?.length || 0) <= 1" class="text-red-400 text-xs font-bold animate-pulse">⚠️ Sin datos</span>
+                                    <span x-show="(this.masterData?.length || 0) > 0" class="text-green-400 text-xs font-bold">✓ <span x-text="(this.masterData?.length || 0)"></span> SKUs</span>
+                                    <span x-show="(this.masterData?.length || 0) === 0 && (this.rawData?.grafana?.length || 0) > 1" class="text-blue-400 text-xs font-bold">✓ Excel cargado</span>
+                                    <button @click="
+                                        const masterCount = this.masterData?.length || 0;
+                                        const grafanaCount = this.rawData?.grafana?.length || 0;
+                                        
+                                        if(masterCount === 0 && grafanaCount <= 1) {
+                                            alert('❌ PRIMERO CARGA EL EXCEL\n\n1. Clickea el botón EXCEL en la parte superior\n2. Selecciona tu archivo\n3. Espera a que se procese\n4. Luego podrás buscar SKUs');
+                                        } else if(masterCount > 0) {
+                                            alert('✓ Total SKUs cargados: ' + masterCount + '\n\nPrimeros 5:\n' + (this.masterData?.slice(0, 5).map(m => m.sku).join('\n') || 'N/D'));
+                                        } else {
+                                            alert('✓ Excel cargado desde Grafana: ' + (grafanaCount-1) + ' filas\n\nPuedes buscar SKUs ahora');
+                                        }
+                                    " 
+                                    class="text-slate-400 hover:text-white text-xs font-normal bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded">📊 Ver SKUs</button>
+                                </div>
+                            </label>
+                            <div class="relative">
+                                <div class="flex gap-2">
+                                    <input type="text" 
+                                        x-model="dashboardSearchText" 
+                                        @input="searchDashboardItems()"
+                                        @keydown.enter="handleDashboardSearchEnter()"
+                                        @keydown.escape="dashboardSearchResults = []"
+                                        @focus="dashboardSearchText.length > 0 && searchDashboardItems()"
+                                        placeholder="Ej: 140006024BA, motor, TOYOTA, proveedor..."
+                                        class="flex-1 bg-slate-700 text-white p-3 rounded border border-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <button @click="handleDashboardSearchEnter()" 
+                                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded border-0 transition-colors font-bold text-sm">⏎ Buscar</button>
+                                    <button @click="dashboardSearchText = ''; dashboardSearchResults = [];" class="bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white px-3 rounded border border-slate-600 transition-colors">✕</button>
+                                </div>
+                                
+                                <!-- Mensaje de carga de Excel requerida -->
+                                <!-- Mensaje de carga de Excel requerida (solo si no hay nada) -->
+                                <div x-show="dashboardSearchText.length > 0 && (this.masterData?.length || 0) === 0 && (this.rawData?.grafana?.length || 0) <= 1"
+                                    class="absolute top-full left-0 right-0 mt-1 bg-red-900 border-2 border-red-600 rounded shadow-lg z-50 p-3">
+                                    <p class="text-red-300 text-sm font-bold">🔴 PRIMERO CARGA EL EXCEL</p>
+                                    <p class="text-red-200 text-xs mt-1">Pasos:</p>
+                                    <ol class="text-red-200 text-xs ml-3 mt-1 list-decimal">
+                                        <li>Clickea el botón <span class="font-bold text-white">📊 Excel</span> en la parte superior</li>
+                                        <li>Selecciona tu archivo de Excel</li>
+                                        <li>Espera a que se procese (verás los widgets KPI con datos)</li>
+                                        <li>Luego podrás usar el buscador aquí</li>
+                                    </ol>
+                                </div>
+                                
+                                <!-- Dropdown de resultados -->
+                                <div x-show="dashboardSearchText.length > 0 && dashboardSearchResults.length > 0" 
+                                    @click.away="dashboardSearchResults = []"
+                                    class="absolute top-full left-0 right-0 mt-1 bg-slate-700 border-2 border-green-500 rounded shadow-xl z-50 max-h-72 overflow-y-auto">
+                                    <div class="bg-slate-800 p-2 border-b border-green-500 text-xs text-slate-300 sticky top-0 font-bold">
+                                        ✓ <span x-text="dashboardSearchResults.length + ' resultado(s) encontrado(s)'"></span> • Click para agregar
+                                    </div>
+                                    <template x-for="(item, idx) in dashboardSearchResults" :key="item.sku">
+                                        <div @click="addDashboardItem(item)" 
+                                            :class="[
+                                                dashboardSelectedItems.some(s => s.sku === item.sku) ? 'bg-green-700 border-l-4 border-green-400' : (idx === 0 ? 'bg-blue-900 border-l-4 border-blue-400' : 'hover:bg-slate-600'),
+                                                'p-3 border-b border-slate-600 cursor-pointer transition-colors'
+                                            ]">
+                                            <div class="flex justify-between items-start">
+                                                <div class="flex-1">
+                                                    <div class="text-white font-mono text-sm font-bold flex items-center gap-2">
+                                                        <span x-text="item.sku"></span>
+                                                        <span x-show="idx === 0" class="text-xs bg-blue-500 px-1 rounded">1er resultado</span>
+                                                    </div>
+                                                    <div class="text-slate-300 text-xs truncate" x-text="(item.desc?.substring(0, 40) || 'S/D')"></div>
+                                                </div>
+                                                <div class="text-slate-400 text-xs text-right ml-2">
+                                                    <div x-text="'Stock: ' + ((item.stockGrafana || item.stock || 0))"></div>
+                                                </div>
+                                            </div>
+                                            <div class="text-slate-400 text-xs flex justify-between mt-1">
+                                                <span x-text="'📦 ' + (item.marca || 'S/D')"></span>
+                                                <span x-text="'🚚 ' + (item.prov || 'S/D')"></span>
+                                            </div>
+                                            <div x-show="dashboardSelectedItems.some(s => s.sku === item.sku)" class="text-green-300 text-xs mt-1 font-bold">✓ Ya agregado</div>
+                                        </div>
+                                    </template>
+                                </div>
+                                
+                                <!-- Mensaje cuando no hay resultados -->
+                                <div x-show="dashboardSearchText.length > 0 && dashboardSearchResults.length === 0 && (this.masterData?.length || 0) > 0"
+                                    class="absolute top-full left-0 right-0 mt-1 bg-slate-700 border-2 border-orange-500 rounded shadow-lg z-50 p-3">
+                                    <p class="text-orange-400 text-xs font-bold">⚠️ No se encontraron resultados para: "<span x-text="dashboardSearchText"></span>"</p>
+                                    <p class="text-slate-400 text-xs mt-1">Intenta con:</p>
+                                    <ul class="text-slate-400 text-xs ml-3 mt-1 list-disc">
+                                        <li>Parte del SKU (ej: primeros 6 dígitos)</li>
+                                        <li>Nombre de la marca</li>
+                                        <li>Proveedor</li>
+                                        <li>Palabra de la descripción</li>
+                                    </ul>
+                                    <button @click="console.log('[DEBUG] masterData:', this.masterData?.length || 0); console.log('[DEBUG] flatData:', this.flatData?.length || 0); console.log('[DEBUG] rawData.grafana:', this.rawData?.grafana?.length || 0); alert('✓ Ver consola (F12) para debugging')" 
+                                        class="mt-2 bg-slate-600 hover:bg-slate-500 text-white text-xs px-2 py-1 rounded">🔍 Ver datos en consola</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Items seleccionados (tabla) -->
+                        <div class="mb-6 bg-slate-700 rounded-lg p-4" x-show="dashboardSelectedItems.length > 0">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-white font-bold text-sm">📋 Seleccionados (<span x-text="dashboardSelectedItems.length"></span>/5)</h3>
+                                <button @click="dashboardSelectedItems = []; updateDashboardAnalysis()" class="text-red-400 hover:text-red-300 text-xs font-bold">Limpiar todo</button>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-xs text-slate-300 border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-slate-600">
+                                            <th class="text-left p-2">SKU</th>
+                                            <th class="text-left p-2">DESCRIPCIÓN</th>
+                                            <th class="text-left p-2">MARCA</th>
+                                            <th class="text-left p-2">PROVEEDOR</th>
+                                            <th class="text-right p-2">VTAR</th>
+                                            <th class="text-right p-2">STOCK</th>
+                                            <th class="p-2">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="item in dashboardSelectedItems" :key="item.sku">
+                                            <tr class="border-b border-slate-600 hover:bg-slate-600">
+                                                <td class="p-2 font-mono" x-text="item.sku"></td>
+                                                <td class="p-2 text-slate-400" x-text="item.desc?.substring(0, 30) + (item.desc?.length > 30 ? '...' : '')"></td>
+                                                <td class="p-2" x-text="item.marca || 'S/D'"></td>
+                                                <td class="p-2" x-text="item.prov || 'S/D'"></td>
+                                                <td class="p-2 text-right" x-text="(item.vtarTotal || 0).toFixed(2)"></td>
+                                                <td class="p-2 text-right" x-text="(item.stockGrafana || 0).toLocaleString()"></td>
+                                                <td class="p-2 text-center">
+                                                    <button @click="removeDashboardItem(item.sku)" class="text-red-400 hover:text-red-300 font-bold text-lg">×</button>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Gráfica -->
+                        <div class="bg-slate-700 rounded-lg p-4" x-show="dashboardSelectedItems.length > 0">
+                            <canvas id="dashboardChart" height="80"></canvas>
+                        </div>
+                        
+                        <div x-show="dashboardSelectedItems.length === 0" class="bg-slate-700 rounded-lg p-8 text-center text-slate-400">
+                            <p>👆 Busca y selecciona 1-5 items para ver la gráfica de comparación</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 🛒 SHARE DE MERCADO - CONSULTA Y MÉTRICAS -->
+                    <div class="mb-8 bg-white rounded-lg p-6 shadow-lg border border-teal-300">
+                        <h2 class="text-xl font-bold text-teal-800 mb-4 flex justify-between items-center">
+                            <span>🛒 SHARE DE MERCADO - Noviembre</span>
+                            <span class="text-xs bg-teal-50 text-teal-700 px-3 py-1 rounded border border-teal-200">Ventas Propias vs. Mercado Total</span>
+                        </h2>
+                        
+                        <!-- KPI Cards de SHARE -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                            <div class="bg-teal-50 border-l-4 border-teal-500 p-3 rounded">
+                                <div class="text-xs text-teal-600 font-medium">📊 SHARE Promedio</div>
+                                <div class="text-2xl font-bold text-teal-700" x-text="(shareMetrics?.shareProm || 0) + '%'"></div>
+                            </div>
+                            <div class="bg-green-50 border-l-4 border-green-500 p-3 rounded">
+                                <div class="text-xs text-green-600 font-medium">🏆 SKUs Líderes (>50%)</div>
+                                <div class="text-2xl font-bold text-green-700" x-text="shareMetrics?.skusLideres || 0"></div>
+                            </div>
+                            <div class="bg-orange-50 border-l-4 border-orange-500 p-3 rounded">
+                                <div class="text-xs text-orange-600 font-medium">⚠️ SKUs Débiles (&lt;10%)</div>
+                                <div class="text-2xl font-bold text-orange-700" x-text="shareMetrics?.skusDebiles || 0"></div>
+                            </div>
+                            <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded">
+                                <div class="text-xs text-blue-600 font-medium">💰 Valor SKUs Líderes</div>
+                                <div class="text-lg font-bold text-blue-700" x-text="formatMoney(shareMetrics?.valorLideres || 0)"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Buscador de SHARE -->
+                        <div class="bg-teal-50 p-4 rounded-lg border border-teal-200 mb-4">
+                            <h4 class="text-sm font-bold text-teal-800 mb-3">🔍 Consultar SHARE por SKU / MARCA / PROVEEDOR</h4>
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                <label class="flex items-center gap-1 text-sm text-teal-700 cursor-pointer">
+                                    <input type="radio" x-model="shareSearchType" value="sku" class="w-4 h-4">
+                                    <span>SKU</span>
+                                </label>
+                                <label class="flex items-center gap-1 text-sm text-teal-700 cursor-pointer">
+                                    <input type="radio" x-model="shareSearchType" value="marca" class="w-4 h-4">
+                                    <span>Marca</span>
+                                </label>
+                                <label class="flex items-center gap-1 text-sm text-teal-700 cursor-pointer">
+                                    <input type="radio" x-model="shareSearchType" value="proveedor" class="w-4 h-4">
+                                    <span>Proveedor</span>
+                                </label>
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="text" 
+                                    x-model="shareSearchText"
+                                    @keydown.enter="searchShare()"
+                                    placeholder="Ingrese SKU, Marca o Proveedor..."
+                                    class="flex-1 bg-white text-slate-800 p-2 rounded border border-teal-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                                <button @click="searchShare()" 
+                                    class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded font-bold text-sm transition-colors">
+                                    🔍 Buscar
+                                </button>
+                                <button @click="shareSearchText=''; shareSearchResult=null" 
+                                    class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded text-sm">
+                                    ✕
+                                </button>
+                            </div>
+                            
+                            <!-- Resultado de búsqueda -->
+                            <div x-show="shareSearchResult && !shareSearchResult.error" class="mt-4 bg-white p-4 rounded-lg border border-teal-300">
+                                <div class="flex justify-between items-start mb-3">
+                                    <div>
+                                        <div class="text-xs text-slate-500 uppercase" x-text="shareSearchResult?.type"></div>
+                                        <div class="text-lg font-bold text-teal-800" x-text="shareSearchResult?.query"></div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-3xl font-black" 
+                                             :style="`color: ${parseFloat(shareSearchResult?.share) >= 50 ? '#16a34a' : (parseFloat(shareSearchResult?.share) >= 20 ? '#f59e0b' : '#dc2626')}`"
+                                             x-text="shareSearchResult?.share + '%'"></div>
+                                        <div class="text-xs text-slate-500">SHARE NOVIEMBRE</div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-3 text-center text-xs mb-3">
+                                    <div class="bg-slate-50 p-2 rounded">
+                                        <div class="font-bold text-slate-800" x-text="shareSearchResult?.skusCount || 0"></div>
+                                        <div class="text-slate-500">SKUs Analizados</div>
+                                    </div>
+                                    <div class="bg-blue-50 p-2 rounded">
+                                        <div class="font-bold text-blue-700" x-text="(shareSearchResult?.vtaNoviembre || 0).toLocaleString()"></div>
+                                        <div class="text-blue-500">Ventas Propias (Nov)</div>
+                                    </div>
+                                    <div class="bg-teal-50 p-2 rounded">
+                                        <div class="font-bold text-teal-700" x-text="(shareSearchResult?.qNoviembre || 0).toLocaleString()"></div>
+                                        <div class="text-teal-500">Mercado Total (Nov)</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Tabla de items -->
+                                <div x-show="shareSearchResult?.items?.length > 0" class="overflow-x-auto max-h-40 border rounded">
+                                    <table class="w-full text-[10px]">
+                                        <thead class="bg-slate-100 sticky top-0">
+                                            <tr><th class="p-1 text-left">SKU</th><th class="p-1 text-left">Descripción</th><th class="p-1 text-right">Vta. Nov</th><th class="p-1 text-right">Q Nov</th><th class="p-1 text-right">SHARE</th></tr>
+                                        </thead>
+                                        <tbody class="divide-y">
+                                            <template x-for="item in shareSearchResult?.items" :key="item.sku">
+                                                <tr class="hover:bg-teal-50">
+                                                    <td class="p-1 font-bold" x-text="item.sku"></td>
+                                                    <td class="p-1 truncate max-w-[150px]" x-text="item.desc"></td>
+                                                    <td class="p-1 text-right" x-text="item.vtaNov"></td>
+                                                    <td class="p-1 text-right" x-text="item.qNov"></td>
+                                                    <td class="p-1 text-right font-bold" 
+                                                        :style="`color: ${parseFloat(item.share) >= 50 ? '#16a34a' : (parseFloat(item.share) >= 20 ? '#f59e0b' : '#dc2626')}`"
+                                                        x-text="item.share + '%'"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- Error de búsqueda -->
+                            <div x-show="shareSearchResult?.error" class="mt-4 bg-red-50 p-3 rounded border border-red-200 text-red-700 text-sm">
+                                <span x-text="shareSearchResult?.message"></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Top 10 SHARE -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <!-- Top 10 Mejores -->
+                            <div class="border-l-4 border-green-500 p-3 bg-green-50 rounded">
+                                <div class="text-sm font-bold text-green-800 mb-2">🏆 Top 10 Mayor SHARE</div>
+                                <div class="text-xs text-slate-600 space-y-1 max-h-48 overflow-y-auto">
+                                    <template x-for="item in shareMetrics?.topSkus" :key="item.sku">
+                                        <div class="bg-white p-2 rounded border-l-2 border-green-400 flex justify-between items-center">
+                                            <div>
+                                                <div class="font-bold text-slate-700" x-text="item.sku"></div>
+                                                <div class="text-[9px] text-slate-500" x-text="item.marca"></div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="font-black text-green-600" x-text="item.shareNov?.toFixed(1) + '%'"></div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <!-- Top 10 Peores (Oportunidad) -->
+                            <div class="border-l-4 border-orange-500 p-3 bg-orange-50 rounded">
+                                <div class="text-sm font-bold text-orange-800 mb-2">📈 Top 10 Menor SHARE (Oportunidad)</div>
+                                <div class="text-xs text-slate-600 space-y-1 max-h-48 overflow-y-auto">
+                                    <template x-for="item in shareMetrics?.worstSkus" :key="item.sku">
+                                        <div class="bg-white p-2 rounded border-l-2 border-orange-400 flex justify-between items-center">
+                                            <div>
+                                                <div class="font-bold text-slate-700" x-text="item.sku"></div>
+                                                <div class="text-[9px] text-slate-500" x-text="item.marca"></div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="font-black text-orange-600" x-text="item.shareNov?.toFixed(1) + '%'"></div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- SHARE por Marca -->
+                        <div class="border rounded p-3 bg-slate-50">
+                            <div class="text-sm font-bold text-slate-700 mb-2">📦 SHARE por Marca (Top 15)</div>
+                            <div class="overflow-x-auto max-h-48">
+                                <table class="w-full text-xs">
+                                    <thead class="bg-slate-200 sticky top-0">
+                                        <tr><th class="p-2 text-left">Marca</th><th class="p-2 text-center">SKUs</th><th class="p-2 text-right">SHARE Prom.</th><th class="p-2 text-right">SHARE Total</th></tr>
+                                    </thead>
+                                    <tbody class="divide-y">
+                                        <template x-for="m in shareMetrics?.byMarca" :key="m.marca">
+                                            <tr class="hover:bg-teal-50 cursor-pointer" @click="shareSearchType='marca'; shareSearchText=m.marca; searchShare()">
+                                                <td class="p-2 font-bold" x-text="m.marca"></td>
+                                                <td class="p-2 text-center" x-text="m.skus"></td>
+                                                <td class="p-2 text-right" x-text="m.shareProm + '%'"></td>
+                                                <td class="p-2 text-right font-bold" 
+                                                    :style="`color: ${parseFloat(m.shareTotal) >= 50 ? '#16a34a' : (parseFloat(m.shareTotal) >= 20 ? '#f59e0b' : '#dc2626')}`"
+                                                    x-text="m.shareTotal + '%'"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="flex-1 overflow-y-auto bg-slate-50 p-6" x-show="currentTab === 'metricas'">
@@ -708,6 +1171,271 @@
                 
 
                     </div>
+
+                    <!-- 🎯 NUEVA MÉTRICA: Sub_Perfil + Cobertura en Dep80 -->
+                    <div class="bg-white p-4 rounded-lg shadow border border-emerald-200 mb-6">
+                        <h3 class="text-sm font-bold text-emerald-700 uppercase border-b pb-2 mb-3 flex justify-between items-center">
+                            <span>🎯 Análisis Sub_Perfil + Cobertura Depósito 80 (30 días)</span>
+                            <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded border border-emerald-100">Killer, Normal, Baja Rotación, Verano</span>
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs">
+                                <thead class="bg-emerald-50 text-emerald-800 font-bold uppercase sticky top-0">
+                                    <tr>
+                                        <td class="p-2">Sub_Perfil</td>
+                                        <td class="p-2 text-center">Cant. Productos</td>
+                                        <td class="p-2 text-center">% del Total</td>
+                                        <td class="p-2 text-right">Stock Dep80</td>
+                                        <td class="p-2 text-right">VTAR Promedio</td>
+                                        <td class="p-2 text-center">Cobertura %</td>
+                                        <td class="p-2 text-center">Cobertura (días)</td>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    <template x-for="sp in metrics.subPerfilCoverage" :key="sp.subPerfil">
+                                        <tr class="hover:bg-emerald-50 cursor-pointer transition-colors" 
+                                            @click="switchTab('consolidado'); activeFilters['subPerfil'] = [sp.subPerfil];">
+                                            <td class="p-2 font-bold text-slate-700" x-text="sp.subPerfil"></td>
+                                            <td class="p-2 text-center font-bold text-slate-800" x-text="sp.cantProductos"></td>
+                                            <td class="p-2 text-center">
+                                                <span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold" x-text="sp.porcentajeProductos + '%'"></span>
+                                            </td>
+                                            <td class="p-2 text-right font-mono text-slate-700" x-text="sp.stockDep80.toLocaleString()"></td>
+                                            <td class="p-2 text-right font-mono text-slate-600" x-text="sp.vtarPromedio"></td>
+                                            <td class="p-2 text-center">
+                                                <div class="flex items-center justify-center gap-1">
+                                                    <span class="text-[10px] font-bold" 
+                                                          :style="`color: ${sp.coberturaLabel >= 100 ? '#16a34a' : (sp.coberturaLabel >= 50 ? '#f59e0b' : '#dc2626')}`"
+                                                          x-text="sp.coberturaDias + '%'"></span>
+                                                    <div class="w-12 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                                        <div class="h-full transition-all" 
+                                                             :style="`width: ${Math.min(sp.coberturaLabel, 100)}%; background-color: ${sp.coberturaLabel >= 100 ? '#16a34a' : (sp.coberturaLabel >= 50 ? '#f59e0b' : '#dc2626')}`"></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="p-2 text-center font-bold" 
+                                                :style="`color: ${sp.coberturaLabel >= 30 ? '#16a34a' : (sp.coberturaLabel >= 15 ? '#f59e0b' : '#dc2626')}`"
+                                                x-text="Math.round((sp.coberturaDias / 100) * 30).toFixed(0) + 'd'"></td>
+                                        </tr>
+                                    </template>
+                                    <tr x-show="!metrics.subPerfilCoverage || metrics.subPerfilCoverage.length === 0">
+                                        <td colspan="7" class="py-4 text-center text-slate-400">Cargando datos...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-3 text-[9px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-100">
+                            <strong>Interpretación:</strong> Cobertura % = (Stock en Dep80 / VTAR Promedio / 30 días) × 100. 
+                            Si es <strong>< 50%</strong> = Riesgo de desabastecimiento; <strong>50-100%</strong> = Aceptable; <strong>> 100%</strong> = Sobrestocked.
+                        </div>
+                    </div>
+
+                    <!-- 🎯 OPCIÓN 1: MATRIZ DE RIESGO -->
+                    <div class="bg-white p-4 rounded-lg shadow border border-red-200 mb-6">
+                        <h3 class="text-sm font-bold text-red-700 uppercase border-b pb-2 mb-3 flex justify-between items-center">
+                            <span>🎲 Matriz de Riesgo: Cobertura vs Rotación</span>
+                            <span class="text-[10px] bg-red-50 text-red-700 px-2 py-1 rounded border border-red-100">2x2 Cuadrantes</span>
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- ROJO -->
+                            <div class="bg-red-50 border-l-4 border-red-600 p-3 rounded">
+                                <div class="text-sm font-bold text-red-700 flex items-center gap-2 mb-2">
+                                    <span class="text-2xl">🔴</span> Dinero Congelado
+                                    <span class="text-xs bg-red-100 px-2 py-1 rounded" x-text="metrics.riskMatrix?.RED?.count || 0 + ' SKUs'"></span>
+                                </div>
+                                <div class="text-xs text-slate-600 bg-white p-2 rounded max-h-32 overflow-y-auto">
+                                    <template x-for="item in metrics.riskMatrix?.RED?.items.slice(0,5)" :key="item.sku">
+                                        <div class="py-1 border-b text-[9px]"><strong x-text="item.sku"></strong> • Stock: <span x-text="item.stock"></span> • $<span x-text="item.valor"></span></div>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <!-- NARANJA -->
+                            <div class="bg-orange-50 border-l-4 border-orange-500 p-3 rounded">
+                                <div class="text-sm font-bold text-orange-700 flex items-center gap-2 mb-2">
+                                    <span class="text-2xl">🟠</span> Bajo Perfil
+                                    <span class="text-xs bg-orange-100 px-2 py-1 rounded" x-text="metrics.riskMatrix?.ORANGE?.count || 0 + ' SKUs'"></span>
+                                </div>
+                                <div class="text-xs text-slate-600 bg-white p-2 rounded max-h-32 overflow-y-auto">
+                                    <template x-for="item in metrics.riskMatrix?.ORANGE?.items.slice(0,5)" :key="item.sku">
+                                        <div class="py-1 border-b text-[9px]"><strong x-text="item.sku"></strong> • Stock: <span x-text="item.stock"></span> • $<span x-text="item.valor"></span></div>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <!-- AMARILLO -->
+                            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded">
+                                <div class="text-sm font-bold text-yellow-700 flex items-center gap-2 mb-2">
+                                    <span class="text-2xl">🟡</span> Riesgo Desabast.
+                                    <span class="text-xs bg-yellow-100 px-2 py-1 rounded" x-text="metrics.riskMatrix?.YELLOW?.count || 0 + ' SKUs'"></span>
+                                </div>
+                                <div class="text-xs text-slate-600 bg-white p-2 rounded max-h-32 overflow-y-auto">
+                                    <template x-for="item in metrics.riskMatrix?.YELLOW?.items.slice(0,5)" :key="item.sku">
+                                        <div class="py-1 border-b text-[9px]"><strong x-text="item.sku"></strong> • Cobertura: <span x-text="item.cobertura + 'd'"></span> • $<span x-text="item.valor"></span></div>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <!-- VERDE -->
+                            <div class="bg-green-50 border-l-4 border-green-600 p-3 rounded">
+                                <div class="text-sm font-bold text-green-700 flex items-center gap-2 mb-2">
+                                    <span class="text-2xl">🟢</span> Ideal
+                                    <span class="text-xs bg-green-100 px-2 py-1 rounded" x-text="metrics.riskMatrix?.GREEN?.count || 0 + ' SKUs'"></span>
+                                </div>
+                                <div class="text-xs text-slate-600 bg-white p-2 rounded max-h-32 overflow-y-auto">
+                                    <template x-for="item in metrics.riskMatrix?.GREEN?.items.slice(0,5)" :key="item.sku">
+                                        <div class="py-1 border-b text-[9px]"><strong x-text="item.sku"></strong> • VTAR: <span x-text="item.vtar.toFixed(1)"></span> • $<span x-text="item.valor"></span></div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 🎯 OPCIÓN 2: FORECAST DE COMPRA (30 y 45 días) -->
+                    <div class="bg-white p-4 rounded-lg shadow border border-blue-200 mb-6">
+                        <h3 class="text-sm font-bold text-blue-700 uppercase border-b pb-2 mb-3 flex justify-between items-center">
+                            <span>📈 Forecast de Necesidad de Compra (30 y 45 días)</span>
+                            <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100">Proyección por Proveedor</span>
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <!-- 30 días -->
+                            <div class="border-l-4 border-blue-500 p-3 bg-blue-50 rounded">
+                                <div class="text-sm font-bold text-blue-800 mb-2">📅 Próximos 30 días</div>
+                                <div class="text-2xl font-bold text-blue-600 mb-2" x-text="'$' + metrics.forecastSummary?.f30"></div>
+                                <div class="text-xs text-slate-600 space-y-1">
+                                    <template x-for="f in metrics.forecast30" :key="f.prov">
+                                        <div class="flex justify-between bg-white p-1 rounded">
+                                            <span class="font-bold" x-text="f.prov"></span>
+                                            <span x-text="f.count + ' SKUs • $' + f.monto"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <!-- 45 días -->
+                            <div class="border-l-4 border-purple-500 p-3 bg-purple-50 rounded">
+                                <div class="text-sm font-bold text-purple-800 mb-2">📅 Próximos 45 días</div>
+                                <div class="text-2xl font-bold text-purple-600 mb-2" x-text="'$' + metrics.forecastSummary?.f45"></div>
+                                <div class="text-xs text-slate-600 space-y-1">
+                                    <template x-for="f in metrics.forecast45" :key="f.prov">
+                                        <div class="flex justify-between bg-white p-1 rounded">
+                                            <span class="font-bold" x-text="f.prov"></span>
+                                            <span x-text="f.count + ' SKUs • $' + f.monto"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 🎯 OPCIÓN 3: ANÁLISIS LEAD TIME vs COBERTURA -->
+                    <div class="bg-white p-4 rounded-lg shadow border border-orange-200 mb-6">
+                        <h3 class="text-sm font-bold text-orange-700 uppercase border-b pb-2 mb-3 flex justify-between items-center">
+                            <span>⏱️ Análisis Lead Time vs Cobertura</span>
+                            <span class="text-[10px] bg-orange-50 text-orange-700 px-2 py-1 rounded border border-orange-100">Riesgo de Desabastecimiento</span>
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <!-- CRÍTICO -->
+                            <div class="bg-red-50 border-l-4 border-red-600 p-3 rounded">
+                                <div class="text-sm font-bold text-red-700 mb-2">🔴 CRÍTICO <span class="text-xs" x-text="'(' + metrics.ltAnalysis?.criticalCount + ' SKUs)'"></span></div>
+                                <div class="text-xs text-slate-600 space-y-1 max-h-40 overflow-y-auto">
+                                    <template x-for="item in metrics.ltAnalysis?.CRITICAL" :key="item.sku">
+                                        <div class="bg-white p-1 rounded border-l-2 border-red-400 text-[9px]">
+                                            <div class="font-bold" x-text="item.sku"></div>
+                                            <div>LT: <span x-text="item.lt + 'd'"></span> | Cobertura: <span x-text="item.cobertura + 'd'"></span></div>
+                                            <div class="text-red-600 font-bold">GAP: <span x-text="item.gap + 'd'"></span></div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <!-- EN RIESGO -->
+                            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded">
+                                <div class="text-sm font-bold text-yellow-700 mb-2">🟠 EN RIESGO <span class="text-xs" x-text="'(' + metrics.ltAnalysis?.atRiskCount + ' SKUs)'"></span></div>
+                                <div class="text-xs text-slate-600 space-y-1 max-h-40 overflow-y-auto">
+                                    <template x-for="item in metrics.ltAnalysis?.AT_RISK" :key="item.sku">
+                                        <div class="bg-white p-1 rounded border-l-2 border-yellow-400 text-[9px]">
+                                            <div class="font-bold" x-text="item.sku"></div>
+                                            <div>LT: <span x-text="item.lt + 'd'"></span> | Cobertura: <span x-text="item.cobertura + 'd'"></span></div>
+                                            <div class="text-yellow-600 font-bold">GAP: <span x-text="item.gap + 'd'"></span></div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <!-- OK -->
+                            <div class="bg-green-50 border-l-4 border-green-600 p-3 rounded">
+                                <div class="text-sm font-bold text-green-700 mb-2">🟢 OK <span class="text-xs" x-text="'(' + (metrics.ltAnalysis?.OK?.length || 0) + ' SKUs)'"></span></div>
+                                <div class="text-xs text-slate-600 space-y-1 max-h-40 overflow-y-auto">
+                                    <template x-for="item in metrics.ltAnalysis?.OK.slice(0,5)" :key="item.sku">
+                                        <div class="bg-white p-1 rounded border-l-2 border-green-400 text-[9px]">
+                                            <div class="font-bold" x-text="item.sku"></div>
+                                            <div>LT: <span x-text="item.lt + 'd'"></span> | Cobertura: <span x-text="item.cobertura + 'd'"></span></div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 🎯 OPCIÓN 4: HEALTH SCORE -->
+                    <div class="bg-white p-4 rounded-lg shadow border border-indigo-200 mb-6">
+                        <h3 class="text-sm font-bold text-indigo-700 uppercase border-b pb-2 mb-3">🏥 Health Score del Inventario</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Score Principal -->
+                            <div class="flex flex-col items-center justify-center p-6 bg-indigo-50 rounded-lg">
+                                <div class="text-6xl font-black" 
+                                     :style="`color: ${metrics.healthScore?.overall >= 75 ? '#16a34a' : (metrics.healthScore?.overall >= 50 ? '#f59e0b' : '#dc2626')}`"
+                                     x-text="metrics.healthScore?.overall || 0"></div>
+                                <div class="text-2xl font-bold text-indigo-700 mt-2">/100</div>
+                                <div class="text-lg font-bold mt-3" x-show="metrics.healthScore?.overall >= 75">✅ SALUDABLE</div>
+                                <div class="text-lg font-bold mt-3 text-yellow-700" x-show="metrics.healthScore?.overall >= 50 && metrics.healthScore?.overall < 75">⚠️ MODERADO</div>
+                                <div class="text-lg font-bold mt-3 text-red-700" x-show="metrics.healthScore?.overall < 50">🚨 CRÍTICO</div>
+                                <div class="text-sm text-slate-600 mt-2" x-text="metrics.healthScore?.trend === '↑' ? '↗️ Mejorando' : (metrics.healthScore?.trend === '↓' ? '↘️ Empeorando' : '→ Sin cambios')"></div>
+                            </div>
+                            
+                            <!-- Desglose de Componentes -->
+                            <div class="space-y-2">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-bold text-slate-700">Cobertura (40%)</span>
+                                        <span class="text-sm font-bold" :style="`color: ${metrics.healthScore?.components?.cobertura >= 75 ? '#16a34a' : '#f59e0b'}`" x-text="metrics.healthScore?.components?.cobertura + '%'"></span>
+                                    </div>
+                                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                        <div class="h-full bg-blue-500" :style="`width: ${metrics.healthScore?.components?.cobertura}%`"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-bold text-slate-700">Rotación (25%)</span>
+                                        <span class="text-sm font-bold" :style="`color: ${metrics.healthScore?.components?.rotacion >= 75 ? '#16a34a' : '#f59e0b'}`" x-text="metrics.healthScore?.components?.rotacion + '%'"></span>
+                                    </div>
+                                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                        <div class="h-full bg-purple-500" :style="`width: ${metrics.healthScore?.components?.rotacion}%`"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-bold text-slate-700">Eficiencia Capital (20%)</span>
+                                        <span class="text-sm font-bold" :style="`color: ${metrics.healthScore?.components?.capital >= 75 ? '#16a34a' : '#f59e0b'}`" x-text="metrics.healthScore?.components?.capital + '%'"></span>
+                                    </div>
+                                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                        <div class="h-full bg-emerald-500" :style="`width: ${metrics.healthScore?.components?.capital}%`"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-bold text-slate-700">Gestión Deuda (15%)</span>
+                                        <span class="text-sm font-bold" :style="`color: ${metrics.healthScore?.components?.deuda >= 75 ? '#16a34a' : '#f59e0b'}`" x-text="metrics.healthScore?.components?.deuda + '%'"></span>
+                                    </div>
+                                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                        <div class="h-full bg-orange-500" :style="`width: ${metrics.healthScore?.components?.deuda}%`"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="bg-white p-4 rounded-lg shadow border lg:col-span-2">
                         <div class="bg-white p-4 rounded-lg shadow border border-slate-200 mb-6">
                     <h3 class="text-sm font-bold text-slate-700 uppercase border-b pb-2 mb-3 flex justify-between items-center">
@@ -1025,7 +1753,7 @@
                         <h3 class="text-xs font-bold text-blue-600 uppercase border-b pb-2 mb-3">Envío Full (80)</h3>
                         <div class="space-y-2 text-xs">
                             <div class="flex justify-between"><span>Disponible:</span><span x-text="selectedRow?.stockRestante"></span></div>
-                            <div class="flex justify-between"><span>Demanda (30d):</span><strong x-text="selectedRow?.debugDemanda80"></strong></div>
+                            <div class="flex justify-between"><span>Demanda (30d):</span><strong x-text="selectedRow?.vta30d_80"></strong></div>
                             <div class="flex justify-between items-center border-t pt-2 mt-2">
                                 <span class="font-bold text-blue-800">A ENVIAR:</span>
                                 <span class="text-2xl font-bold text-blue-700" x-text="selectedRow?.qEnviar"></span>
@@ -1100,6 +1828,16 @@
     </div>
 
     <script>
+        // ⚡ OPTIMIZACIÓN: Cache para memoización de cálculos costosos
+        const MemoCache = {
+            _cache: new Map(),
+            get(key) { return this._cache.get(key); },
+            set(key, value) { this._cache.set(key, value); return value; },
+            has(key) { return this._cache.has(key); },
+            clear() { this._cache.clear(); },
+            size() { return this._cache.size; }
+        };
+
         const DB={
             name:'InvProV93', store:'Files', histStore: 'History', debtStore: 'DebtHistory',
             async getDB(){
@@ -1192,20 +1930,31 @@
             return zScore > 2.5;
         }
 
+        /**
+         * Convierte fecha serial de Excel a formato DD/MM/YYYY
+         * @param {number} serial - Número serial de Excel
+         * @returns {string} Fecha formateada o valor original si es inválido
+         */
         function excelDateToJSDate(serial) {
            if (!serial || isNaN(serial)) return serial;
-           const utc_days  = Math.floor(serial - 25569);
-           const utc_value = utc_days * 86400000;
-           const date_info = new Date(utc_value);
-           const day = String(date_info.getUTCDate()).padStart(2, '0');
-           const month = String(date_info.getUTCMonth() + 1).padStart(2, '0');
-           const year = date_info.getUTCFullYear();
-           return `${day}/${month}/${year}`;
+           try {
+               const utc_days  = Math.floor(serial - 25569);
+               const utc_value = utc_days * 86400000;
+               const date_info = new Date(utc_value);
+               const day = String(date_info.getUTCDate()).padStart(2, '0');
+               const month = String(date_info.getUTCMonth() + 1).padStart(2, '0');
+               const year = date_info.getUTCFullYear();
+               return `${day}/${month}/${year}`;
+           } catch(e) {
+               console.warn('[WARN] Error convirtiendo fecha:', serial);
+               return serial;
+           }
         }
 //--  ---
         window.inventoryApp = function() {
             return {
                 isLoading: false, loadingMsg: '', dataReady: false, fileName: null, lastUpdate: null,
+                darkMode: false,
                 
                 filterMLUrgencies: false,
                 focusMode: false,
@@ -1213,6 +1962,7 @@
                 filterOpportunityCost: false,
                 filterAging: null,
                 filterArbitrage: false,
+                kpiFilter: null, // 'criticos' | 'viejo' | null
 
                 modalOpen: false, selectedRow: null, selectedRowLotes: [],
                 rawData: {}, masterData: [], flatData: [], enviosData: [], lotesData: [], proveedoresData: [], otherDepositsData: [],
@@ -1220,10 +1970,30 @@
 
                 params: { diasSuc: 30, diasFull: 30, diasCompra: 30, diasOtros: 30, simulationDays: 30 },
                 
+                // 🔄 Método de cálculo: 'vtar' (histórico) o 'vpd' (proyectado)
+                calcMethod: 'vtar',
+                
                 showSimulator: false,
                 simParams: { days: 30 },
 
                 selectedIds: [],
+                
+                kpiDashboard: { criticos: 0, dineroViejo: 0, stockTotal: 0, skusActivos: 0 },
+                sugerencias: [],
+                
+                // 🛒 SHARE de Mercado
+                shareSearchType: 'sku',
+                shareSearchText: '',
+                shareSearchResult: null,
+                shareMetrics: { shareProm: 0, skusLideres: 0, skusDebiles: 0, valorLideres: 0, distribution: {} },
+                
+                // Análisis comparativo Dashboard
+                dashboardAnalysisType: 'sku',
+                dashboardSelectedItems: [],
+                dashboardChartInstance: null,
+                dashboardChartData: {},
+                dashboardSearchText: '',
+                dashboardSearchResults: [],
                 
                 showSeasonalityModal: false,
                 seasonalFactorInput: 1.2,
@@ -1257,8 +2027,10 @@
                 },
 
                 tabs: [
+                    { id: 'dashboard', label: '⚡ Dashboard KPI' },
                     { id: 'metricas', label: '📊 Métricas' },
                     { id: 'matriz_det', label: '🚦 Detalle Matriz' },
+                    { id: 'market', label: '🛒 Market' },
                     { id: 'consolidado', label: '🌍 Consolidado' },
                     { id: 'proveedores', label: '🏭 Proveedores' },
                     { id: 'otros_depositos', label: '🏭 Otros Depósitos' },
@@ -1273,6 +2045,13 @@
                 chartInstances: {},
 
                 async initApp() {
+                    // 🎨 Cargar tema guardado
+                    const savedTheme = localStorage.getItem('inventoryAppTheme');
+                    if (savedTheme === 'dark') {
+                        this.darkMode = true;
+                        document.documentElement.classList.add('dark-theme');
+                    }
+                    
                     this.isLoading = true; this.loadingMsg = 'RECUPERANDO SESIÓN...';
                     try {
                         const main = await DB.load('grafana');
@@ -1290,14 +2069,35 @@
                     } catch(e) { console.error(e); this.isLoading = false; }
                 },
 
+                toggleTheme() {
+                    this.darkMode = !this.darkMode;
+                    if (this.darkMode) {
+                        document.documentElement.classList.add('dark-theme');
+                        localStorage.setItem('inventoryAppTheme', 'dark');
+                    } else {
+                        document.documentElement.classList.remove('dark-theme');
+                        localStorage.setItem('inventoryAppTheme', 'light');
+                    }
+                },
+
                 handleFile(e) {
-                    const file = e.target.files[0]; if (!file) return;
+                    const file = e.target.files[0]; 
+                    if (!file) return;
+                    
+                    // Validación de archivo
+                    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+                        alert('❌ Por favor sube un archivo Excel (.xlsx o .xls)');
+                        return;
+                    }
+                    
+                    console.log('[INFO] Cargando archivo:', file.name, '(' + (file.size / 1024).toFixed(2) + ' KB)');
                     this.isLoading = true; this.loadingMsg = 'LEYENDO EXCEL...';
                     this.fileName = file.name;
                     const reader = new FileReader();
                     reader.onload = async (evt) => {
                         try {
                             const wb = XLSX.read(evt.target.result, { type: 'array' });
+                            console.log('[INFO] Hojas encontradas:', wb.SheetNames.join(', '));
                             const getSheet = (keys) => { const name = wb.SheetNames.find(n => keys.some(k => n.toLowerCase().includes(k.toLowerCase()))); return name ? XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1 }) : []; };
                             this.rawData.grafana = getSheet(['grafana', 'main']);
                             this.rawData.pbi = getSheet(['pbi', 'powerbi']);
@@ -1307,7 +2107,19 @@
                             this.rawData.enviados = getSheet(['enviados', 'envios']);
                             this.rawData.vto = getSheet(['vencimiento', 'vto']);
 
-                            if(this.rawData.grafana.length === 0) throw new Error("Falta hoja Grafana");
+                            if(this.rawData.grafana.length === 0) {
+                                throw new Error("❌ No se encontró la hoja 'Grafana' o está vacía.\n\nVerifica que tu Excel tenga una hoja con ese nombre.");
+                            }
+                            
+                            // Validar columnas mínimas requeridas
+                            const hG = this.rawData.grafana[0];
+                            const requiredCols = ['SKU', 'VTAR', 'Stock'];
+                            const missingCols = requiredCols.filter(col => 
+                                !hG.some(h => String(h).toUpperCase().includes(col.toUpperCase()))
+                            );
+                            if (missingCols.length > 0) {
+                                throw new Error(`❌ Faltan columnas requeridas en Grafana: ${missingCols.join(', ')}`);
+                            }
 
                             const now = new Date().toLocaleString();
                             this.lastUpdate = now;
@@ -1353,8 +2165,42 @@
                     this.filterOpportunityCost = false;
                     this.filterAging = null;
                     this.filterArbitrage = false;
+                    this.kpiFilter = null; // Limpiar filtro KPI
+                    
+                    // ⚡ Limpiar cache de memoización al cambiar tab
+                    MemoCache.clear();
+                    
                     if(id === 'metricas') setTimeout(()=>this.renderCharts(), 100);
                     else this.calculateColumnMaxes();
+                },
+
+                // 🔗 Navegación desde KPI Dashboard
+                goToCriticos() {
+                    this.currentTab = 'consolidado';
+                    this.currentPage = 1;
+                    this.search = '';
+                    this.activeFilters = {};
+                    this.selectedIds = [];
+                    this.filterOpportunityCost = false;
+                    this.filterAging = null;
+                    this.filterArbitrage = false;
+                    this.kpiFilter = 'criticos'; // Filtro especial para críticos
+                    MemoCache.clear();
+                    this.calculateColumnMaxes();
+                },
+
+                goToStockViejo() {
+                    this.currentTab = 'inmovilizado';
+                    this.currentPage = 1;
+                    this.search = '';
+                    this.activeFilters = {};
+                    this.selectedIds = [];
+                    this.filterOpportunityCost = false;
+                    this.filterAging = null;
+                    this.filterArbitrage = false;
+                    this.kpiFilter = null;
+                    MemoCache.clear();
+                    this.calculateColumnMaxes();
                 },
 
                 toggleSelectAll(e) {
@@ -1565,10 +2411,19 @@
 
                 processAll() {
                     setTimeout(() => {
+                        const startTime = performance.now();
+                        console.log('[INFO] Iniciando procesamiento de datos...');
+                        
                         try {
+                            // Utilidades optimizadas
                             const clean = (s) => String(s||'').trim().toUpperCase();
                             const num = (v) => { if(typeof v==='number') return v; if(!v) return 0; let s = String(v).replace(/[$\s]/g,''); if(s.includes(',') && s.includes('.')) s = s.replace(/\./g,'').replace(',','.'); else if(s.includes(',')) s = s.replace(',','.'); return parseFloat(s) || 0; };
                             const idx = (row, keys) => row.findIndex(c => keys.some(k => String(c).trim().toUpperCase().includes(k.toUpperCase())));
+                            
+                            // Validación de datos de entrada
+                            if (!this.rawData.grafana || this.rawData.grafana.length < 2) {
+                                throw new Error('❌ La hoja Grafana está vacía o no tiene datos');
+                            }
 
                             this.lookups.mapML = {};
                             this.lookups.mapCargos = {};
@@ -1646,6 +2501,15 @@
                             const iCamino = idx(hG, ['COMPRAS']), iVta59 = idx(hG, ['TOTAL VENDIDO', '59 DÍAS', 'VENDIDO 59']);
                             
                             const iPerfil = idx(hG, ['Perfil']);
+                            const iSubPerfil = idx(hG, ['Sub_Perfil']);
+                            
+                            // 🛒 Índices para columnas Q MES (Market)
+                            const meses = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+                            const iQMes = {};
+                            meses.forEach(mes => {
+                                const i = hG.findIndex(c => String(c).toUpperCase().trim() === 'Q ' + mes);
+                                if(i > -1) iQMes[mes] = i;
+                            });
 
                             const flatRows = [];
                             this.rawData.grafana.slice(1).forEach(r => {
@@ -1661,9 +2525,13 @@
                                         vpdCpra: num(r[iVpd]),
                                         uxb: num(r[iUxb])||1,
                                         perfil: (iPerfil > -1 ? r[iPerfil] : '') || 'Sin Clasificar',
+                                        subPerfil: (iSubPerfil > -1 ? r[iSubPerfil] : '') || 'Sin Clasificar',
                                         vtarTotal: 0, vtar80: 0, vtar1: 0, vtarSuc: 0,
                                         stockGrafana: 0, comprasEnCamino: 0, vta59Total: 0,
-                                        histDaily: [], vtarBreakdown: {}, seasonalMult: 1
+                                        vta30d: 0, vta30d_80: 0,
+                                        histDaily: [], histDaily80: [], vtarBreakdown: {}, seasonalMult: 1,
+                                        // 🛒 Datos Q MES para Market (acumuladores para promedio)
+                                        _qMesSum: {}, _qMesCount: 0
                                     };
                                 }
 
@@ -1683,6 +2551,12 @@
                                     const dailySales = histIndices.map(item => num(r[item.idx]));
                                     if (data[sku].histDaily.length === 0) data[sku].histDaily = dailySales;
                                     else for(let k=0; k<dailySales.length; k++) data[sku].histDaily[k] += dailySales[k];
+                                    
+                                    // Acumular histDaily80 SOLO si es depósito 80
+                                    if(dep.includes('80') || dep.includes('FULL')) {
+                                        if (data[sku].histDaily80.length === 0) data[sku].histDaily80 = dailySales;
+                                        else for(let k=0; k<dailySales.length; k++) data[sku].histDaily80[k] += dailySales[k];
+                                    }
 
                                     const calcAvg = (days) => {
                                         const slice = data[sku].histDaily.slice(0, days); 
@@ -1694,11 +2568,30 @@
                                     data[sku].vtar30 = calcAvg(30);
                                     data[sku].vtar45 = calcAvg(45);
                                     data[sku].vtar60 = calcAvg(60);
+                                    
+                                    // Calcular venta total de 30 días (suma de -1 a -30)
+                                    const slice30 = data[sku].histDaily.slice(0, 30);
+                                    data[sku].vta30d = slice30.reduce((a,b) => a + b, 0);
+                                    
+                                    // Calcular venta de 30 días SOLO del depósito 80
+                                    const slice30_80 = data[sku].histDaily80.slice(0, 30);
+                                    data[sku].vta30d_80 = slice30_80.reduce((a,b) => a + b, 0);
                                 }
 
                                 data[sku].vtarTotal += v; data[sku].stockGrafana += st; data[sku].vta59Total += vta59;
                                 if(iCamino > -1) data[sku].comprasEnCamino += num(r[iCamino]);
                                 if(dep.includes('80') || dep.includes('FULL')) data[sku].vtar80 += v; else if(dep.includes('1') || dep.includes('CENTRAL')) data[sku].vtar1 += v; else data[sku].vtarSuc += v;
+                                
+                                // 🛒 Acumular Q MES (para promediar después)
+                                meses.forEach(mes => {
+                                    if(iQMes[mes] !== undefined) {
+                                        const val = num(r[iQMes[mes]]);
+                                        if(!data[sku]._qMesSum[mes]) data[sku]._qMesSum[mes] = 0;
+                                        data[sku]._qMesSum[mes] += val;
+                                    }
+                                });
+                                data[sku]._qMesCount++;
+                                
                                 flatRows.push({ id: Math.random().toString(36).substr(2,9), sku: sku, desc: r[iDesc]||data[sku]?.desc||'-', marca: r[iMarca]||'-', prov: r[iProv]||'-', dep, vtar: v, stock: st, vta59, diasStockDep: v > 0 ? st/v : (st>0 ? 999 : 0), costo: num(r[iCosto]), analista: r[iAnalista]||'-' });
                             }); 
 
@@ -1871,6 +2764,62 @@
                                 });
                             }
 
+                            // 🛒 Calcular promedios Q MES para Market
+                            // 📅 Cálculo dinámico de días de Noviembre basado en fecha actual
+                            const hoy = new Date();
+                            const diaDelMes = hoy.getDate();
+                            const mesActual = hoy.getMonth(); // 0=Enero, 11=Diciembre
+                            
+                            // Calcular qué días del historial corresponden a Noviembre
+                            // Si estamos en Diciembre (mes 11), Noviembre terminó hace "diaDelMes" días
+                            // -1 = ayer, entonces el día 1 de diciembre sería -diaDelMes desde el día 30 de nov
+                            let novStart = 0, novEnd = 0;
+                            if(mesActual === 11) { // Diciembre
+                                // Último día de noviembre fue hace "diaDelMes" días
+                                novEnd = diaDelMes; // Ej: si hoy es 13 dic, -13 = 30 nov
+                                novStart = diaDelMes + 29; // -43 = 1 nov (30 días de noviembre)
+                            } else if(mesActual === 10) { // Noviembre
+                                // Estamos en noviembre, solo podemos calcular días pasados del mes
+                                novEnd = 1; // Ayer
+                                novStart = diaDelMes - 1; // Desde el día 1 de noviembre hasta ayer
+                            }
+                            console.log('[INFO] SHARE: Calculando ventas Noviembre, días -' + novEnd + ' a -' + novStart);
+                            
+                            Object.values(data).forEach(item => {
+                                const count = item._qMesCount || 1;
+                                const mesMap = {
+                                    'ENERO': 'qEnero', 'FEBRERO': 'qFebrero', 'MARZO': 'qMarzo',
+                                    'ABRIL': 'qAbril', 'MAYO': 'qMayo', 'JUNIO': 'qJunio',
+                                    'JULIO': 'qJulio', 'AGOSTO': 'qAgosto', 'SEPTIEMBRE': 'qSeptiembre',
+                                    'OCTUBRE': 'qOctubre', 'NOVIEMBRE': 'qNoviembre', 'DICIEMBRE': 'qDiciembre'
+                                };
+                                Object.keys(mesMap).forEach(mes => {
+                                    const prop = mesMap[mes];
+                                    const sum = item._qMesSum?.[mes] || 0;
+                                    item[prop] = count > 0 ? Math.round(sum / count) : 0;
+                                });
+                                
+                                // 🛒 Calcular ventas propias de Noviembre desde histDaily
+                                let vtaNoviembre = 0;
+                                if(item.histDaily && item.histDaily.length > 0 && novStart > 0) {
+                                    // histDaily[0] = -1 (ayer), histDaily[1] = -2, etc.
+                                    for(let d = novEnd - 1; d < novStart && d < item.histDaily.length; d++) {
+                                        vtaNoviembre += (item.histDaily[d] || 0);
+                                    }
+                                }
+                                item.vtaNoviembre = vtaNoviembre;
+                                
+                                // 🛒 Calcular SHARE % = Ventas propias Nov / Q NOVIEMBRE (Mercado) * 100
+                                const qNov = item._qMesSum?.['NOVIEMBRE'] || 0;
+                                const qNovProm = count > 0 ? qNov / count : 0;
+                                item.qNoviembre = qNovProm; // Guardar Q Noviembre promedio para uso en búsqueda
+                                item.shareNov = qNovProm > 0 ? (vtaNoviembre / qNovProm) * 100 : 0;
+                                
+                                // Limpiar propiedades temporales
+                                delete item._qMesSum;
+                                delete item._qMesCount;
+                            });
+
                             const processed = Object.values(data).map(item => {
                                 if (item.histDaily && item.histDaily.length > 5) {
                                     const chrono = [...item.histDaily].reverse();
@@ -1997,23 +2946,30 @@
                                 } catch(errHist) { console.warn("Trend calc skipped", errHist); }
                             }, 100);
 
+                            // ⚡ OPTIMIZACIÓN: Clasificación ABC-XYZ-Salud consolidada en 1 solo bucle
+                            console.log('[INFO] Calculando clasificación ABC-XYZ...');
                             const totVenta = processed.reduce((s,i)=>s+(i.vtarTotal*i.costo),0);
                             processed.sort((a,b)=>(b.vtarTotal*b.costo)-(a.vtarTotal*a.costo));
+                            
                             let acc=0;
                             const matrix = { A: {q:0, pq:0, s:0, a:0, o:0}, B: {q:0, pq:0, s:0, a:0, o:0}, C: {q:0, pq:0, s:0, a:0, o:0} };
                             const mCounts = {};
 
+                            // BUCLE CONSOLIDADO: ABC + XYZ + Matriz de Salud en una sola pasada
                             processed.forEach(p=>{
+                                // Clasificación ABC (Pareto)
                                 acc+=(p.vtarTotal*p.costo);
                                 const pct=totVenta?acc/totVenta:0;
                                 p.abc=pct<=0.8?'A':(pct<=0.95?'B':'C');
                                 
+                                // Clasificación XYZ (Estabilidad)
                                 let xyz = 'Z';
                                 if (p.stability === 'Estable') xyz = 'X';
                                 else if (p.stability === 'Variable') xyz = 'Y';
                                 p.abc_xyz = p.abc + xyz;
                                 mCounts[p.abc_xyz] = (mCounts[p.abc_xyz] || 0) + 1;
 
+                                // Matriz de Salud (días de stock)
                                 let status = '';
                                 if(p.diasStock <= 10) status='q';
                                 else if(p.diasStock <= 17) status='pq';
@@ -2024,9 +2980,273 @@
                             });
                             this.metrics.matrix = matrix;
                             this.matrixCounts = mCounts;
+                            console.log('[INFO] Clasificación completada:', Object.keys(mCounts).length, 'categorías');
 
                             this.masterData = processed;
-                            this.flatData = flatRows; 
+                            this.flatData = flatRows;
+
+                            // 🎯 MÉTRICA: Sub_Perfil + Cobertura en Dep80 (30 días)
+                            const subPerfilStats = {};
+                            const subPerfilNames = ['Killer', 'Normal', 'Baja Rotación', 'Verano'];
+                            subPerfilNames.forEach(sp => {
+                                subPerfilStats[sp] = { count: 0, stock: 0, vtar: 0, coverage: 0 };
+                            });
+
+                            this.masterData.forEach(item => {
+                                const sp = String(item.subPerfil || 'Sin Clasificar').trim();
+                                const matchedSp = subPerfilNames.find(name => sp.toLowerCase().includes(name.toLowerCase()));
+                                if(matchedSp) {
+                                    subPerfilStats[matchedSp].count++;
+                                    subPerfilStats[matchedSp].stock += (item.vtar80 || 0); // Stock en dep80
+                                    subPerfilStats[matchedSp].vtar += (item.vtarTotal || 0); // VTAR (venta promedio diaria)
+                                }
+                            });
+
+                            const totalSkusDep80 = Object.values(subPerfilStats).reduce((acc, s) => acc + s.count, 0);
+                            const subPerfilCoverageData = Object.entries(subPerfilStats).map(([name, stats]) => ({
+                                subPerfil: name,
+                                porcentajeProductos: totalSkusDep80 > 0 ? ((stats.count / totalSkusDep80) * 100).toFixed(1) : 0,
+                                cantProductos: stats.count,
+                                stockDep80: stats.stock.toFixed(0),
+                                vtarPromedio: (stats.count > 0 ? (stats.vtar / stats.count) : 0).toFixed(2),
+                                coberturaDias: stats.vtar > 0 ? ((stats.stock / stats.vtar) / 30 * 100).toFixed(1) : 0,
+                                coberturaLabel: stats.vtar > 0 ? ((stats.stock / stats.vtar) / 30 * 100).toFixed(0) : 0
+                            }));
+
+                            this.metrics.subPerfilCoverage = subPerfilCoverageData;
+                            console.log('[INFO] Sub_Perfil Cobertura:', subPerfilCoverageData);
+
+                            // 🎯 OPCIÓN 1: MATRIZ DE RIESGO (Cobertura vs Rotación)
+                            const riskMatrix = { RED: [], ORANGE: [], YELLOW: [], GREEN: [] };
+                            const vtarMediana = this.masterData.length > 0 
+                                ? this.masterData.map(m => m.vtarTotal || 0).sort((a,b) => a-b)[Math.floor(this.masterData.length/2)]
+                                : 0;
+                            
+                            this.masterData.forEach(item => {
+                                if(item.stockGrafana > 0) {
+                                    const cobertura = item.vtarTotal > 0 ? (item.vtar80 / item.vtarTotal) * 30 : 0;
+                                    const isHighRotation = item.vtarTotal >= vtarMediana;
+                                    const isGoodCoverage = cobertura >= 30;
+                                    
+                                    let quadrant = '';
+                                    if (!isHighRotation && !isGoodCoverage) quadrant = 'ORANGE'; // Baja rot + poco stock
+                                    else if (!isHighRotation && isGoodCoverage) quadrant = 'RED';    // Dinero congelado
+                                    else if (isHighRotation && !isGoodCoverage) quadrant = 'YELLOW'; // Riesgo desabast
+                                    else quadrant = 'GREEN';                                         // Ideal
+                                    
+                                    riskMatrix[quadrant].push({
+                                        sku: item.sku,
+                                        desc: item.desc,
+                                        vtar: item.vtarTotal,
+                                        stock: item.vtar80,
+                                        cobertura: cobertura.toFixed(1),
+                                        valor: (item.vtar80 * item.costo).toFixed(0)
+                                    });
+                                }
+                            });
+                            
+                            this.metrics.riskMatrix = {
+                                RED: { label: 'Dinero Congelado', icon: '🔴', items: riskMatrix.RED, count: riskMatrix.RED.length },
+                                ORANGE: { label: 'Bajo Perfil', icon: '🟠', items: riskMatrix.ORANGE, count: riskMatrix.ORANGE.length },
+                                YELLOW: { label: 'Riesgo Desabastecimiento', icon: '🟡', items: riskMatrix.YELLOW, count: riskMatrix.YELLOW.length },
+                                GREEN: { label: 'Ideal', icon: '🟢', items: riskMatrix.GREEN, count: riskMatrix.GREEN.length }
+                            };
+                            console.log('[INFO] Matriz Riesgo:', this.metrics.riskMatrix);
+
+                            // 🎯 OPCIÓN 2: FORECAST DE COMPRA (30 y 45 días)
+                            const forecast30 = {}; const forecast45 = {};
+                            this.masterData.forEach(item => {
+                                if(item.comprarU > 0) {
+                                    const prov = item.prov || 'S/D';
+                                    const inv = item.inversion || 0;
+                                    
+                                    // A 30 días: SKUs con cobertura < 30
+                                    if(item.diasStock < 30) {
+                                        if(!forecast30[prov]) forecast30[prov] = { count: 0, monto: 0, items: [] };
+                                        forecast30[prov].count++;
+                                        forecast30[prov].monto += inv;
+                                        forecast30[prov].items.push({sku: item.sku, inv});
+                                    }
+                                    
+                                    // A 45 días: SKUs con cobertura < 45
+                                    if(item.diasStock < 45) {
+                                        if(!forecast45[prov]) forecast45[prov] = { count: 0, monto: 0, items: [] };
+                                        forecast45[prov].count++;
+                                        forecast45[prov].monto += inv;
+                                        forecast45[prov].items.push({sku: item.sku, inv});
+                                    }
+                                }
+                            });
+                            
+                            this.metrics.forecast30 = Object.entries(forecast30)
+                                .map(([prov, data]) => ({prov, ...data, monto: data.monto.toFixed(0)}))
+                                .sort((a,b) => b.monto - a.monto);
+                            
+                            this.metrics.forecast45 = Object.entries(forecast45)
+                                .map(([prov, data]) => ({prov, ...data, monto: data.monto.toFixed(0)}))
+                                .sort((a,b) => b.monto - a.monto);
+                            
+                            const totalFc30 = this.metrics.forecast30.reduce((a,b) => a + parseFloat(b.monto), 0);
+                            const totalFc45 = this.metrics.forecast45.reduce((a,b) => a + parseFloat(b.monto), 0);
+                            this.metrics.forecastSummary = { f30: totalFc30.toFixed(0), f45: totalFc45.toFixed(0) };
+                            console.log('[INFO] Forecast:', this.metrics.forecastSummary);
+
+                            // 🎯 OPCIÓN 3: ANÁLISIS LEAD TIME vs COBERTURA
+                            const ltAnalysis = { CRITICAL: [], AT_RISK: [], OK: [] };
+                            this.masterData.forEach(item => {
+                                if(item.stockGrafana > 0) {
+                                    const cobertura = item.vtarTotal > 0 ? (item.stockGrafana / item.vtarTotal) : 0;
+                                    const lt = item.lt || 0;
+                                    const gap = lt - cobertura;
+                                    
+                                    const risk = {
+                                        sku: item.sku,
+                                        desc: item.desc,
+                                        lt: lt,
+                                        cobertura: cobertura.toFixed(1),
+                                        gap: gap.toFixed(1),
+                                        status: gap > 5 ? '🔴 CRÍTICO' : (gap > 0 ? '🟠 RIESGO' : '🟢 OK')
+                                    };
+                                    
+                                    if(gap > 5) ltAnalysis.CRITICAL.push(risk);
+                                    else if(gap > 0) ltAnalysis.AT_RISK.push(risk);
+                                    else ltAnalysis.OK.push(risk);
+                                }
+                            });
+                            
+                            this.metrics.ltAnalysis = {
+                                CRITICAL: ltAnalysis.CRITICAL.slice(0, 20),
+                                AT_RISK: ltAnalysis.AT_RISK.slice(0, 20),
+                                OK: ltAnalysis.OK.slice(0, 20),
+                                criticalCount: ltAnalysis.CRITICAL.length,
+                                atRiskCount: ltAnalysis.AT_RISK.length
+                            };
+                            console.log('[INFO] Lead Time Analysis:', this.metrics.ltAnalysis);
+
+                            // 🎯 OPCIÓN 4: HEALTH SCORE GENERAL
+                            const coberturaSKUs = this.masterData.filter(m => m.stockGrafana > 0 && (m.vtar80 / (m.vtarTotal || 1)) * 30 >= 30).length;
+                            const coberturaScore = (coberturaSKUs / Math.max(this.masterData.filter(m => m.stockGrafana > 0).length, 1)) * 100;
+                            
+                            const rotacionSKUs = this.masterData.filter(m => m.vtarTotal >= vtarMediana).length;
+                            const rotacionScore = (rotacionSKUs / Math.max(this.masterData.length, 1)) * 100;
+                            
+                            const capitalTotal = this.masterData.reduce((a,m) => a + (m.stockValorizado || 0), 0);
+                            const capitalRotado = this.masterData.filter(m => m.vtarTotal > 0).reduce((a,m) => a + (m.stockValorizado || 0), 0);
+                            const capitalScore = capitalTotal > 0 ? (capitalRotado / capitalTotal) * 100 : 50;
+                            
+                            const deudaTotal = this.metrics.totalDeudaAnalistas || 0;
+                            const deudaHistAvg = this.debtHistory.length > 0 
+                                ? this.debtHistory.reduce((a,d) => a + (d.val || 0), 0) / this.debtHistory.length
+                                : 0;
+                            const deudaScore = deudaHistAvg > 0 ? Math.max(0, 100 - (deudaTotal / deudaHistAvg) * 50) : 80;
+                            
+                            const healthScore = Math.round((coberturaScore * 0.4 + rotacionScore * 0.25 + capitalScore * 0.2 + deudaScore * 0.15));
+                            const healthTrend = this.debtHistory.length > 1 
+                                ? (this.debtHistory[this.debtHistory.length - 1].val > this.debtHistory[0].val ? '↓' : '↑')
+                                : '→';
+                            
+                            this.metrics.healthScore = {
+                                overall: healthScore,
+                                trend: healthTrend,
+                                components: {
+                                    cobertura: Math.round(coberturaScore),
+                                    rotacion: Math.round(rotacionScore),
+                                    capital: Math.round(capitalScore),
+                                    deuda: Math.round(deudaScore)
+                                }
+                            };
+                            console.log('[INFO] Health Score:', this.metrics.healthScore);
+
+                            // 🚨 OPCIÓN 1: ALERTAS Y BANDERAS VISUALES
+                            // Calcular mediana de VTAR para comparación
+                            const vtars = this.masterData.map(m => m.vtarTotal || 0).sort((a,b) => a-b);
+                            const medianVtar = vtars[Math.floor(vtars.length/2)] || 5;
+                            
+                            this.masterData.forEach(item => {
+                                let alerta = null;
+                                const cobertura = (item.stockGrafana || 0) / (item.vtarTotal || 1);
+                                const gap = (item.lt || 0) - cobertura;
+                                
+                                try {
+                                    if(item.diasStock < 5 && item.vtarTotal > medianVtar) {
+                                        alerta = { nivel: 'CRÍTICO', icono: '🔴', texto: 'Stock crítico + Alta demanda' };
+                                    } else if(item.diasStock < 10 && gap > 0) {
+                                        alerta = { nivel: 'CRÍTICO', icono: '🔴', texto: 'Lead Time > Cobertura' };
+                                    } else if(item.diasStock > 30 && item.vtarTotal < medianVtar) {
+                                        alerta = { nivel: 'ATENCIÓN', icono: '🟡', texto: 'Dinero congelado' };
+                                    } else if(item.diasStock < 15 && item.vtarTotal > medianVtar) {
+                                        alerta = { nivel: 'ATENCIÓN', icono: '🟡', texto: 'Stock bajo + Demanda alta' };
+                                    } else {
+                                        alerta = { nivel: 'OK', icono: '🟢', texto: 'Normal' };
+                                    }
+                                } catch(e) {
+                                    alerta = { nivel: 'OK', icono: '🟢', texto: 'Normal' };
+                                }
+                                item.alerta = alerta;
+                            });
+
+                            // 🎯 OPCIÓN 4: SUGERENCIAS DE ACCIÓN AUTOMÁTICAS
+                            const sugerencias = [];
+                            this.masterData.forEach(item => {
+                                try {
+                                    if(item.diasStock < 5 && item.vtarTotal > medianVtar) {
+                                        sugerencias.push({
+                                            prioridad: 1,
+                                            icono: '🚨',
+                                            titulo: 'COMPRA URGENTE',
+                                            sku: item.sku,
+                                            desc: item.desc,
+                                            detalle: `Stock ${item.diasStock.toFixed(1)}d, VTAR ${item.vtarTotal.toFixed(1)}, necesita ${Math.ceil(item.vtarTotal * 30)} unid.`
+                                        });
+                                    } else if((item.lt || 0) - (item.stockGrafana / (item.vtarTotal || 1)) > 5) {
+                                        sugerencias.push({
+                                            prioridad: 1,
+                                            icono: '⏱️',
+                                            titulo: 'RIESGO LEAD TIME',
+                                            sku: item.sku,
+                                            desc: item.desc,
+                                            detalle: `LT ${item.lt}d > Cobertura ${(item.stockGrafana / (item.vtarTotal || 1)).toFixed(1)}d`
+                                        });
+                                    } else if(item.diasStock > 45 && item.vtarTotal < medianVtar) {
+                                        sugerencias.push({
+                                            prioridad: 2,
+                                            icono: '💰',
+                                            titulo: 'LIQUIDAR STOCK',
+                                            sku: item.sku,
+                                            desc: item.desc,
+                                            detalle: `${item.stockGrafana} unidades en ${item.diasStock.toFixed(1)} días`
+                                        });
+                                    } else if(item.diasStock < 20 && item.diasStock > 0) {
+                                        const proximo30 = item.vtarTotal * 30;
+                                        if(proximo30 > 100) {
+                                            sugerencias.push({
+                                                prioridad: 2,
+                                                icono: '📈',
+                                                titulo: 'PREPARAR COMPRA',
+                                                sku: item.sku,
+                                                desc: item.desc,
+                                                detalle: `Proyectado ${Math.ceil(proximo30)} unid. en 30 días`
+                                            });
+                                        }
+                                    }
+                                } catch(e) {
+                                    // Skip item si hay error
+                                }
+                            });
+                            sugerencias.sort((a,b) => a.prioridad - b.prioridad);
+                            this.sugerencias = sugerencias.slice(0, 20); // Top 20
+
+                            // 📊 OPCIÓN 2: DASHBOARD KPI EJECUTIVO
+                            this.kpiDashboard = {
+                                criticos: this.masterData.filter(m => m.diasStock < 5 && m.vtarTotal > medianVtar).length,
+                                dineroViejo: this.masterData
+                                    .filter(m => m.diasStock > 45)
+                                    .reduce((a,m) => a + ((m.stockGrafana || 0) * (m.costo || 0)), 0),
+                                stockTotal: Math.ceil(this.masterData.reduce((a,m) => a + (m.stockValorizado || 0), 0)),
+                                skusActivos: this.masterData.filter(m => m.stockGrafana > 0 || m.vta30d > 0).length
+                            };
+                            console.log('[INFO] KPI Dashboard:', this.kpiDashboard);
+                            console.log('[INFO] Sugerencias:', this.sugerencias.length);
 
                             const anaDebt = {}; let totalDebt = 0;
                             const anaStats = {};
@@ -2150,12 +3370,96 @@
                                 }))
                                 .sort((a,b) => b.money - a.money); 
 
+                            // 🛒 MÉTRICAS DE SHARE DE MERCADO
+                            const shareData = this.masterData.filter(m => m.shareNov > 0 && m.qNoviembre > 0);
+                            const totalShareSkus = shareData.length || 1;
+                            const shareProm = shareData.reduce((a, m) => a + (m.shareNov || 0), 0) / totalShareSkus;
+                            const skusLideres = this.masterData.filter(m => m.shareNov >= 50).length;
+                            const skusDebiles = this.masterData.filter(m => m.shareNov > 0 && m.shareNov < 10).length;
+                            const valorLideres = this.masterData.filter(m => m.shareNov >= 50).reduce((a, m) => a + (m.stockGrafana * m.costo), 0);
+                            
+                            // Distribución por rangos
+                            const shareDistribution = { '0-10%': 0, '10-30%': 0, '30-50%': 0, '>50%': 0 };
+                            this.masterData.forEach(m => {
+                                if(m.shareNov > 0) {
+                                    if(m.shareNov < 10) shareDistribution['0-10%']++;
+                                    else if(m.shareNov < 30) shareDistribution['10-30%']++;
+                                    else if(m.shareNov < 50) shareDistribution['30-50%']++;
+                                    else shareDistribution['>50%']++;
+                                }
+                            });
+                            
+                            // Top 10 SKUs por SHARE
+                            const topShareSkus = this.masterData
+                                .filter(m => m.shareNov > 0)
+                                .sort((a, b) => b.shareNov - a.shareNov)
+                                .slice(0, 10)
+                                .map(m => ({ sku: m.sku, desc: m.desc, marca: m.marca, shareNov: m.shareNov, vtaNov: m.vtaNoviembre, qNov: m.qNoviembre }));
+                            
+                            // Peores 10 SKUs por SHARE (oportunidad)
+                            const worstShareSkus = this.masterData
+                                .filter(m => m.shareNov > 0 && m.shareNov < 50)
+                                .sort((a, b) => a.shareNov - b.shareNov)
+                                .slice(0, 10)
+                                .map(m => ({ sku: m.sku, desc: m.desc, marca: m.marca, shareNov: m.shareNov, vtaNov: m.vtaNoviembre, qNov: m.qNoviembre }));
+                            
+                            // SHARE por marca
+                            const shareByMarca = {};
+                            this.masterData.forEach(m => {
+                                if(m.shareNov > 0) {
+                                    const marca = m.marca || 'S/D';
+                                    if(!shareByMarca[marca]) shareByMarca[marca] = { count: 0, totalShare: 0, vtaNov: 0, qNov: 0 };
+                                    shareByMarca[marca].count++;
+                                    shareByMarca[marca].totalShare += m.shareNov;
+                                    shareByMarca[marca].vtaNov += (m.vtaNoviembre || 0);
+                                    shareByMarca[marca].qNov += (m.qNoviembre || 0);
+                                }
+                            });
+                            const shareByMarcaArr = Object.entries(shareByMarca)
+                                .map(([marca, data]) => ({
+                                    marca,
+                                    skus: data.count,
+                                    shareProm: data.count > 0 ? (data.totalShare / data.count).toFixed(1) : 0,
+                                    shareTotal: data.qNov > 0 ? ((data.vtaNov / data.qNov) * 100).toFixed(1) : 0
+                                }))
+                                .sort((a, b) => parseFloat(b.shareTotal) - parseFloat(a.shareTotal))
+                                .slice(0, 15);
+                            
+                            this.shareMetrics = {
+                                shareProm: shareProm.toFixed(1),
+                                skusLideres,
+                                skusDebiles,
+                                valorLideres,
+                                distribution: shareDistribution,
+                                topSkus: topShareSkus,
+                                worstSkus: worstShareSkus,
+                                byMarca: shareByMarcaArr
+                            };
+                            console.log('[INFO] SHARE Metrics:', this.shareMetrics); 
+
                             this.updateKPIs();
                             this.calculateColumnMaxes();
                             this.isLoading = false; this.dataReady = true;
+                            
+                            // Logging de rendimiento
+                            const endTime = performance.now();
+                            const processingTime = ((endTime - startTime) / 1000).toFixed(2);
+                            console.log(`[INFO] ✅ Procesamiento completado en ${processingTime}s`);
+                            console.log('[INFO] SKUs procesados:', this.masterData.length);
+                            console.log('[INFO] Dashboard - Datos disponibles para búsqueda:', {
+                                masterDataLength: this.masterData.length,
+                                flatDataLength: this.flatData.length,
+                                primeraLinea: this.masterData[0]?.sku
+                            });
+                            
                             if(this.currentTab === 'metricas') this.renderCharts();
 
-                        } catch (e) { console.error("CRITICAL ERROR:", e); alert("Error crítico procesando datos: " + e.message); this.isLoading = false; }
+                        } catch (e) { 
+                            console.error("[ERROR] CRÍTICO:", e.message); 
+                            console.error("[ERROR] Stack:", e.stack);
+                            alert("❌ Error crítico procesando datos: " + e.message + "\n\nRevisa la consola (F12) para más detalles."); 
+                            this.isLoading = false; 
+                        }
                     }, 50);
                 },
 
@@ -2205,8 +3509,13 @@
                     const hasStrategy = (strategyDays !== undefined && strategyDays !== null && strategyDays !== "");
                     const coverageDays = hasStrategy ? parseFloat(strategyDays) : (this.params.diasCompra || 30);
 
-                    let vtarCalc = item.vtarTotal;
-                    if (item.seasonalMult && item.seasonalMult !== 1) vtarCalc = item.vtarTotal * item.seasonalMult;
+                    // 🔄 SELECCIÓN DE BASE DE CÁLCULO: VTAR (histórico) o VPD (proyectado)
+                    const baseVenta = this.calcMethod === 'vpd' && item.vpdCpra > 0 
+                        ? item.vpdCpra 
+                        : item.vtarTotal;
+                    
+                    let vtarCalc = baseVenta;
+                    if (item.seasonalMult && item.seasonalMult !== 1) vtarCalc = baseVenta * item.seasonalMult;
 
                     if(!isImpulse && vtarCalc > 0) {
                         const targetStock = Math.ceil((vtarCalc * coverageDays) + ss);
@@ -2395,6 +3704,13 @@
                     else if(this.currentTab === 'cargos') d = d.filter(i => i.deuda > 0 || i.unidadesCargo > 0);
                     else if(this.currentTab === 'inmovilizado') d = d.filter(i => i.diasStock > 45);
 
+                    // 🔗 Filtro KPI desde Dashboard
+                    if (this.kpiFilter === 'criticos') {
+                        const vtars = this.masterData.map(m => m.vtarTotal || 0).sort((a,b) => a-b);
+                        const medianVtar = vtars[Math.floor(vtars.length/2)] || 5;
+                        d = d.filter(i => i.diasStock < 5 && i.vtarTotal > medianVtar);
+                    }
+
                     if(this.activeFilters['abc_xyz']) {
                         const code = this.activeFilters['abc_xyz'][0];
                         d = d.filter(i => i.abc_xyz === code);
@@ -2460,6 +3776,12 @@
                     this.columnMaxValues = maxes;
                 },
                 getBarStyle(col, row) {
+                    // ⚡ MEMOIZACIÓN: Cachear resultados de barras para evitar recálculos
+                    const cacheKey = `bar_${col.key}_${row.id}_${this.columnMaxValues[col.key]}`;
+                    if (MemoCache.has(cacheKey)) {
+                        return MemoCache.get(cacheKey);
+                    }
+                    
                     const key = col.key;
                     if(!['pbi.dep80', 'pbi.dep1', 'qEnviar', 'comprarU', 'inversion', 'stockGrafana', 'vtarIa'].includes(key)) return '';
                     const val = key.split('.').reduce((o,i)=>(o?o[i]:0), row);
@@ -2470,7 +3792,9 @@
                     if(key === 'comprarU' || key === 'inversion') color = '#86efac';
                     if(key.includes('stock')) color = '#93c5fd';
                     if(key === 'vtarIa') color = '#d8b4fe';
-                    return `width: ${pct}%; background-color: ${color};`;
+                    
+                    const result = `width: ${pct}%; background-color: ${color};`;
+                    return MemoCache.set(cacheKey, result);
                 },
                 isFilterable(key) { return ['marca', 'prov', 'analista', 'dep', 'abc', 'estadoSalud', 'deposito'].includes(key); },
                 toggleFilterMenu(key) { this.filterMenuOpen = this.filterMenuOpen === key ? null : key; },
@@ -2508,22 +3832,453 @@
     const columns = this.getColumns();
     const sheetName = this.tabs.find(t => t.id === this.currentTab)?.label || 'Datos';
 
+    // Preparar datos con alertas y formateo
     const exportData = dataToExport.map(row => {
         const newRow = {};
         columns.forEach(col => {
             let val = col.key.split('.').reduce((o, i) => (o ? o[i] : undefined), row);
             if (val === undefined) val = row[col.key];
+            
+            // Formatear según tipo
+            if (col.key === 'stockValorizado') val = Math.round(val || 0);
+            else if (['vtarTotal', 'diasStock', 'lt', 'uxb'].includes(col.key)) val = (val || 0).toFixed(2);
+            else if (col.key === 'alerta') val = row.alerta ? `${row.alerta.icono} ${row.alerta.nivel}` : 'OK';
+            
             newRow[col.label] = val;
         });
+        
+        // Agregar columna de ALERTA si no existe
+        if (!newRow['ALERTA']) {
+            newRow['ALERTA'] = row.alerta ? `${row.alerta.icono} ${row.alerta.nivel}` : '🟢 OK';
+        }
+        
         return newRow;
     });
 
     const ws = XLSX.utils.json_to_sheet(exportData);
+    
+    // Ajustar ancho de columnas
+    ws['!cols'] = [];
+    Object.keys(exportData[0] || {}).forEach((col, idx) => {
+        ws['!cols'][idx] = { wch: Math.min(20, Math.max(10, col.length + 2)) };
+    });
+
+    // Agregar hoja de SUGERENCIAS si hay
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
-    XLSX.writeFile(wb, `${sheetName}_${this.lastUpdate.replace(/[\/, :]/g, '_')}.xlsx`);
+    if (this.sugerencias && this.sugerencias.length > 0) {
+        const sugData = this.sugerencias.map(s => ({
+            'PRIORIDAD': `P${s.prioridad}`,
+            'ACCIÓN': s.titulo,
+            'SKU': s.sku,
+            'DESCRIPCIÓN': s.desc,
+            'DETALLE': s.detalle
+        }));
+        const wsSug = XLSX.utils.json_to_sheet(sugData);
+        wsSug['!cols'] = [
+            { wch: 10 },
+            { wch: 20 },
+            { wch: 12 },
+            { wch: 25 },
+            { wch: 40 }
+        ];
+        XLSX.utils.book_append_sheet(wb, wsSug, 'Sugerencias');
+    }
+
+    // Agregar hoja de KPIs
+    const kpiData = [{
+        'MÉTRICA': 'SKUs Críticos',
+        'VALOR': this.kpiDashboard?.criticos || 0
+    }, {
+        'MÉTRICA': 'Dinero Congelado',
+        'VALOR': `$${Math.round(this.kpiDashboard?.dineroCong || 0).toLocaleString()}`
+    }, {
+        'MÉTRICA': 'Riesgo Lead Time',
+        'VALOR': this.kpiDashboard?.riesgoLT || 0
+    }, {
+        'MÉTRICA': 'Compra Próxima 30d',
+        'VALOR': (this.kpiDashboard?.compraProxima || 0).toLocaleString()
+    }, {
+        'MÉTRICA': 'Stock Total Valorizado',
+        'VALOR': `$${Math.round(this.kpiDashboard?.stockTotal || 0).toLocaleString()}`
+    }, {
+        'MÉTRICA': 'Health Score',
+        'VALOR': `${Math.round(this.metrics?.healthScore?.overall || 0)}%`
+    }];
+    
+    const wsKpi = XLSX.utils.json_to_sheet(kpiData);
+    wsKpi['!cols'] = [{ wch: 25 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, wsKpi, 'KPIs Ejecutivos');
+
+    XLSX.writeFile(wb, `Dashboard_${sheetName}_${this.lastUpdate.replace(/[\/, :]/g, '_')}.xlsx`);
+    console.log('[INFO] Excel exportado:', sheetName);
 },
+
+                // 📊 ANÁLISIS COMPARATIVO DASHBOARD
+                searchDashboardItems() {
+                    try {
+                        let query = (this.dashboardSearchText || '').toLowerCase().trim();
+                        query = query.replace(/\s+/g, ' ').trim();
+                        
+                        if(query.length < 1) {
+                            this.dashboardSearchResults = [];
+                            return;
+                        }
+                        
+                        console.log('[DASHBOARD-SEARCH] Buscando:', query);
+                        
+                        // SIEMPRE buscar en rawData.grafana (la solapa del Excel)
+                        if(!this.rawData?.grafana || this.rawData.grafana.length < 2) {
+                            console.warn('[DASHBOARD-SEARCH] rawData.grafana vacío');
+                            this.dashboardSearchResults = [];
+                            return;
+                        }
+                        
+                        const hG = this.rawData.grafana[0]; // Encabezados
+                        
+                        // Encontrar índices de columnas
+                        const iSku = hG.findIndex(c => String(c).toUpperCase().trim() === 'SKU');
+                        const iDesc = hG.findIndex(c => String(c).toUpperCase().includes('DESC'));
+                        const iMarca = hG.findIndex(c => String(c).toUpperCase().includes('MARCA'));
+                        const iProv = hG.findIndex(c => String(c).toUpperCase().includes('PROV'));
+                        
+                        // Mapear todas las columnas de ventas (-1 a -59)
+                        const trendCols = {};
+                        const trendHeaders = [];
+                        
+                        hG.forEach((header, idx) => {
+                            if(header === null || header === undefined) return;
+                            const h = String(header).trim();
+                            // Intentar parsear como número
+                            const dayNum = parseInt(h, 10);
+                            
+                            // Si es un número entre -59 y -1, guardarlo
+                            if(!isNaN(dayNum) && dayNum >= -59 && dayNum <= -1) {
+                                trendCols[dayNum] = idx;
+                                trendHeaders.push({ day: dayNum, idx: idx, header: h });
+                            }
+                        });
+                        
+                        // Ordenar headers por día para visualización
+                        trendHeaders.sort((a, b) => b.day - a.day);
+                        
+                        console.log('[DASHBOARD-SEARCH] Total trend cols encontradas:', Object.keys(trendCols).length);
+                        console.log('[DASHBOARD-SEARCH] Primeras 5 columnas trend:', trendHeaders.slice(0, 5));
+                        console.log('[DASHBOARD-SEARCH] Últimas 5 columnas trend:', trendHeaders.slice(-5));
+                        console.log('[DASHBOARD-SEARCH] Mapa completo trendCols:', trendCols);
+                        
+                        const results = [];
+                        const seen = {};
+                        
+                        // Buscar en todas las filas del Excel
+                        this.rawData.grafana.slice(1).forEach((row, rowIdx) => {
+                            if(!row || !row[iSku]) return;
+                            
+                            const sku = (row[iSku] || '').toString().toLowerCase().trim().replace(/\s+/g, ' ');
+                            if(sku === 'total' || seen[sku]) return;
+                            
+                            const desc = (row[iDesc] || '').toString().toLowerCase().trim();
+                            const marca = (row[iMarca] || '').toString().toLowerCase().trim();
+                            const prov = (row[iProv] || '').toString().toLowerCase().trim();
+                            
+                            // Buscar en todos los campos
+                            const match = sku.includes(query) || desc.includes(query) || marca.includes(query) || prov.includes(query);
+                            
+                            if(match) {
+                                seen[sku] = true;
+                                
+                                // Extraer histórico de -1 a -59 usando el mapeo
+                                const trendData = [];
+                                for(let day = -1; day >= -59; day--) {
+                                    if(trendCols[day] !== undefined) {
+                                        const val = parseFloat(row[trendCols[day]]) || 0;
+                                        trendData.push(val);
+                                    } else {
+                                        trendData.push(0);
+                                    }
+                                }
+                                
+                                results.push({
+                                    sku: row[iSku],
+                                    desc: row[iDesc] || 'S/D',
+                                    marca: row[iMarca] || 'S/D',
+                                    prov: row[iProv] || 'S/D',
+                                    stockGrafana: 0,
+                                    vtarTotal: 0,
+                                    trendHistory: trendData
+                                });
+                                
+                                console.log('[DASHBOARD-SEARCH] ✓ Encontrado:', row[iSku], 'histórico:', trendData.length);
+                            }
+                        });
+                        
+                        // Ordenar por coincidencia en SKU
+                        results.sort((a, b) => {
+                            const aSkuMatch = (a.sku || '').toLowerCase().trim().replace(/\s+/g, ' ').includes(query);
+                            const bSkuMatch = (b.sku || '').toLowerCase().trim().replace(/\s+/g, ' ').includes(query);
+                            if(aSkuMatch && !bSkuMatch) return -1;
+                            if(!aSkuMatch && bSkuMatch) return 1;
+                            return 0;
+                        });
+                        
+                        console.log('[DASHBOARD-SEARCH] Resultados:', results.length, results.slice(0, 3).map(r => r.sku));
+                        this.dashboardSearchResults = results.slice(0, 10);
+                        
+                    } catch(e) {
+                        console.error('[DASHBOARD-SEARCH] Error:', e);
+                        this.dashboardSearchResults = [];
+                    }
+                },
+
+                handleDashboardSearchEnter() {
+                    try {
+                        // Ejecutar búsqueda primero
+                        this.searchDashboardItems();
+                        
+                        // Esperar a que se actualice dashboardSearchResults
+                        this.$nextTick(() => {
+                            if(this.dashboardSearchResults && this.dashboardSearchResults.length > 0) {
+                                console.log('[DASHBOARD-ENTER] Agregando:', this.dashboardSearchResults[0].sku);
+                                this.addDashboardItem(this.dashboardSearchResults[0]);
+                            } else {
+                                console.warn('[DASHBOARD-ENTER] Sin resultados para:', this.dashboardSearchText);
+                                alert('⚠️ No se encontraron resultados para: ' + this.dashboardSearchText);
+                            }
+                        });
+                    } catch(e) {
+                        console.error('[DASHBOARD-ENTER] Error:', e);
+                    }
+                },
+
+                addDashboardItem(item) {
+                    try {
+                        // Validar item
+                        if(!item || !item.sku) {
+                            console.error('[DASHBOARD] Item inválido:', item);
+                            return;
+                        }
+                        
+                        // Validar límite de 5 items
+                        if(this.dashboardSelectedItems.length >= 5) {
+                            alert('⚠️ Máximo 5 items permitidos');
+                            return;
+                        }
+                        
+                        // Evitar duplicados
+                        if(this.dashboardSelectedItems.some(s => s.sku === item.sku)) {
+                            console.info('[DASHBOARD] Item ya seleccionado:', item.sku);
+                            return;
+                        }
+                        
+                        // Obtener datos completos del item desde masterData
+                        const fullItem = this.masterData?.find(m => m.sku === item.sku) || item;
+                        
+                        // Agregar item con todos los campos disponibles
+                        this.dashboardSelectedItems.push({
+                            sku: item.sku,
+                            desc: item.desc || fullItem.desc || 'S/D',
+                            marca: item.marca || fullItem.marca || 'S/D',
+                            prov: item.prov || fullItem.prov || 'S/D',
+                            vtarTotal: fullItem.vtarTotal || item.vtar || item.vtarTotal || 0,
+                            stockGrafana: fullItem.stockGrafana || item.stock || item.stockGrafana || 0,
+                            costo: fullItem.costo || item.costo || 0,
+                            trendHistory: (item.trendHistory && item.trendHistory.length > 0) ? item.trendHistory : (fullItem.trendHistory || [])
+                        });
+                        
+                        console.log('[DASHBOARD] Item agregado:', item.sku, this.dashboardSelectedItems.length);
+                        
+                        // Limpiar búsqueda
+                        this.dashboardSearchText = '';
+                        this.dashboardSearchResults = [];
+                        
+                        // Actualizar gráfica
+                        this.$nextTick(() => {
+                            this.updateDashboardAnalysis();
+                        });
+                    } catch(e) {
+                        console.error('[DASHBOARD] Error en addDashboardItem:', e);
+                    }
+                },
+
+                removeDashboardItem(sku) {
+                    try {
+                        if(!sku) return;
+                        this.dashboardSelectedItems = this.dashboardSelectedItems.filter(s => s.sku !== sku);
+                        this.$nextTick(() => {
+                            this.updateDashboardAnalysis();
+                        });
+                    } catch(e) {
+                        console.error('Error en removeDashboardItem:', e);
+                    }
+                },
+
+                // 🛒 BÚSQUEDA DE SHARE DE MERCADO
+                searchShare() {
+                    try {
+                        const query = (this.shareSearchText || '').toUpperCase().trim();
+                        if(query.length < 2) {
+                            this.shareSearchResult = null;
+                            return;
+                        }
+                        
+                        const type = this.shareSearchType;
+                        let items = [];
+                        
+                        if(type === 'sku') {
+                            // Buscar SKU específico
+                            items = this.masterData.filter(m => m.sku && String(m.sku).toUpperCase().includes(query));
+                        } else if(type === 'marca') {
+                            // Agregar todos los SKUs de esa marca
+                            items = this.masterData.filter(m => m.marca && String(m.marca).toUpperCase().includes(query));
+                        } else if(type === 'proveedor') {
+                            // Agregar todos los SKUs de ese proveedor
+                            items = this.masterData.filter(m => m.prov && String(m.prov).toUpperCase().includes(query));
+                        }
+                        
+                        if(items.length === 0) {
+                            this.shareSearchResult = { error: true, message: 'No se encontraron resultados para: ' + query };
+                            return;
+                        }
+                        
+                        // Calcular totales
+                        const vtaNovTotal = items.reduce((a, m) => a + (m.vtaNoviembre || 0), 0);
+                        const qNovTotal = items.reduce((a, m) => a + (m.qNoviembre || 0), 0);
+                        const shareTotal = qNovTotal > 0 ? (vtaNovTotal / qNovTotal) * 100 : 0;
+                        
+                        // Resultado
+                        this.shareSearchResult = {
+                            type: type,
+                            query: query,
+                            skusCount: items.length,
+                            vtaNoviembre: vtaNovTotal,
+                            qNoviembre: qNovTotal,
+                            share: shareTotal.toFixed(2),
+                            items: items.slice(0, 10).map(m => ({
+                                sku: m.sku,
+                                desc: m.desc,
+                                vtaNov: m.vtaNoviembre || 0,
+                                qNov: m.qNoviembre || 0,
+                                share: m.shareNov?.toFixed(1) || '0'
+                            }))
+                        };
+                        
+                        console.log('[SHARE] Resultado:', this.shareSearchResult);
+                    } catch(e) {
+                        console.error('[SHARE] Error en searchShare:', e);
+                        this.shareSearchResult = { error: true, message: 'Error: ' + e.message };
+                    }
+                },
+
+                getDashboardItemOptions() {
+                    if(this.dashboardAnalysisType === 'sku') {
+                        return [...new Set(this.masterData.map(m => m.sku))].sort();
+                    } else if(this.dashboardAnalysisType === 'marca') {
+                        return [...new Set(this.masterData.map(m => m.marca || 'S/D'))].sort();
+                    } else if(this.dashboardAnalysisType === 'proveedor') {
+                        return [...new Set(this.masterData.map(m => m.prov || 'S/D'))].sort();
+                    }
+                    return [];
+                },
+
+                updateDashboardAnalysis() {
+                    try {
+                        if(!this.dashboardSelectedItems || this.dashboardSelectedItems.length === 0) {
+                            if(this.dashboardChartInstance) {
+                                this.dashboardChartInstance.destroy();
+                                this.dashboardChartInstance = null;
+                            }
+                            return;
+                        }
+                        
+                        // Preparar datos históricos -1 a -59 (60 días)
+                        const labels = [];
+                        for(let i = 1; i <= 60; i++) {
+                            labels.push(`-${i}d`);
+                        }
+                        
+                        const datasets = [];
+                        const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7'];
+                        
+                        this.dashboardSelectedItems.slice(0, 5).forEach((item, idx) => {
+                            try {
+                                if(!item || !item.sku) return;
+                                
+                                let data = [];
+                                
+                                // PRIMERO: Intentar usar trendHistory del item (viene del Excel)
+                                if(item.trendHistory && Array.isArray(item.trendHistory) && item.trendHistory.length > 0) {
+                                    data = [...item.trendHistory].reverse().slice(0, 60);
+                                    console.log('[CHART] Usando trendHistory del item:', item.sku, 'puntos:', data.length);
+                                } else {
+                                    // FALLBACK: Buscar en masterData
+                                    const sku = this.masterData?.find(m => m?.sku === item.sku);
+                                    if(sku?.trendHistory && Array.isArray(sku.trendHistory)) {
+                                        data = [...sku.trendHistory].reverse().slice(0, 60);
+                                        console.log('[CHART] Usando trendHistory de masterData:', item.sku, 'puntos:', data.length);
+                                    }
+                                }
+                                
+                                // Rellenar con ceros si faltan datos
+                                while(data.length < 60) {
+                                    data.unshift(0);
+                                }
+                                
+                                // Validar que todos sean números
+                                data = data.map(d => typeof d === 'number' ? d : 0).slice(0, 60);
+                                
+                                datasets.push({
+                                    label: item.sku + ' (' + (item.desc?.substring(0, 15) || 'S/D') + ')',
+                                    data: data,
+                                    borderColor: colors[idx % colors.length],
+                                    backgroundColor: colors[idx % colors.length] + '20',
+                                    tension: 0.3,
+                                    fill: false,
+                                    borderWidth: 2,
+                                    pointRadius: 0,
+                                    pointHoverRadius: 4
+                                });
+                            } catch(e) {
+                                console.warn('Error procesando item:', item, e);
+                            }
+                        });
+                        
+                        const ctx = document.getElementById('dashboardChart');
+                        if(!ctx || datasets.length === 0) return;
+                        
+                        if(this.dashboardChartInstance) {
+                            try {
+                                this.dashboardChartInstance.destroy();
+                            } catch(e) {
+                                console.warn('Error destruyendo chart anterior:', e);
+                            }
+                        }
+                        
+                        this.dashboardChartInstance = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: datasets
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: true,
+                                plugins: {
+                                    legend: {
+                                        position: 'top',
+                                        labels: { color: '#d1d5db', font: { size: 11 } }
+                                    }
+                                },
+                                scales: {
+                                    x: { grid: { color: '#374151' }, ticks: { color: '#9ca3af', maxRotation: 45, minRotation: 0 } },
+                                    y: { grid: { color: '#374151' }, ticks: { color: '#9ca3af' } }
+                                }
+                            }
+                        });
+                    } catch(e) {
+                        console.error('Error en updateDashboardAnalysis:', e);
+                    }
+                },
 
                 isEditable(key) { return ['lt', 'uxb', 'dev', 'costo', 'diasEstrategia'].includes(key); },
                 startEdit(row, key) {
@@ -2641,6 +4396,29 @@
                 },
 
                 getColumns() {
+                    if(this.currentTab==='market') return [
+                        {key:'sku',label:'SKU'}, 
+                        {key:'desc',label:'DESCRIPCION'}, 
+                        {key:'marca',label:'MARCA'}, 
+                        {key:'stockGrafana',label:'STOCK TOTAL'},
+                        {key:'vtarTotal',label:'VTAR TOTAL'},
+                        {key:'vta59Total',label:'VENTA 59D'},
+                        {key:'vta30d',label:'VENTA 30D'},
+                        {key:'shareNov',label:'SHARE % NOV'},
+                        {key:'qEnero',label:'Q ENERO'},
+                        {key:'qFebrero',label:'Q FEBRERO'},
+                        {key:'qMarzo',label:'Q MARZO'},
+                        {key:'qAbril',label:'Q ABRIL'},
+                        {key:'qMayo',label:'Q MAYO'},
+                        {key:'qJunio',label:'Q JUNIO'},
+                        {key:'qJulio',label:'Q JULIO'},
+                        {key:'qAgosto',label:'Q AGOSTO'},
+                        {key:'qSeptiembre',label:'Q SEPTIEMBRE'},
+                        {key:'qOctubre',label:'Q OCTUBRE'},
+                        {key:'qNoviembre',label:'Q NOVIEMBRE'},
+                        {key:'qDiciembre',label:'Q DICIEMBRE'}
+                    ];
+                    
                     if(this.currentTab==='matriz_det') return [
                         {key:'sku',label:'SKU'}, {key:'desc',label:'DESCRIPCION'}, {key:'marca',label:'MARCA'}, {key:'prov',label:'PROVEEDOR'},
                         {key:'abc',label:'CLASIF. ABC'},
@@ -2657,6 +4435,7 @@
                         {key:'statusVisualML',label:'ESTADO ML'}, 
                         {key:'antiguedadStock',label:'ANTIGÜEDAD STOCK'}, 
                         {key:'comprasEnCamino',label:'EN CAMINO'},
+                        {key:'vta30d',label:'VENTA 30D (Total)'},
                         {key:'stockGrafana',label:'STOCK TOTAL'},
                         {key:'vtarTotal',label:'VTAR TOTAL (Tendencia)'},
                         {key:'vtarIa',label:'VTAR IA (Pred)'}, 
@@ -2696,9 +4475,10 @@
 
                     if(this.currentTab==='dep80') return [
                         {key:'sku',label:'SKU'}, 
-                        {key:'desc',label:'DESCRIPCION'}, 
-                        {key:'mlEsUrgente',label:'ALERTA ML'}, 
-                        {key:'mlSugerido',label:'SUG. ML'},    
+                        {key:'desc',label:'DESCRIPCION'},
+                        {key:'prov',label:'PROVEEDOR'},
+                        {key:'subPerfil',label:'SUB_PERFIL'},
+                        {key:'vta30d_80',label:'VENTA 30D (80)'}, 
                         {key:'vtar80',label:'VTAR 80'}, 
                         {key:'pbi.dep80',label:'STOCK 80'}, 
                         {key:'diasStock80',label:'DIAS 80'},
@@ -2838,6 +4618,28 @@
 
                    if(c.key === 'statusVisual') return r.statusVisual;
                    if(c.key === 'fechaCarga') return new Date().toLocaleDateString('es-AR');
+                   if(c.key === 'subPerfil') return r.subPerfil || '-';
+                   if(c.key === 'vta30d_80') {
+                       return (r.vta30d_80 || 0).toFixed(0);
+                   }
+                   if(c.key === 'vta30d') {
+                       return (r.vta30d || 0).toFixed(0);
+                   }
+                   
+                   // 🛒 Formato para columnas Q MES (Market)
+                   if(c.key.startsWith('q') && ['qEnero','qFebrero','qMarzo','qAbril','qMayo','qJunio','qJulio','qAgosto','qSeptiembre','qOctubre','qNoviembre','qDiciembre'].includes(c.key)) {
+                       const val = r[c.key];
+                       if(val === undefined || val === null || val === 0) return '-';
+                       return val.toLocaleString('es-AR');
+                   }
+                   
+                   // 🛒 Formato para SHARE % NOV
+                   if(c.key === 'shareNov') {
+                       const share = r.shareNov || 0;
+                       if(share === 0) return '-';
+                       return share.toFixed(1) + '%';
+                   }
+                   
                    let val = c.key.split('.').reduce((o,i)=>(o?o[i]:0), r);
                    if(c.key.includes('inversion') || c.key.includes('totalStockVal') || c.key.includes('inmoVal') || c.key.includes('valorizado') || c.key.includes('deuda') || c.key==='stockValorizado') return this.formatMoney(val);
                    if((c.key.includes('fecha') || c.key.includes('Ingreso') || c.key.includes('Vto')) && typeof val==='number') return new Date((val-25569)*86400000).toLocaleDateString('es-AR');
