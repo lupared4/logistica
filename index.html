@@ -210,7 +210,7 @@
                     <span>🚨</span> <span x-text="filterMLUrgencies ? 'Viendo Urgencias ML' : 'Filtrar Urgencias ML'"></span>
                 </button>
 
-                <div class="relative" x-data="{ openDates: false }" x-show="currentTab !== 'vencimientos' && currentTab !== 'otros_depositos'">
+                <div class="relative" x-data="{ openDates: false }" x-show="currentTab !== 'vencimientos'">
                     <button @click="openDates = !openDates" @click.outside="openDates = false"
                         class="flex items-center justify-between gap-2 bg-blue-50 px-3 py-1.5 rounded border border-blue-100 text-xs text-blue-800 font-bold hover:bg-blue-100 transition w-48"
                         :class="selectedEnvioFechas.length > 0 ? 'ring-2 ring-blue-300' : ''">
@@ -290,6 +290,10 @@
                 </div>
                 <div x-show="currentTab === 'dep80' && selectedEnvioFechas.length > 0" class="bg-yellow-50 text-yellow-800 px-4 py-2 text-xs font-bold border-b border-yellow-100 flex justify-between items-center">
                     <span>⚠️ FILTRANDO POR FECHAS SELECCIONADAS: Mostrando solo SKUs enviados en las fechas marcadas.</span>
+                    <button @click="selectedEnvioFechas = []" class="underline hover:text-yellow-900">Limpiar Fechas</button>
+                </div>
+                <div x-show="currentTab === 'otros_depositos' && selectedEnvioFechas.length > 0" class="bg-yellow-50 text-yellow-800 px-4 py-2 text-xs font-bold border-b border-yellow-100 flex justify-between items-center">
+                    <span>⚠️ ENVIOS FILTRADOS: La columna "ENVIOS REALIZADO" muestra cantidades de las fechas seleccionadas.</span>
                     <button @click="selectedEnvioFechas = []" class="underline hover:text-yellow-900">Limpiar Fechas</button>
                 </div>
 
@@ -2910,6 +2914,7 @@
                                              stock: stk,
                                              vtar: vt,
                                              diasStock: dias,
+                                             enviadoHist: item.enviadoHist || 0,
                                              qEnviar: Math.ceil(q),
                                              statusVisual: status
                                          });
@@ -3665,6 +3670,28 @@
                     else if(this.currentTab === 'proveedores') d = this.proveedoresData;
                     else if(this.currentTab === 'otros_depositos') {
                         d = this.otherDepositsData.filter(i => this.selectedOtherDeps.includes(i.deposito));
+                        
+                        // Los envíos de HIST. ENVIOS son solo para depósito 80
+                        // Recalcular enviadoHist: solo depósito 80 tiene envíos, otros muestran 0
+                        if (this.selectedEnvioFechas.length > 0) {
+                            const enviosPorSku = {};
+                            this.enviosData.forEach(e => {
+                                if(this.selectedEnvioFechas.includes(e.fecha)) {
+                                    enviosPorSku[e.sku] = (enviosPorSku[e.sku] || 0) + (e.cant || 0);
+                                }
+                            });
+                            d = d.map(item => ({
+                                ...item,
+                                // Solo depósito 80 tiene envíos, otros depósitos muestran 0
+                                enviadoHist: item.deposito === '80' ? (enviosPorSku[item.sku] || 0) : 0
+                            }));
+                        } else {
+                            // Sin filtro de fechas: solo dep 80 muestra enviadoHist, otros 0
+                            d = d.map(item => ({
+                                ...item,
+                                enviadoHist: item.deposito === '80' ? (item.enviadoHist || 0) : 0
+                            }));
+                        }
                     }
                     if (this.filterOpportunityCost) {
                         d = d.filter(i => i.ventaPerdida > 0);
@@ -3692,12 +3719,22 @@
                             d = d.filter(i => i.mlEsUrgente);
                         }
 
+                        // Recalcular enviadoHist según fechas seleccionadas
                         if (this.selectedEnvioFechas.length > 0) {
-                            const skusEnFechas = new Set();
+                            // Calcular envíos solo de las fechas seleccionadas
+                            const enviosPorSku = {};
                             this.enviosData.forEach(e => {
-                                if(this.selectedEnvioFechas.includes(e.fecha)) skusEnFechas.add(e.sku);
+                                if(this.selectedEnvioFechas.includes(e.fecha)) {
+                                    enviosPorSku[e.sku] = (enviosPorSku[e.sku] || 0) + (e.cant || 0);
+                                }
                             });
-                            d = d.filter(i => skusEnFechas.has(i.sku));
+                            
+                            // Filtrar solo SKUs con envíos en esas fechas y actualizar enviadoHist
+                            d = d.filter(i => enviosPorSku[i.sku] !== undefined)
+                                 .map(item => ({
+                                     ...item,
+                                     enviadoHist: enviosPorSku[item.sku] || 0
+                                 }));
                         }
                     }
                     else if(this.currentTab === 'resumen') d = d.filter(i => i.comprarU > 0 || i.comprasEnCamino > 0);
@@ -4470,7 +4507,7 @@
                         {key:'statusVisual',label:'ESTADO'},
                         {key:'sku',label:'SKU'}, {key:'desc',label:'DESCRIPCION'}, {key:'marca',label:'MARCA'}, {key:'prov',label:'PROVEEDOR'},
                         {key:'deposito',label:'DEPOSITO'}, {key:'stock',label:'STOCK'}, {key:'vtar',label:'VTAR'},
-                        {key:'diasStock',label:'DIAS STOCK'}, {key:'qEnviar',label:'CANTIDADES A ENVIAR'}
+                        {key:'diasStock',label:'DIAS STOCK'}, {key:'enviadoHist',label:'ENVIOS REALIZADO'}, {key:'qEnviar',label:'CANTIDADES A ENVIAR'}
                     ];
 
                     if(this.currentTab==='dep80') return [
@@ -4485,6 +4522,7 @@
                         {key:'runOutDate',label:'AGOTAMIENTO ESTIMADO'},
                         {key:'pbi.dep1',label:'STOCK CENTRAL'}, 
                         {key:'stockRestante',label:'DISPONIBLE'}, 
+                        {key:'enviadoHist',label:'ENVIOS REALIZADO'},
                         {key:'qEnviar',label:'A ENVIAR'}, 
                         {key:'valorizado',label:'MONTO $'}
                     ];
