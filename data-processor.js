@@ -67,7 +67,8 @@ export function buildLookups(rawData) {
         mapML: {},
         mapCargos: {},
         mapEnvios: {},
-        mapPlanML: {}
+        mapPlanML: {},
+        mapCanasta: {}
     };
 
     // ML Stock
@@ -156,6 +157,23 @@ export function buildLookups(rawData) {
             const s = cleanString(r[iS]);
             if (s) {
                 lookups.mapEnvios[s] = (lookups.mapEnvios[s] || 0) + parseNumber(r[iCant]);
+            }
+        });
+    }
+
+    // Canasta (FLAG BLOQUEADOS)
+    if (rawData.canasta && rawData.canasta.length) {
+        const h = rawData.canasta[0];
+        const iS = findColumnIndex(h, ['SKU']);
+        const iFlag = findColumnIndex(h, ['FLAG BLOQUEADOS', 'BLOQUEADOS', 'BLOQUEADO']);
+
+        rawData.canasta.slice(1).forEach(r => {
+            const s = cleanString(r[iS]);
+            if (s) {
+                const flagVal = String(r[iFlag] || '').toUpperCase().trim();
+                lookups.mapCanasta[s] = {
+                    bloqueado: flagVal === 'SI' || flagVal === 'SÍ' || flagVal === 'S'
+                };
             }
         });
     }
