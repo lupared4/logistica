@@ -4176,94 +4176,99 @@
                     } catch(err) { console.error('Failed to copy', err); }
                 },
                 exportExcel() {
-    if (!this.dataReady) return;
+                    if (!this.dataReady) return;
 
-    const dataToExport = this.filteredData;
-    const columns = this.getColumns();
-    const sheetName = this.tabs.find(t => t.id === this.currentTab)?.label || 'Datos';
+                    const dataToExport = this.filteredData;
+                    const columns = this.getColumns();
+                    const sheetName = this.tabs.find(t => t.id === this.currentTab)?.label || 'Datos';
 
-    // Preparar datos con alertas y formateo
-    const exportData = dataToExport.map(row => {
-        const newRow = {};
-        columns.forEach(col => {
-            let val = col.key.split('.').reduce((o, i) => (o ? o[i] : undefined), row);
-            if (val === undefined) val = row[col.key];
-            
-            // Formatear según tipo
-            if (col.key === 'stockValorizado') val = Math.round(val || 0);
-            else if (['vtarTotal', 'diasStock', 'lt', 'uxb'].includes(col.key)) val = (val || 0).toFixed(2);
-            else if (col.key === 'alerta') val = row.alerta ? `${row.alerta.icono} ${row.alerta.nivel}` : 'OK';
-            
-            newRow[col.label] = val;
-        });
-        
-        // Agregar columna de ALERTA si no existe
-        if (!newRow['ALERTA']) {
-            newRow['ALERTA'] = row.alerta ? `${row.alerta.icono} ${row.alerta.nivel}` : '🟢 OK';
-        }
-        
-        return newRow;
-    });
+                    // Preparar datos con alertas y formateo
+                    const exportData = dataToExport.map(row => {
+                        const newRow = {};
+                        columns.forEach(col => {
+                            let val = col.key.split('.').reduce((o, i) => (o ? o[i] : undefined), row);
+                            if (val === undefined) val = row[col.key];
+                            
+                            // Formatear según tipo
+                            if (col.key === 'stockValorizado') val = Math.round(val || 0);
+                            else if (['vtarTotal', 'diasStock', 'lt', 'uxb'].includes(col.key)) val = parseFloat(val || 0).toFixed(2);
+                            else if (col.key === 'alerta') val = row.alerta ? `${row.alerta.icono} ${row.alerta.nivel}` : 'OK';
+                            
+                            newRow[col.label] = val;
+                        });
+                        
+                        // Agregar columna de ALERTA si no existe
+                        if (!newRow['ALERTA']) {
+                            newRow['ALERTA'] = row.alerta ? `${row.alerta.icono} ${row.alerta.nivel}` : '🟢 OK';
+                        }
+                        
+                        return newRow;
+                    });
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    
-    // Ajustar ancho de columnas
-    ws['!cols'] = [];
-    Object.keys(exportData[0] || {}).forEach((col, idx) => {
-        ws['!cols'][idx] = { wch: Math.min(20, Math.max(10, col.length + 2)) };
-    });
+                    const ws = XLSX.utils.json_to_sheet(exportData);
+                    
+                    // Ajustar ancho de columnas
+                    ws['!cols'] = [];
+                    if (exportData.length > 0) {
+                        Object.keys(exportData[0]).forEach((col, idx) => {
+                            ws['!cols'][idx] = { wch: Math.min(20, Math.max(10, col.length + 2)) };
+                        });
+                    }
 
-    // Agregar hoja de SUGERENCIAS si hay
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+                    // Crear workbook y agregar hoja principal
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
-    if (this.sugerencias && this.sugerencias.length > 0) {
-        const sugData = this.sugerencias.map(s => ({
-            'PRIORIDAD': `P${s.prioridad}`,
-            'ACCIÓN': s.titulo,
-            'SKU': s.sku,
-            'DESCRIPCIÓN': s.desc,
-            'DETALLE': s.detalle
-        }));
-        const wsSug = XLSX.utils.json_to_sheet(sugData);
-        wsSug['!cols'] = [
-            { wch: 10 },
-            { wch: 20 },
-            { wch: 12 },
-            { wch: 25 },
-            { wch: 40 }
-        ];
-        XLSX.utils.book_append_sheet(wb, wsSug, 'Sugerencias');
-    }
+                    // Agregar hoja de SUGERENCIAS si hay
+                    if (this.sugerencias && this.sugerencias.length > 0) {
+                        const sugData = this.sugerencias.map(s => ({
+                            'PRIORIDAD': `P${s.prioridad}`,
+                            'ACCIÓN': s.titulo,
+                            'SKU': s.sku,
+                            'DESCRIPCIÓN': s.desc,
+                            'DETALLE': s.detalle
+                        }));
+                        const wsSug = XLSX.utils.json_to_sheet(sugData);
+                        wsSug['!cols'] = [
+                            { wch: 10 },
+                            { wch: 20 },
+                            { wch: 12 },
+                            { wch: 25 },
+                            { wch: 40 }
+                        ];
+                        XLSX.utils.book_append_sheet(wb, wsSug, 'Sugerencias');
+                    }
 
-    // Agregar hoja de KPIs
-    const kpiData = [{
-        'MÉTRICA': 'SKUs Críticos',
-        'VALOR': this.kpiDashboard?.criticos || 0
-    }, {
-        'MÉTRICA': 'Dinero Congelado',
-        'VALOR': `$${Math.round(this.kpiDashboard?.dineroCong || 0).toLocaleString()}`
-    }, {
-        'MÉTRICA': 'Riesgo Lead Time',
-        'VALOR': this.kpiDashboard?.riesgoLT || 0
-    }, {
-        'MÉTRICA': 'Compra Próxima 30d',
-        'VALOR': (this.kpiDashboard?.compraProxima || 0).toLocaleString()
-    }, {
-        'MÉTRICA': 'Stock Total Valorizado',
-        'VALOR': `$${Math.round(this.kpiDashboard?.stockTotal || 0).toLocaleString()}`
-    }, {
-        'MÉTRICA': 'Health Score',
-        'VALOR': `${Math.round(this.metrics?.healthScore?.overall || 0)}%`
-    }];
-    
-    const wsKpi = XLSX.utils.json_to_sheet(kpiData);
-    wsKpi['!cols'] = [{ wch: 25 }, { wch: 20 }];
-    XLSX.utils.book_append_sheet(wb, wsKpi, 'KPIs Ejecutivos');
+                    // Agregar hoja de KPIs
+                    const kpiData = [{
+                        'MÉTRICA': 'SKUs Críticos',
+                        'VALOR': this.kpiDashboard?.criticos || 0
+                    }, {
+                        'MÉTRICA': 'Dinero Congelado',
+                        'VALOR': `$${Math.round(this.kpiDashboard?.dineroCong || 0).toLocaleString()}`
+                    }, {
+                        'MÉTRICA': 'Riesgo Lead Time',
+                        'VALOR': this.kpiDashboard?.riesgoLT || 0
+                    }, {
+                        'MÉTRICA': 'Compra Próxima 30d',
+                        'VALOR': (this.kpiDashboard?.compraProxima || 0).toLocaleString()
+                    }, {
+                        'MÉTRICA': 'Stock Total Valorizado',
+                        'VALOR': `$${Math.round(this.kpiDashboard?.stockTotal || 0).toLocaleString()}`
+                    }, {
+                        'MÉTRICA': 'Health Score',
+                        'VALOR': `${Math.round(this.metrics?.healthScore?.overall || 0)}%`
+                    }];
+                    
+                    const wsKpi = XLSX.utils.json_to_sheet(kpiData);
+                    wsKpi['!cols'] = [{ wch: 25 }, { wch: 20 }];
+                    XLSX.utils.book_append_sheet(wb, wsKpi, 'KPIs Ejecutivos');
 
-    XLSX.writeFile(wb, `Dashboard_${sheetName}_${this.lastUpdate.replace(/[\/, :]/g, '_')}.xlsx`);
-    console.log('[INFO] Excel exportado:', sheetName);
-},
+                    // Generar nombre de archivo seguro
+                    const timestamp = (this.lastUpdate || new Date().toLocaleString('es-AR')).replace(/[\/, :]/g, '_');
+                    XLSX.writeFile(wb, `Dashboard_${sheetName}_${timestamp}.xlsx`);
+                    console.log('[INFO] Excel exportado:', sheetName);
+                },
 
                 // 📊 ANÁLISIS COMPARATIVO DASHBOARD
                 searchDashboardItems() {
