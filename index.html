@@ -227,9 +227,9 @@
             </button>
             <label class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded shadow text-xs flex gap-2 items-center transition">
                 <span x-text="dataReady ? '🔄 ACTUALIZAR' : '📂 CARGAR EXCEL'"></span>
-                <input type="file" class="hidden" accept=".xlsx, .xls" @change="handleFile">
+                <input type="file" class="hidden" accept=".xlsx, .xls, .xlsb" @change="handleFile">
             </label>
-            <button @click="loadLocalExcel" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1.5 px-3 rounded shadow text-xs flex gap-2 items-center transition" title="Cargar ENVIOS LUCIANO.xlsx desde carpeta local">
+            <button @click="loadLocalExcel" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1.5 px-3 rounded shadow text-xs flex gap-2 items-center transition" title="Cargar ENVIOS LUCIANO.xlsx o .xlsb desde carpeta local">
                 <span>📥 Traer Datos Directamente</span>
             </button>
             <button @click="resetApp" class="text-slate-400 hover:text-red-500 p-1.5 transition" title="Borrar datos y reiniciar">🗑️</button>
@@ -678,6 +678,11 @@
                                                         <span x-show="idx === 0" class="text-xs bg-blue-500 px-1 rounded">1er resultado</span>
                                                     </div>
                                                     <div class="text-slate-300 text-xs truncate" x-text="(item.desc?.substring(0, 40) || 'S/D')"></div>
+                                                    <!-- Códigos adicionales: EAN y MLA -->
+                                                    <div class="flex gap-3 mt-1" x-show="item.ean || item.mla">
+                                                        <span x-show="item.ean" class="text-slate-500 text-[10px] font-mono" x-text="'EAN: ' + item.ean"></span>
+                                                        <span x-show="item.mla" class="text-blue-400 text-[10px] font-mono" x-text="'MLA: ' + item.mla"></span>
+                                                    </div>
                                                 </div>
                                                 <div class="text-slate-400 text-xs text-right ml-2">
                                                     <div x-text="'Stock: ' + ((item.stockGrafana || item.stock || 0))"></div>
@@ -1774,6 +1779,15 @@
                         <span x-show="selectedRow?.impulsar" class="bg-orange-500 text-white text-xs px-2 py-1 rounded font-bold animate-pulse">🚀 IMPULSAR</span>
                     </div>
                     <div class="text-slate-400 text-sm" x-text="selectedRow?.desc"></div>
+                    <!-- Códigos EAN y MLA -->
+                    <div class="flex gap-4 mt-1" x-show="selectedRow?.ean || selectedRow?.mla">
+                        <span x-show="selectedRow?.ean" class="text-slate-500 text-xs font-mono flex items-center gap-1">
+                            <span class="text-slate-600">EAN:</span> <span x-text="selectedRow?.ean" class="text-slate-300"></span>
+                        </span>
+                        <span x-show="selectedRow?.mla" class="text-blue-400 text-xs font-mono flex items-center gap-1">
+                            <span class="text-blue-500">MLA:</span> <span x-text="selectedRow?.mla" class="text-blue-300"></span>
+                        </span>
+                    </div>
                 </div>
                 <button @click="modalOpen = false" class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button>
             </div>
@@ -2138,7 +2152,7 @@
                 chatOpen: false, chatInput: '', isTyping: false,
                 chatMessages: [{type: 'bot', text: '¡Hola! Soy tu asistente de inventario. Pregúntame por un SKU, Marca o usa los botones rápidos.'}],
 
-                lookups: { mapML: {}, mapCargos: {}, mapEnvios: {}, mapCanasta: {} },
+                lookups: { mapML: {}, mapCargos: {}, mapEnvios: {}, mapCanasta: {}, mapMLA: {}, mapSTA19: {} },
 
                 kpis: { compra:0, envios:0, valorEnvios:0, lotesVencidos:0, skusCompra:0, cantImpulsar:0, enCamino: 0, inmovilizado: 0 },
                 
@@ -2213,16 +2227,30 @@
 
                 // 📥 Cargar Excel directamente desde carpeta local
                 async loadLocalExcel() {
-                    const fileName = 'ENVIOS LUCIANO.xlsx';
+                    const fileNames = ['ENVIOS LUCIANO.xlsx', 'ENVIOS LUCIANO.xlsb'];
                     this.isLoading = true;
                     this.loadingMsg = 'BUSCANDO ARCHIVO LOCAL...';
                     
+                    let response = null;
+                    let fileName = null;
+                    
+                    // Intentar cargar .xlsx primero, luego .xlsb
+                    for (const name of fileNames) {
+                        try {
+                            const resp = await fetch(name);
+                            if (resp.ok) {
+                                response = resp;
+                                fileName = name;
+                                break;
+                            }
+                        } catch (e) {
+                            console.log(`[INFO] Archivo ${name} no encontrado, probando siguiente...`);
+                        }
+                    }
+                    
                     try {
-                        // Intentar cargar el archivo desde la misma carpeta
-                        const response = await fetch(fileName);
-                        
-                        if (!response.ok) {
-                            throw new Error(`No se encontró el archivo "${fileName}" en la carpeta del proyecto.`);
+                        if (!response || !response.ok) {
+                            throw new Error(`No se encontró ningún archivo "ENVIOS LUCIANO" (.xlsx o .xlsb) en la carpeta del proyecto.`);
                         }
                         
                         this.loadingMsg = 'LEYENDO EXCEL...';
@@ -2246,6 +2274,8 @@
                         this.rawData.enviados = getSheet(['enviados', 'envios']);
                         this.rawData.vto = getSheet(['vencimiento', 'vto']);
                         this.rawData.canasta = getSheet(['canasta']);
+                        this.rawData.mla = getSheet(['mla']);
+                        this.rawData.sta19 = getSheet(['sta19', 'sta 19']);
                         
                         if(this.rawData.grafana.length === 0) {
                             throw new Error("❌ No se encontró la hoja 'Grafana' o está vacía.");
@@ -2286,9 +2316,9 @@
                     const file = e.target.files[0]; 
                     if (!file) return;
                     
-                    // Validación de archivo
-                    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
-                        alert('❌ Por favor sube un archivo Excel (.xlsx o .xls)');
+                    // Validación de archivo (soporta .xlsx, .xls y .xlsb)
+                    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls') && !file.name.endsWith('.xlsb')) {
+                        alert('❌ Por favor sube un archivo Excel (.xlsx, .xls o .xlsb)');
                         return;
                     }
                     
@@ -2309,6 +2339,8 @@
                             this.rawData.enviados = getSheet(['enviados', 'envios']);
                             this.rawData.vto = getSheet(['vencimiento', 'vto']);
                             this.rawData.canasta = getSheet(['canasta']);
+                            this.rawData.mla = getSheet(['mla']);
+                            this.rawData.sta19 = getSheet(['sta19', 'sta 19']);
 
                             if(this.rawData.grafana.length === 0) {
                                 throw new Error("❌ No se encontró la hoja 'Grafana' o está vacía.\n\nVerifica que tu Excel tenga una hoja con ese nombre.");
@@ -2771,6 +2803,62 @@
                                 console.log('[INFO] Canasta cargada:', Object.keys(this.lookups.mapCanasta).length, 'SKUs |', bloqueadosCount, 'bloqueados');
                             } else {
                                 console.log('[INFO] Hoja Canasta no encontrada o vacía');
+                            }
+
+                            // 📰 MLA - Códigos publicación Mercado Libre (Dep80)
+                            this.lookups.mapMLA = {};
+                            if(this.rawData.mla && this.rawData.mla.length) {
+                                const h = this.rawData.mla[0];
+                                const iS = idx(h, ['SKU']);
+                                const iMLA = idx(h, ['MLA']);
+                                const iEstado = idx(h, ['ESTADO']);
+                                
+                                console.log('[DEBUG] MLA headers:', h);
+                                console.log('[DEBUG] MLA columna SKU idx:', iS, '| MLA idx:', iMLA, '| ESTADO idx:', iEstado);
+                                
+                                if(iS > -1 && iMLA > -1) {
+                                    this.rawData.mla.slice(1).forEach(r => {
+                                        const s = clean(r[iS]);
+                                        if(s) {
+                                            this.lookups.mapMLA[s] = {
+                                                mla: clean(r[iMLA]),
+                                                estado: clean(r[iEstado] || '')
+                                            };
+                                        }
+                                    });
+                                } else {
+                                    console.warn('[WARN] No se encontró columna SKU o MLA en hoja MLA');
+                                }
+                                console.log('[INFO] MLA cargada:', Object.keys(this.lookups.mapMLA).length, 'SKUs');
+                            } else {
+                                console.log('[INFO] Hoja MLA no encontrada o vacía');
+                            }
+
+                            // 📋 STA19 - EAN y datos maestros
+                            this.lookups.mapSTA19 = {};
+                            if(this.rawData.sta19 && this.rawData.sta19.length) {
+                                const h = this.rawData.sta19[0];
+                                const iS = idx(h, ['SKU']);
+                                const iEAN = idx(h, ['EAN']);
+                                
+                                console.log('[DEBUG] STA19 headers:', h.slice(0, 10), '...');
+                                console.log('[DEBUG] STA19 columna SKU idx:', iS, '| EAN idx:', iEAN);
+                                
+                                if(iS > -1 && iEAN > -1) {
+                                    this.rawData.sta19.slice(1).forEach(r => {
+                                        const s = clean(r[iS]);
+                                        if(s) {
+                                            this.lookups.mapSTA19[s] = {
+                                                ean: String(r[iEAN] || '').trim()
+                                            };
+                                        }
+                                    });
+                                } else {
+                                    console.warn('[WARN] No se encontró columna SKU o EAN en hoja STA19');
+                                }
+                                console.log('[INFO] STA19 cargada:', Object.keys(this.lookups.mapSTA19).length, 'SKUs con EAN');
+                            } else {
+                                console.log('[INFO] Hoja STA19 no encontrada o vacía');
                             }
 
                             const data = {}; const hG = this.rawData.grafana[0];
@@ -3815,6 +3903,15 @@
                     // --- FLAG BLOQUEADO (viene directo de Grafana) ---
                     const bloqueado = item.bloqueado || false;
                     
+                    // --- MLA (Código publicación Mercado Libre - Dep80) ---
+                    const mlaData = this.lookups.mapMLA && this.lookups.mapMLA[item.sku];
+                    const mla = mlaData ? mlaData.mla : '';
+                    const estadoMLA = mlaData ? mlaData.estado : '';
+                    
+                    // --- EAN (desde STA19) ---
+                    const sta19Data = this.lookups.mapSTA19 && this.lookups.mapSTA19[item.sku];
+                    const ean = sta19Data ? sta19Data.ean : '';
+                    
                     // --- CÁLCULO DE COMPRA (OPTIMIZADO POR BULTOS) ---
                     let necesidadExacta = 0;
                     const strategyDays = item.diasEstrategia;
@@ -3899,7 +3996,8 @@
                         mlRecomendacion, mlSugerido, mlEsUrgente,
                         ventaPerdida,
                         isArbitrage, arbitrageVal,
-                        bloqueado
+                        bloqueado,
+                        mla, estadoMLA, ean
                     };
                 },
 
@@ -4789,6 +4887,9 @@
                      
                     if(this.currentTab==='consolidado') return [
                         {key:'sku',label:'SKU'}, 
+                        {key:'mla',label:'MLA'}, 
+                        {key:'ean',label:'EAN'}, 
+                        {key:'estadoMLA',label:'ESTADO'}, 
                         {key:'desc',label:'DESCRIPCION'}, 
                         {key:'statusVisualML',label:'ESTADO ML'}, 
                         {key:'antiguedadStock',label:'ANTIGÜEDAD STOCK'}, 
@@ -4909,6 +5010,14 @@
                         if(st === 'INACTIVA') return 'bg-gray-200 text-gray-500 font-bold text-[10px] text-center';
                         return 'text-green-600 font-bold text-[10px] text-center';
                     }
+
+                    if(c.key === 'estadoMLA') {
+                        const st = (r.estadoMLA||'').toUpperCase();
+                        if(st === 'ACTIVE') return 'bg-green-100 text-green-700 font-bold text-[10px] text-center';
+                        if(st === 'PAUSED') return 'bg-red-100 text-red-700 font-bold text-[10px] text-center';
+                        if(st === 'UNDER_REVIEW') return 'bg-yellow-100 text-yellow-700 font-bold text-[10px] text-center';
+                        return 'text-slate-400 text-[10px] text-center';
+                    }
                     
                     if(c.key === 'antiguedadStock') {
                          if(!r.antiguedadStock) return 'text-center text-slate-300';
@@ -4976,6 +5085,13 @@
                         if(st === 'ACTIVA') return '✅ ACTIVA';
                         if(c.key === 'mlEsUrgente') return r.mlEsUrgente ? '🔥 URGENTE' : '-';
                         return st;
+                    }
+                    if(c.key === 'estadoMLA') {
+                        const st = (r.estadoMLA||'').toUpperCase();
+                        if(st === 'ACTIVE') return '✅ ACTIVE';
+                        if(st === 'PAUSED') return '⏸️ PAUSED';
+                        if(st === 'UNDER_REVIEW') return '⚠️ REVIEW';
+                        return r.estadoMLA || '-';
                     }
                     if(c.key === 'antiguedadStock') {
                          if(!r.antiguedadStock) return '-';

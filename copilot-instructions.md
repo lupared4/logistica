@@ -2,21 +2,21 @@
 
 ## Arquitectura
 
-**Stack:** Alpine.js + Tailwind CSS + Chart.js + SheetJS (XLSX)  
+**Stack:** Alpine.js 3.x + Tailwind CSS + Chart.js 4.x + SheetJS (XLSX)  
 **Build:** Vite 5.x | **Tests:** Vitest | **Persistencia:** IndexedDB (db: `InvProV93`, versión 24)
 
 ### Estructura de código
 ```
-index.html              → Monolito principal (~5236 líneas) con inventoryApp()
+index.html              → Monolito principal (~5241 líneas) con inventoryApp() en L2079
 src/
-├── data-processor.js   → Transformación Excel (generateSnapshot, buildLookups, classifyABCAndHealth)
-├── utils.js            → formatMoney, parseNumber, logger, calculateLinearRegression, detectAnomaly
+├── data-processor.js   → Transformación Excel (generateSnapshot, buildLookups, validateSheet)
+├── utils.js            → formatMoney, parseNumber, logger, cleanString, findColumnIndex, MemoCache
 └── db.js               → IndexedDB: save(), load(), saveSnapshot() - 3 stores (Files, History, DebtHistory)
 tests/
 └── utils.test.js       → Tests unitarios con Vitest
 ```
 
-> ⚠️ **CRÍTICO:** La lógica de negocio está en `index.html`, NO en `src/app.js`. El archivo `index.html` contiene `inventoryApp()` con todo el estado reactivo Alpine.js.
+> ⚠️ **CRÍTICO:** La lógica de negocio vive en `index.html` dentro de `inventoryApp()` (línea 2079). NO existe `src/app.js` - todo el estado reactivo Alpine.js está en el HTML principal.
 
 ## Flujo de datos
 
@@ -30,11 +30,23 @@ Excel(.xlsx) → SheetJS → data-processor.js (validación + consolidación por
 
 | Función | Ubicación | Propósito |
 |---------|-----------|-----------|
-| `calculateRowLogic(item)` | index.html:~3780 | Cálculo compra/stock (UXB, SS, stockMin/Max, seasonalMult, ventaPerdida) |
-| `getColumns()` | index.html:~4751 | Define columnas por tab (consolidado, market, matriz_det, dep80, etc.) |
+| `calculateRowLogic(item)` | index.html:~L3780 | Cálculo compra/stock (UXB, SS, stockMin/Max, seasonalMult, ventaPerdida) |
+| `getColumns()` | index.html:~L4756 | Define columnas visibles por tab |
 | `generateSnapshot()` | data-processor.js | Genera snapshots de VTAR por SKU para historial |
-| `buildLookups()` | data-processor.js | Mapea hojas auxiliares (mapML, mapCargos, mapEnvios, mapPlanML, mapCanasta) |
+| `buildLookups()` | data-processor.js | Mapea hojas auxiliares a objetos lookup |
 | `validateSheet()` | data-processor.js | Valida columnas requeridas en hojas Excel |
+
+### Utilidades disponibles (src/utils.js)
+```javascript
+formatMoney(v)              // "$ 1.234.567" (formato AR)
+parseNumber(v)              // Maneja "1.234,56" (AR) y "1,234.56" (US)
+cleanString(s)              // trim() + toUpperCase()
+findColumnIndex(row, keys)  // Busca columna por múltiples aliases
+excelDateToJSDate(serial)   // Serial Excel → "DD/MM/YYYY"
+calculateLinearRegression(y)// Predicción de tendencia
+detectAnomaly(data)         // Z-score > 2.5 = anomalía
+logger.info/warn/error/debug// Sistema de logging (nunca console.log directo)
+```
 
 ## Estado Alpine.js (index.html)
 
@@ -63,6 +75,8 @@ currentTab      // 'metricas'|'consolidado'|'market'|'matriz_det'|'proveedores'|
 | Cargos | `cargos` | SKU, Unidades, Cargo por unidad, FECHA, Antigüedad | Penalizaciones (filtra última fecha) |
 | Enviados | `enviados` | SKU, ENVIO REALIZADO | Historial envíos |
 | Canasta | `canasta` | SKU, FLAG BLOQUEADOS | Bloqueados → 🚩 bandera roja |
+| MLA | `mla` | MLA, SKU, DESCRIPCION, ESTADO | Códigos publicación ML (Dep80) |
+| STA19 | `sta19` | SKU, EAN, PROV, DESCRIPCION... (+56 cols) | Datos maestros (EAN, UXB, precios) |
 
 ## Comandos
 
@@ -76,15 +90,15 @@ npm run test:ui    # Interfaz visual de tests
 
 ## Guía de modificaciones
 
-| Tarea | Archivo | Buscar/Ubicación |
-|-------|---------|------------------|
-| Agregar columna tabla | index.html | `getColumns()` (~línea 4751) |
-| Cambiar cálculo compra/stock | index.html | `calculateRowLogic()` (~línea 3780) |
-| Estilos condicionales celda | index.html | `getCellClass(c,r)` (después de getColumns) |
-| Nueva hoja Excel | data-processor.js | `buildLookups()` - agregar nuevo bloque |
-| Nueva utilidad | src/utils.js | Exportar función + agregar test en tests/utils.test.js |
-| Cambiar persistencia | src/db.js | Modificar `save()`/`load()` |
-| Nuevo tab UI | index.html | Agregar en `getColumns()` + template HTML |
+| Tarea | Archivo | Buscar |
+|-------|---------|--------|
+| Agregar columna tabla | index.html | `getColumns()` (~L4756) |
+| Cambiar cálculo compra/stock | index.html | `calculateRowLogic()` (~L3780) |
+| Estilos condicionales celda | index.html | `getCellClass(c,r)` |
+| Nueva hoja Excel | data-processor.js | `buildLookups()` |
+| Nueva utilidad | src/utils.js | Exportar + test en tests/utils.test.js |
+| Cambiar persistencia | src/db.js | `save()`/`load()` |
+| Nuevo tab UI | index.html | `getColumns()` + template HTML |
 
 ## Convenciones del proyecto
 
@@ -136,5 +150,31 @@ if(this.currentTab==='consolidado') return [
 - **Excel no carga:** F12 → Console → buscar errores en `data-processor.js` (validación columnas con `validateSheet`)
 - **Datos no actualizan:** verificar que `masterData` se actualice y llamar `calculateRowLogic()` después de cambios
 - **Tests fallan:** verificar extensiones `.js` en imports y que Vitest esté corriendo
+- **IndexedDB corrupta:** F12 → Application → IndexedDB → eliminar `InvProV93`
+- **Columna no aparece:** revisar que esté en `getColumns()` para el tab correcto (L4756+)
+
+## Vendor chunks (Vite)
+
+El build separa automáticamente dependencias en `vendor.js`:
+- `alpinejs`, `chart.js`, `xlsx` → manualChunks en [vite.config.js](vite.config.js)
+
+## Patrones importantes
+
+### Iteración sobre hojas Excel
+```javascript
+// Siempre: slice(1) para saltar headers, cleanString para SKUs
+rawData.hoja.slice(1).forEach(r => {
+    const sku = cleanString(r[iSku]);
+    if (sku && sku !== 'TOTAL') { /* procesar */ }
+});
+```
+
+### Cálculo con método dual (VTAR vs VPD)
+```javascript
+// En calculateRowLogic: usar calcMethod para elegir base
+const baseVenta = this.calcMethod === 'vpd' && item.vpdCpra > 0 
+    ? item.vpdCpra       // Proyectado IA
+    : item.vtarTotal;    // Histórico (default)
+```
 - **IndexedDB corrupta:** F12 → Application → IndexedDB → eliminar `InvProV93`
 - **Columna no aparece:** revisar que esté en `getColumns()` para el tab correcto

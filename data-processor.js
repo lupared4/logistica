@@ -68,7 +68,8 @@ export function buildLookups(rawData) {
         mapCargos: {},
         mapEnvios: {},
         mapPlanML: {},
-        mapCanasta: {}
+        mapCanasta: {},
+        mapMLA: {}
     };
 
     // ML Stock
@@ -173,6 +174,24 @@ export function buildLookups(rawData) {
                 const flagVal = String(r[iFlag] || '').toUpperCase().trim();
                 lookups.mapCanasta[s] = {
                     bloqueado: flagVal === 'SI' || flagVal === 'SÍ' || flagVal === 'S'
+                };
+            }
+        });
+    }
+
+    // MLA (Códigos de publicación Mercado Libre - Depósito 80)
+    if (rawData.mla && rawData.mla.length) {
+        const h = rawData.mla[0];
+        const iS = findColumnIndex(h, ['SKU']);
+        const iMLA = findColumnIndex(h, ['MLA']);
+        const iEstado = findColumnIndex(h, ['ESTADO']);
+
+        rawData.mla.slice(1).forEach(r => {
+            const s = cleanString(r[iS]);
+            if (s) {
+                lookups.mapMLA[s] = {
+                    mla: cleanString(r[iMLA]),
+                    estado: cleanString(r[iEstado])
                 };
             }
         });
