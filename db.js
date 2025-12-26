@@ -182,6 +182,3 @@ export const DB = {
     getDebtHistory,
     clear
 };
-
-
-
