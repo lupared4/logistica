@@ -2227,30 +2227,34 @@
 
                 // 📥 Cargar Excel directamente desde carpeta local
                 async loadLocalExcel() {
-                    const fileNames = ['ENVIOS LUCIANO.xlsx', 'ENVIOS LUCIANO.xlsb'];
+                    // Prioridad: .xlsb primero (más actualizado), luego .xlsx
+                    const fileNames = ['ENVIOS LUCIANO.xlsb', 'ENVIOS LUCIANO.xlsx'];
                     this.isLoading = true;
                     this.loadingMsg = 'BUSCANDO ARCHIVO LOCAL...';
                     
                     let response = null;
                     let fileName = null;
                     
-                    // Intentar cargar .xlsx primero, luego .xlsb
+                    // Intentar cargar .xlsb primero, luego .xlsx
                     for (const name of fileNames) {
                         try {
+                            console.log(`[DEBUG] Intentando cargar: ${name}`);
                             const resp = await fetch(name);
+                            console.log(`[DEBUG] Respuesta para ${name}: status=${resp.status}, ok=${resp.ok}`);
                             if (resp.ok) {
                                 response = resp;
                                 fileName = name;
+                                console.log(`[INFO] ✅ Archivo encontrado: ${name}`);
                                 break;
                             }
                         } catch (e) {
-                            console.log(`[INFO] Archivo ${name} no encontrado, probando siguiente...`);
+                            console.log(`[INFO] Archivo ${name} no encontrado, probando siguiente...`, e.message);
                         }
                     }
                     
                     try {
                         if (!response || !response.ok) {
-                            throw new Error(`No se encontró ningún archivo "ENVIOS LUCIANO" (.xlsx o .xlsb) en la carpeta del proyecto.`);
+                            throw new Error(`No se encontró ningún archivo "ENVIOS LUCIANO" (.xlsb o .xlsx) en la carpeta del proyecto.`);
                         }
                         
                         this.loadingMsg = 'LEYENDO EXCEL...';
@@ -2262,6 +2266,7 @@
                         
                         const getSheet = (keys) => { 
                             const name = wb.SheetNames.find(n => keys.some(k => n.toLowerCase().includes(k.toLowerCase()))); 
+                            console.log('[DEBUG] Buscando hoja con keys:', keys, '→ Encontrada:', name || 'NO ENCONTRADA');
                             if (!name) return [];
                             return XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1 });
                         };
