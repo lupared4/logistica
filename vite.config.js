@@ -20,3 +20,4 @@ export default defineConfig({
     include: ['alpinejs', 'chart.js', 'chartjs-plugin-datalabels', 'xlsx']
   }
 });
+
