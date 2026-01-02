@@ -273,7 +273,7 @@
             <div class="p-2 border-b bg-white flex gap-3 items-center shrink-0" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard'">
                 <div class="relative">
                     <span class="absolute left-2 top-1.5 text-slate-400">🔍</span>
-                    <input type="text" x-model="search" placeholder="Buscar SKU, Nombre, Marca, Proveedor..." class="border rounded pl-7 pr-3 py-1.5 text-xs w-64 focus:outline-none focus:border-blue-400 shadow-sm">
+                    <input type="text" x-model="search" @input="clearTimeout(searchTimeout); searchTimeout = setTimeout(() => $nextTick(), 300)" placeholder="Buscar SKU, Nombre, Marca, Proveedor..." class="border rounded pl-7 pr-3 py-1.5 text-xs w-64 focus:outline-none focus:border-blue-400 shadow-sm">
                 </div>
 
                 <button x-show="currentTab === 'inmovilizado'" @click="showLiquidationModal = true" class="bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded border border-red-200 text-xs font-bold transition flex items-center gap-1">
@@ -402,6 +402,16 @@
                     </button>
                 </div>
 
+                <div x-show="kpiFilter === 'stockSinVenta'" class="bg-purple-100 text-purple-900 px-4 py-2 text-xs font-bold border-b border-purple-200 flex justify-between items-center animate-in slide-in-from-top duration-300">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg animate-pulse">📦</span>
+                        <span>FILTRO STOCK SIN VENTA: Mostrando SKUs con días de stock en rangos: <span x-text="stockSinVentaFilters.join(', ')"></span></span>
+                    </div>
+                    <button @click="kpiFilter = null; stockSinVentaFilters = []" class="text-[10px] underline hover:text-purple-950 bg-white px-2 py-1 rounded border border-purple-200 hover:bg-purple-50 transition">
+                        Mostrar Todo
+                    </button>
+                </div>
+
                 <table class="w-full border-collapse">
                     <thead class="bg-slate-800 text-white">
                         <tr>
@@ -523,8 +533,8 @@
                     <h1 class="text-3xl font-bold text-white mb-2">📊 Dashboard Ejecutivo</h1>
                     <p class="text-slate-400 text-sm mb-6">Indicadores clave y acciones recomendadas</p>
 
-                    <!-- KPI WIDGETS (2 grandes) -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <!-- KPI WIDGETS (3 columnas) -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <!-- Críticos -->
                         <div @click="goToCriticos()" 
                              class="bg-gradient-to-br from-red-600 to-red-700 rounded-lg p-6 shadow-lg text-white cursor-pointer hover:scale-[1.02] hover:shadow-2xl transition-all duration-200"
@@ -574,6 +584,80 @@
                                     class="mt-2 text-[10px] bg-orange-500 hover:bg-orange-400 px-3 py-1 rounded font-bold transition-colors">
                                 👆 Ver detalle
                             </button>
+                        </div>
+
+                        <!-- 🆕 STOCK SIN VENTA (por días desde última venta) -->
+                        <div class="bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg p-6 shadow-lg text-white">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <p class="text-purple-100 text-sm font-medium">📦 STOCK SIN VENTA</p>
+                                    <p class="text-3xl font-bold mt-2"><span x-text="getStockSinVentaCount()"></span> <span class="text-lg">SKUs</span></p>
+                                </div>
+                                <div class="bg-purple-500 bg-opacity-30 p-3 rounded-lg">🛑</div>
+                            </div>
+                            <!-- Selector múltiple de rangos de días sin venta -->
+                            <div class="mb-3" @click.stop>
+                                <p class="text-[10px] text-purple-200 mb-2">📅 Seleccionar rangos de días SIN VENTA:</p>
+                                <div class="grid grid-cols-2 gap-1">
+                                    <template x-for="opt in ['20-30', '31-40', '41-50', '>51']" :key="opt">
+                                        <label class="flex items-center gap-1 cursor-pointer bg-purple-500/30 hover:bg-purple-500/50 px-2 py-1 rounded transition-colors" @click.stop>
+                                            <input type="checkbox" 
+                                                   :value="opt" 
+                                                   x-model="stockSinVentaFilters"
+                                                   @click.stop
+                                                   class="w-3.5 h-3.5 rounded border-2 border-purple-300 text-purple-500 focus:ring-purple-400 cursor-pointer">
+                                            <span class="text-[11px] text-white font-medium" x-text="opt + ' días'"></span>
+                                        </label>
+                                    </template>
+                                </div>
+                            </div>
+                            <p class="text-xs text-purple-100">
+                                <span x-text="stockSinVentaFilters.length > 0 ? 'Seleccionados: ' + stockSinVentaFilters.join(', ') + ' días sin venta' : 'Selecciona rangos arriba'"/>
+                            </p>
+                            <button @click="applyStockSinVentaFilter()" 
+                                    :disabled="stockSinVentaFilters.length === 0"
+                                    :class="stockSinVentaFilters.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-purple-400'"
+                                    class="mt-2 text-[10px] bg-purple-500 px-3 py-1 rounded font-bold transition-colors">
+                                👆 Ver detalle
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 🆕 SEGUNDA FILA: KPIs OPERATIVOS -->
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                        <!-- Fill Rate -->
+                        <div class="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg p-4 shadow-lg text-white">
+                            <p class="text-emerald-100 text-xs font-medium">📦 FILL RATE</p>
+                            <p class="text-2xl font-bold mt-1" x-text="(kpiDashboard?.fillRate || 0).toFixed(1) + '%'"></p>
+                            <p class="text-[10px] text-emerald-200 mt-1">SKUs con stock disponible</p>
+                        </div>
+                        <!-- Rotación -->
+                        <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg p-4 shadow-lg text-white">
+                            <p class="text-blue-100 text-xs font-medium">🔄 ROTACIÓN</p>
+                            <p class="text-2xl font-bold mt-1" x-text="(kpiDashboard?.rotacionInv || 0).toFixed(2) + 'x'"></p>
+                            <p class="text-[10px] text-blue-200 mt-1">Veces/mes (venta/stock)</p>
+                        </div>
+                        <!-- Forecast: VTAR vs VPD (cumplimiento objetivo) -->
+                        <div class="bg-gradient-to-br from-cyan-600 to-cyan-700 rounded-lg p-4 shadow-lg text-white">
+                            <p class="text-cyan-100 text-xs font-medium">🎯 CUMPLIMIENTO VPD</p>
+                            <p class="text-2xl font-bold mt-1" x-text="(kpiDashboard?.forecastRatio || 0).toFixed(1) + '%'"></p>
+                            <p class="text-[10px] text-cyan-200 mt-1">
+                                <span x-text="'VTAR: ' + (kpiDashboard?.vtarTotalSum || 0).toFixed(0)"></span> / 
+                                <span x-text="'VPD: ' + (kpiDashboard?.vpdTotalSum || 0).toFixed(0)"></span>
+                            </p>
+                            <p class="text-[9px] text-cyan-300 mt-0.5" x-text="(kpiDashboard?.forecastRatio || 0) >= 100 ? '✅ Objetivo superado' : '⚠️ Por debajo del objetivo'"></p>
+                        </div>
+                        <!-- Venta Perdida -->
+                        <div class="bg-gradient-to-br from-rose-600 to-rose-700 rounded-lg p-4 shadow-lg text-white">
+                            <p class="text-rose-100 text-xs font-medium">💸 VENTA PERDIDA</p>
+                            <p class="text-2xl font-bold mt-1">$<span x-text="Math.round(kpiDashboard?.ventaPerdidaTotal || 0).toLocaleString()"></span></p>
+                            <p class="text-[10px] text-rose-200 mt-1">Por quiebres de stock</p>
+                        </div>
+                        <!-- Deuda ML -->
+                        <div class="bg-gradient-to-br from-amber-600 to-amber-700 rounded-lg p-4 shadow-lg text-white">
+                            <p class="text-amber-100 text-xs font-medium">⚡ DEUDA ML</p>
+                            <p class="text-2xl font-bold mt-1">$<span x-text="Math.round(kpiDashboard?.deudaTotal || 0).toLocaleString()"></span></p>
+                            <p class="text-[10px] text-amber-200 mt-1">Cargos pendientes</p>
                         </div>
                     </div>
 
@@ -765,7 +849,15 @@
                     <!-- 🛒 SHARE DE MERCADO - CONSULTA Y MÉTRICAS -->
                     <div class="mb-8 bg-white rounded-lg p-6 shadow-lg border border-teal-300">
                         <h2 class="text-xl font-bold text-teal-800 mb-4 flex justify-between items-center">
-                            <span>🛒 SHARE DE MERCADO - Noviembre</span>
+                            <div class="flex items-center gap-3">
+                                <span>🛒 SHARE DE MERCADO</span>
+                                <select x-model="shareSelectedMonth" @change="updateShareMetrics()" 
+                                    class="text-sm bg-teal-100 border border-teal-400 rounded px-3 py-1 font-bold text-teal-800 cursor-pointer focus:ring-2 focus:ring-teal-500">
+                                    <template x-for="mes in shareMonths" :key="mes">
+                                        <option :value="mes" x-text="mes" :selected="mes === shareSelectedMonth"></option>
+                                    </template>
+                                </select>
+                            </div>
                             <span class="text-xs bg-teal-50 text-teal-700 px-3 py-1 rounded border border-teal-200">Ventas Propias vs. Mercado Total</span>
                         </h2>
                         
@@ -833,7 +925,7 @@
                                         <div class="text-3xl font-black" 
                                              :style="`color: ${parseFloat(shareSearchResult?.share) >= 50 ? '#16a34a' : (parseFloat(shareSearchResult?.share) >= 20 ? '#f59e0b' : '#dc2626')}`"
                                              x-text="shareSearchResult?.share + '%'"></div>
-                                        <div class="text-xs text-slate-500">SHARE NOVIEMBRE</div>
+                                        <div class="text-xs text-slate-500" x-text="'SHARE ' + shareSelectedMonth"></div>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-3 gap-3 text-center text-xs mb-3">
@@ -843,11 +935,11 @@
                                     </div>
                                     <div class="bg-blue-50 p-2 rounded">
                                         <div class="font-bold text-blue-700" x-text="(shareSearchResult?.vtaNoviembre || 0).toLocaleString()"></div>
-                                        <div class="text-blue-500">Ventas Propias (Nov)</div>
+                                        <div class="text-blue-500" x-text="'Ventas Propias (' + shareSelectedMonth.substring(0,3) + ')'"></div>
                                     </div>
                                     <div class="bg-teal-50 p-2 rounded">
                                         <div class="font-bold text-teal-700" x-text="(shareSearchResult?.qNoviembre || 0).toLocaleString()"></div>
-                                        <div class="text-teal-500">Mercado Total (Nov)</div>
+                                        <div class="text-teal-500" x-text="'Mercado Total (' + shareSelectedMonth.substring(0,3) + ')'"></div>
                                     </div>
                                 </div>
                                 
@@ -2117,15 +2209,19 @@
 
                 selectedIds: [],
                 
-                kpiDashboard: { criticos: 0, dineroViejo: 0, stockTotal: 0, skusActivos: 0 },
+                kpiDashboard: { criticos: 0, dineroViejo: 0, stockTotal: 0, skusActivos: 0, fillRate: 0, rotacionInv: 0, forecastRatio: 0, vtarTotalSum: 0, vpdTotalSum: 0, ventaPerdidaTotal: 0, deudaTotal: 0 },
+                searchTimeout: null, // Debounce para búsqueda
                 stockViejoFilters: [], // Selector múltiple: ['>30', '>45', '>60', '>90', '>120']
+                stockSinVentaFilters: [], // Selector múltiple: ['≤20', '≤30', '≤40', '≤50', '≤60', '>60']
                 sugerencias: [],
                 
                 // 🛒 SHARE de Mercado
                 shareSearchType: 'sku',
                 shareSearchText: '',
                 shareSearchResult: null,
-                shareMetrics: { shareProm: 0, skusLideres: 0, skusDebiles: 0, valorLideres: 0, distribution: {} },
+                shareSelectedMonth: 'NOVIEMBRE', // Mes seleccionado para SHARE
+                shareMonths: ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'],
+                shareMetrics: { shareProm: 0, skusLideres: 0, skusDebiles: 0, valorLideres: 0, distribution: {}, topSkus: [], worstSkus: [], byMarca: [] },
                 
                 // Análisis comparativo Dashboard
                 dashboardAnalysisType: 'sku',
@@ -2203,7 +2299,7 @@
                         if(main && main.length) {
                             const meta = await DB.load('meta');
                             this.fileName = meta?.fileName; this.lastUpdate = meta?.date;
-                            for(let k of ['grafana','pbi','sml','pml','cargos','enviados','vto','canasta']) this.rawData[k] = await DB.load(k);
+                            for(let k of ['grafana','pbi','sml','pml','cargos','enviados','vto','canasta','mla','sta19']) this.rawData[k] = await DB.load(k);
                             this.strategyOverrides = await DB.load('strategyOverrides') || {};
                             this.historyData = await DB.getHistory();
                             this.debtHistory = await DB.getDebtHistory();
@@ -2295,7 +2391,7 @@
                         // Guardar después del procesamiento en segundo plano
                         setTimeout(async () => {
                             try {
-                                for(let k of ['grafana','pbi','sml','pml','cargos','enviados','vto','canasta']) {
+                                for(let k of ['grafana','pbi','sml','pml','cargos','enviados','vto','canasta','mla','sta19']) {
                                     if(this.rawData[k] && this.rawData[k].length > 0) {
                                         // Clonar manualmente para evitar problemas
                                         const cleanData = this.rawData[k].map(row => 
@@ -2480,6 +2576,19 @@
                     this.selectedIds = [];
                     this.kpiFilter = null;
                     // El filtro se aplica en el getter de filteredData
+                    MemoCache.clear();
+                    this.calculateColumnMaxes();
+                },
+
+                // 🎯 Filtrar stock sin venta por rangos de días
+                applyStockSinVentaFilter() {
+                    if(this.stockSinVentaFilters.length === 0) return;
+                    this.currentTab = 'consolidado';
+                    this.currentPage = 1;
+                    this.search = '';
+                    this.activeFilters = {};
+                    this.selectedIds = [];
+                    this.kpiFilter = 'stockSinVenta'; // Filtro especial
                     MemoCache.clear();
                     this.calculateColumnMaxes();
                 },
@@ -3639,13 +3748,44 @@
                             this.sugerencias = sugerencias.slice(0, 20); // Top 20
 
                             // 📊 OPCIÓN 2: DASHBOARD KPI EJECUTIVO
+                            // Calcular métricas adicionales
+                            const skusConStock = this.masterData.filter(m => m.stockGrafana > 0).length;
+                            const skusTotales = this.masterData.length;
+                            const fillRate = skusTotales > 0 ? (skusConStock / skusTotales) * 100 : 0;
+                            
+                            const stockTotal = this.masterData.reduce((a,m) => a + (m.stockGrafana || 0), 0);
+                            const venta30dTotal = this.masterData.reduce((a,m) => a + (m.vta30d || 0), 0);
+                            const rotacionInv = stockTotal > 0 ? venta30dTotal / stockTotal : 0;
+                            
+                            // Forecast: Relación VTAR vs VPD (cumplimiento del objetivo)
+                            // VPD = Venta Proyectada (objetivo/meta), VTAR = Venta histórica real
+                            const vtarTotalSum = this.masterData.reduce((a,m) => a + (m.vtarTotal || 0), 0);
+                            const vpdTotalSum = this.masterData.reduce((a,m) => a + (m.vpdCpra || 0), 0);
+                            
+                            // Forecast = (VTAR / VPD) * 100
+                            // >100% = Se superó el objetivo, <100% = No se alcanzó el objetivo
+                            let forecastRatio = 0;
+                            if(vpdTotalSum > 0) {
+                                forecastRatio = (vtarTotalSum / vpdTotalSum) * 100;
+                            }
+                            
+                            const ventaPerdidaTotal = this.masterData.reduce((a,m) => a + (m.ventaPerdida || 0), 0);
+                            const deudaTotalKpi = this.masterData.reduce((a,m) => a + (m.deuda || 0), 0);
+                            
                             this.kpiDashboard = {
                                 criticos: this.masterData.filter(m => m.diasStock < 5 && m.vtarTotal > medianVtar).length,
                                 dineroViejo: this.masterData
                                     .filter(m => m.diasStock > 45)
                                     .reduce((a,m) => a + ((m.stockGrafana || 0) * (m.costo || 0)), 0),
                                 stockTotal: Math.ceil(this.masterData.reduce((a,m) => a + (m.stockValorizado || 0), 0)),
-                                skusActivos: this.masterData.filter(m => m.stockGrafana > 0 || m.vta30d > 0).length
+                                skusActivos: this.masterData.filter(m => m.stockGrafana > 0 || m.vta30d > 0).length,
+                                fillRate,
+                                rotacionInv,
+                                forecastRatio,
+                                vtarTotalSum,
+                                vpdTotalSum,
+                                ventaPerdidaTotal,
+                                deudaTotal: deudaTotalKpi
                             };
                             console.log('[INFO] KPI Dashboard:', this.kpiDashboard);
                             console.log('[INFO] Sugerencias:', this.sugerencias.length);
@@ -3772,72 +3912,8 @@
                                 }))
                                 .sort((a,b) => b.money - a.money); 
 
-                            // 🛒 MÉTRICAS DE SHARE DE MERCADO
-                            const shareData = this.masterData.filter(m => m.shareNov > 0 && m.qNoviembre > 0);
-                            const totalShareSkus = shareData.length || 1;
-                            const shareProm = shareData.reduce((a, m) => a + (m.shareNov || 0), 0) / totalShareSkus;
-                            const skusLideres = this.masterData.filter(m => m.shareNov >= 50).length;
-                            const skusDebiles = this.masterData.filter(m => m.shareNov > 0 && m.shareNov < 10).length;
-                            const valorLideres = this.masterData.filter(m => m.shareNov >= 50).reduce((a, m) => a + (m.stockGrafana * m.costo), 0);
-                            
-                            // Distribución por rangos
-                            const shareDistribution = { '0-10%': 0, '10-30%': 0, '30-50%': 0, '>50%': 0 };
-                            this.masterData.forEach(m => {
-                                if(m.shareNov > 0) {
-                                    if(m.shareNov < 10) shareDistribution['0-10%']++;
-                                    else if(m.shareNov < 30) shareDistribution['10-30%']++;
-                                    else if(m.shareNov < 50) shareDistribution['30-50%']++;
-                                    else shareDistribution['>50%']++;
-                                }
-                            });
-                            
-                            // Top 10 SKUs por SHARE
-                            const topShareSkus = this.masterData
-                                .filter(m => m.shareNov > 0)
-                                .sort((a, b) => b.shareNov - a.shareNov)
-                                .slice(0, 10)
-                                .map(m => ({ sku: m.sku, desc: m.desc, marca: m.marca, shareNov: m.shareNov, vtaNov: m.vtaNoviembre, qNov: m.qNoviembre }));
-                            
-                            // Peores 10 SKUs por SHARE (oportunidad)
-                            const worstShareSkus = this.masterData
-                                .filter(m => m.shareNov > 0 && m.shareNov < 50)
-                                .sort((a, b) => a.shareNov - b.shareNov)
-                                .slice(0, 10)
-                                .map(m => ({ sku: m.sku, desc: m.desc, marca: m.marca, shareNov: m.shareNov, vtaNov: m.vtaNoviembre, qNov: m.qNoviembre }));
-                            
-                            // SHARE por marca
-                            const shareByMarca = {};
-                            this.masterData.forEach(m => {
-                                if(m.shareNov > 0) {
-                                    const marca = m.marca || 'S/D';
-                                    if(!shareByMarca[marca]) shareByMarca[marca] = { count: 0, totalShare: 0, vtaNov: 0, qNov: 0 };
-                                    shareByMarca[marca].count++;
-                                    shareByMarca[marca].totalShare += m.shareNov;
-                                    shareByMarca[marca].vtaNov += (m.vtaNoviembre || 0);
-                                    shareByMarca[marca].qNov += (m.qNoviembre || 0);
-                                }
-                            });
-                            const shareByMarcaArr = Object.entries(shareByMarca)
-                                .map(([marca, data]) => ({
-                                    marca,
-                                    skus: data.count,
-                                    shareProm: data.count > 0 ? (data.totalShare / data.count).toFixed(1) : 0,
-                                    shareTotal: data.qNov > 0 ? ((data.vtaNov / data.qNov) * 100).toFixed(1) : 0
-                                }))
-                                .sort((a, b) => parseFloat(b.shareTotal) - parseFloat(a.shareTotal))
-                                .slice(0, 15);
-                            
-                            this.shareMetrics = {
-                                shareProm: shareProm.toFixed(1),
-                                skusLideres,
-                                skusDebiles,
-                                valorLideres,
-                                distribution: shareDistribution,
-                                topSkus: topShareSkus,
-                                worstSkus: worstShareSkus,
-                                byMarca: shareByMarcaArr
-                            };
-                            console.log('[INFO] SHARE Metrics:', this.shareMetrics); 
+                            // 🛒 MÉTRICAS DE SHARE DE MERCADO - Calcular dinámicamente según mes seleccionado
+                            this.updateShareMetrics();
 
                             this.updateKPIs();
                             this.calculateColumnMaxes();
@@ -4162,6 +4238,21 @@
                         const vtars = this.masterData.map(m => m.vtarTotal || 0).sort((a,b) => a-b);
                         const medianVtar = vtars[Math.floor(vtars.length/2)] || 5;
                         d = d.filter(i => i.diasStock < 5 && i.vtarTotal > medianVtar);
+                    }
+                    
+                    // 📦 Filtro KPI Stock Sin Venta (por días desde última venta)
+                    if (this.kpiFilter === 'stockSinVenta' && this.stockSinVentaFilters.length > 0) {
+                        d = d.filter(i => {
+                            if (!(i.stockGrafana > 0 && i.vtarTotal === 0 && this.getDiasSinVenta(i) > 0)) return false;
+                            const dias = this.getDiasSinVenta(i);
+                            return this.stockSinVentaFilters.some(f => {
+                                if(f === '20-30') return dias >= 20 && dias <= 30;
+                                if(f === '31-40') return dias >= 31 && dias <= 40;
+                                if(f === '41-50') return dias >= 41 && dias <= 50;
+                                if(f === '>51') return dias > 51;
+                                return false;
+                            });
+                        });
                     }
 
                     if(this.activeFilters['abc_xyz']) {
@@ -4571,6 +4662,138 @@
                     }
                 },
 
+                // 🛒 ACTUALIZAR MÉTRICAS DE SHARE SEGÚN MES SELECCIONADO
+                updateShareMetrics() {
+                    try {
+                        const mes = this.shareSelectedMonth || 'NOVIEMBRE';
+                        const qKey = 'q' + mes.charAt(0) + mes.slice(1).toLowerCase(); // qNoviembre, qOctubre, etc.
+                        
+                        console.log('[SHARE] Actualizando métricas para:', mes, '| Key:', qKey);
+                        
+                        // Calcular días del mes para extraer ventas de histDaily
+                        const hoy = new Date();
+                        const mesActual = hoy.getMonth(); // 0=Enero, 11=Diciembre
+                        const diaDelMes = hoy.getDate();
+                        const añoActual = hoy.getFullYear();
+                        
+                        const mesesNombres = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+                        const mesIdx = mesesNombres.indexOf(mes); // 0-11
+                        
+                        // Calcular rango de días en histDaily para el mes seleccionado
+                        let diasDesde = 0, diasHasta = 0;
+                        
+                        if(mesIdx === mesActual) {
+                            // Mes actual: desde día 1 hasta ayer
+                            diasHasta = 1;
+                            diasDesde = diaDelMes - 1;
+                        } else if(mesIdx === mesActual - 1 || (mesActual === 0 && mesIdx === 11)) {
+                            // Mes anterior
+                            const diasMesAnterior = new Date(añoActual, mesActual, 0).getDate(); // Último día del mes anterior
+                            diasHasta = diaDelMes;
+                            diasDesde = diaDelMes + diasMesAnterior - 1;
+                        } else if(mesIdx === mesActual - 2 || (mesActual === 0 && mesIdx === 10) || (mesActual === 1 && mesIdx === 11)) {
+                            // Hace 2 meses (límite de histDaily ~60 días)
+                            const diasMes1 = new Date(añoActual, mesActual, 0).getDate();
+                            const diasMes2 = new Date(añoActual, mesActual - 1, 0).getDate();
+                            diasHasta = diaDelMes + diasMes1;
+                            diasDesde = diaDelMes + diasMes1 + diasMes2 - 1;
+                        } else {
+                            // Meses más antiguos: no hay datos en histDaily, usar 0
+                            diasDesde = 0;
+                            diasHasta = 0;
+                        }
+                        
+                        console.log('[SHARE] Rango histDaily para', mes, ': días -' + diasHasta, 'a -' + diasDesde);
+                        
+                        // Calcular ventas y SHARE para cada SKU
+                        this.masterData.forEach(item => {
+                            let vtaMes = 0;
+                            if(item.histDaily && diasDesde > 0) {
+                                for(let d = diasHasta - 1; d < diasDesde && d < item.histDaily.length; d++) {
+                                    vtaMes += (item.histDaily[d] || 0);
+                                }
+                            }
+                            item._vtaMesActual = vtaMes;
+                            item._qMesActual = item[qKey] || 0;
+                            item._shareMesActual = item._qMesActual > 0 ? (vtaMes / item._qMesActual) * 100 : 0;
+                        });
+                        
+                        // Calcular métricas agregadas
+                        const shareData = this.masterData.filter(m => m._shareMesActual > 0 && m._qMesActual > 0);
+                        const totalShareSkus = shareData.length || 1;
+                        const shareProm = shareData.reduce((a, m) => a + m._shareMesActual, 0) / totalShareSkus;
+                        const skusLideres = this.masterData.filter(m => m._shareMesActual >= 50).length;
+                        const skusDebiles = this.masterData.filter(m => m._shareMesActual > 0 && m._shareMesActual < 10).length;
+                        const valorLideres = this.masterData.filter(m => m._shareMesActual >= 50).reduce((a, m) => a + ((m.stockGrafana || 0) * (m.costo || 0)), 0);
+                        
+                        // Distribución
+                        const shareDistribution = { '0-10%': 0, '10-30%': 0, '30-50%': 0, '>50%': 0 };
+                        this.masterData.forEach(m => {
+                            if(m._shareMesActual > 0) {
+                                if(m._shareMesActual < 10) shareDistribution['0-10%']++;
+                                else if(m._shareMesActual < 30) shareDistribution['10-30%']++;
+                                else if(m._shareMesActual < 50) shareDistribution['30-50%']++;
+                                else shareDistribution['>50%']++;
+                            }
+                        });
+                        
+                        // Top 10
+                        const topSkus = this.masterData
+                            .filter(m => m._shareMesActual > 0)
+                            .sort((a, b) => b._shareMesActual - a._shareMesActual)
+                            .slice(0, 10)
+                            .map(m => ({ sku: m.sku, desc: m.desc, marca: m.marca, shareNov: m._shareMesActual, vtaNov: m._vtaMesActual, qNov: m._qMesActual }));
+                        
+                        // Peores 10
+                        const worstSkus = this.masterData
+                            .filter(m => m._shareMesActual > 0 && m._shareMesActual < 50)
+                            .sort((a, b) => a._shareMesActual - b._shareMesActual)
+                            .slice(0, 10)
+                            .map(m => ({ sku: m.sku, desc: m.desc, marca: m.marca, shareNov: m._shareMesActual, vtaNov: m._vtaMesActual, qNov: m._qMesActual }));
+                        
+                        // Por marca
+                        const shareByMarca = {};
+                        this.masterData.forEach(m => {
+                            if(m._shareMesActual > 0) {
+                                const marca = m.marca || 'S/D';
+                                if(!shareByMarca[marca]) shareByMarca[marca] = { count: 0, totalShare: 0, vtaMes: 0, qMes: 0 };
+                                shareByMarca[marca].count++;
+                                shareByMarca[marca].totalShare += m._shareMesActual;
+                                shareByMarca[marca].vtaMes += m._vtaMesActual;
+                                shareByMarca[marca].qMes += m._qMesActual;
+                            }
+                        });
+                        const byMarca = Object.entries(shareByMarca)
+                            .map(([marca, data]) => ({
+                                marca,
+                                skus: data.count,
+                                shareProm: data.count > 0 ? (data.totalShare / data.count).toFixed(1) : 0,
+                                shareTotal: data.qMes > 0 ? ((data.vtaMes / data.qMes) * 100).toFixed(1) : 0
+                            }))
+                            .sort((a, b) => parseFloat(b.shareTotal) - parseFloat(a.shareTotal))
+                            .slice(0, 15);
+                        
+                        this.shareMetrics = {
+                            shareProm: shareProm.toFixed(1),
+                            skusLideres,
+                            skusDebiles,
+                            valorLideres,
+                            distribution: shareDistribution,
+                            topSkus,
+                            worstSkus,
+                            byMarca,
+                            mes: mes
+                        };
+                        
+                        // Limpiar resultado de búsqueda anterior
+                        this.shareSearchResult = null;
+                        
+                        console.log('[SHARE] Métricas actualizadas:', this.shareMetrics);
+                    } catch(e) {
+                        console.error('[SHARE] Error actualizando métricas:', e);
+                    }
+                },
+
                 // 🛒 BÚSQUEDA DE SHARE DE MERCADO
                 searchShare() {
                     try {
@@ -4581,16 +4804,14 @@
                         }
                         
                         const type = this.shareSearchType;
+                        const mes = this.shareSelectedMonth || 'NOVIEMBRE';
                         let items = [];
                         
                         if(type === 'sku') {
-                            // Buscar SKU específico
                             items = this.masterData.filter(m => m.sku && String(m.sku).toUpperCase().includes(query));
                         } else if(type === 'marca') {
-                            // Agregar todos los SKUs de esa marca
                             items = this.masterData.filter(m => m.marca && String(m.marca).toUpperCase().includes(query));
                         } else if(type === 'proveedor') {
-                            // Agregar todos los SKUs de ese proveedor
                             items = this.masterData.filter(m => m.prov && String(m.prov).toUpperCase().includes(query));
                         }
                         
@@ -4599,29 +4820,29 @@
                             return;
                         }
                         
-                        // Calcular totales
-                        const vtaNovTotal = items.reduce((a, m) => a + (m.vtaNoviembre || 0), 0);
-                        const qNovTotal = items.reduce((a, m) => a + (m.qNoviembre || 0), 0);
-                        const shareTotal = qNovTotal > 0 ? (vtaNovTotal / qNovTotal) * 100 : 0;
+                        // Usar datos del mes seleccionado (calculados en updateShareMetrics)
+                        const vtaMesTotal = items.reduce((a, m) => a + (m._vtaMesActual || 0), 0);
+                        const qMesTotal = items.reduce((a, m) => a + (m._qMesActual || 0), 0);
+                        const shareTotal = qMesTotal > 0 ? (vtaMesTotal / qMesTotal) * 100 : 0;
                         
-                        // Resultado
                         this.shareSearchResult = {
                             type: type,
                             query: query,
+                            mes: mes,
                             skusCount: items.length,
-                            vtaNoviembre: vtaNovTotal,
-                            qNoviembre: qNovTotal,
+                            vtaNoviembre: vtaMesTotal,
+                            qNoviembre: qMesTotal,
                             share: shareTotal.toFixed(2),
                             items: items.slice(0, 10).map(m => ({
                                 sku: m.sku,
                                 desc: m.desc,
-                                vtaNov: m.vtaNoviembre || 0,
-                                qNov: m.qNoviembre || 0,
-                                share: m.shareNov?.toFixed(1) || '0'
+                                vtaNov: m._vtaMesActual || 0,
+                                qNov: m._qMesActual || 0,
+                                share: m._shareMesActual?.toFixed(1) || '0'
                             }))
                         };
                         
-                        console.log('[SHARE] Resultado:', this.shareSearchResult);
+                        console.log('[SHARE] Resultado búsqueda:', this.shareSearchResult);
                     } catch(e) {
                         console.error('[SHARE] Error en searchShare:', e);
                         this.shareSearchResult = { error: true, message: 'Error: ' + e.message };
@@ -5165,6 +5386,37 @@
                    return this.masterData.filter(item => item.diasStock > minDays);
                },
 
+               // 📦 Obtener cantidad de SKUs con stock sin venta (según filtros seleccionados)
+               getStockSinVentaCount() {
+                   if(!this.masterData || this.masterData.length === 0) return 0;
+                   if(this.stockSinVentaFilters.length === 0) {
+                       // Por defecto mostrar todos los SKUs con stock > 0 y vtarTotal === 0
+                       return this.masterData.filter(i => i.stockGrafana > 0 && i.vtarTotal === 0 && this.getDiasSinVenta(i) > 0).length;
+                   }
+                   return this.masterData.filter(i => {
+                       if (!(i.stockGrafana > 0 && i.vtarTotal === 0 && this.getDiasSinVenta(i) > 0)) return false;
+                       const dias = this.getDiasSinVenta(i);
+                       return this.stockSinVentaFilters.some(f => {
+                           if(f === '20-30') return dias >= 20 && dias <= 30;
+                           if(f === '31-40') return dias >= 31 && dias <= 40;
+                           if(f === '41-50') return dias >= 41 && dias <= 50;
+                           if(f === '>51') return dias > 51;
+                           return false;
+                       });
+                   }).length;
+               },
+
+               // Calcula días desde la última venta para un SKU
+               getDiasSinVenta(item) {
+                   if (!item.histDaily || !Array.isArray(item.histDaily) || item.histDaily.length === 0) return 0;
+                   for (let i = 0; i < item.histDaily.length; i++) {
+                       if (item.histDaily[item.histDaily.length - 1 - i] > 0) {
+                           return i;
+                       }
+                   }
+                   return item.histDaily.length; // Nunca vendió en el período
+               },
+
                openModal(r) {
                    const m = this.masterData.find(x => x.sku === r.sku);
                    this.selectedRow = m ? {...m, dep: r.dep} : r;
@@ -5358,4 +5610,6 @@
    </script>
 </body>
 </html>
+
+
 
