@@ -7,7 +7,7 @@
 
 ### Estructura de código
 ```
-index.html              → Monolito principal (~5241 líneas) con inventoryApp() en L2079
+index.html              → Monolito principal con inventoryApp() en L2139
 src/
 ├── data-processor.js   → Transformación Excel (generateSnapshot, buildLookups, validateSheet)
 ├── utils.js            → formatMoney, parseNumber, logger, cleanString, findColumnIndex, MemoCache
@@ -16,7 +16,7 @@ tests/
 └── utils.test.js       → Tests unitarios con Vitest
 ```
 
-> ⚠️ **CRÍTICO:** La lógica de negocio vive en `index.html` dentro de `inventoryApp()` (línea 2079). NO existe `src/app.js` - todo el estado reactivo Alpine.js está en el HTML principal.
+> ⚠️ **CRÍTICO:** La lógica de negocio vive en `index.html` dentro de `inventoryApp()` (línea 2139). NO existe `src/app.js` - todo el estado reactivo Alpine.js está en el HTML principal.
 
 ## Flujo de datos
 
@@ -30,8 +30,8 @@ Excel(.xlsx) → SheetJS → data-processor.js (validación + consolidación por
 
 | Función | Ubicación | Propósito |
 |---------|-----------|-----------|
-| `calculateRowLogic(item)` | index.html:~L3780 | Cálculo compra/stock (UXB, SS, stockMin/Max, seasonalMult, ventaPerdida) |
-| `getColumns()` | index.html:~L4756 | Define columnas visibles por tab |
+| `calculateRowLogic(item)` | index.html:L3933 | Cálculo compra/stock (UXB, SS, stockMin/Max, seasonalMult, ventaPerdida) |
+| `getColumns()` | index.html:L4934 | Define columnas visibles por tab |
 | `generateSnapshot()` | data-processor.js | Genera snapshots de VTAR por SKU para historial |
 | `buildLookups()` | data-processor.js | Mapea hojas auxiliares a objetos lookup |
 | `validateSheet()` | data-processor.js | Valida columnas requeridas en hojas Excel |
@@ -92,8 +92,8 @@ npm run test:ui    # Interfaz visual de tests
 
 | Tarea | Archivo | Buscar |
 |-------|---------|--------|
-| Agregar columna tabla | index.html | `getColumns()` (~L4756) |
-| Cambiar cálculo compra/stock | index.html | `calculateRowLogic()` (~L3780) |
+| Agregar columna tabla | index.html | `getColumns()` (L4934) |
+| Cambiar cálculo compra/stock | index.html | `calculateRowLogic()` (L3933) |
 | Estilos condicionales celda | index.html | `getCellClass(c,r)` |
 | Nueva hoja Excel | data-processor.js | `buildLookups()` |
 | Nueva utilidad | src/utils.js | Exportar + test en tests/utils.test.js |
@@ -151,7 +151,7 @@ if(this.currentTab==='consolidado') return [
 - **Datos no actualizan:** verificar que `masterData` se actualice y llamar `calculateRowLogic()` después de cambios
 - **Tests fallan:** verificar extensiones `.js` en imports y que Vitest esté corriendo
 - **IndexedDB corrupta:** F12 → Application → IndexedDB → eliminar `InvProV93`
-- **Columna no aparece:** revisar que esté en `getColumns()` para el tab correcto (L4756+)
+- **Columna no aparece:** revisar que esté en `getColumns()` para el tab correcto (L4934+)
 
 ## Vendor chunks (Vite)
 
@@ -176,5 +176,4 @@ const baseVenta = this.calcMethod === 'vpd' && item.vpdCpra > 0
     ? item.vpdCpra       // Proyectado IA
     : item.vtarTotal;    // Histórico (default)
 ```
-- **IndexedDB corrupta:** F12 → Application → IndexedDB → eliminar `InvProV93`
-- **Columna no aparece:** revisar que esté en `getColumns()` para el tab correcto
+
