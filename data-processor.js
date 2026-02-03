@@ -426,5 +426,3 @@ export function classifyABCAndHealth(items) {
 
     return { matrix, matrixCounts };
 }
-
-
