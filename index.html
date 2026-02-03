@@ -145,7 +145,49 @@
 
 <body class="h-screen flex flex-col overflow-hidden" x-data="inventoryApp()" x-init="initApp()" x-cloak>
 
-    <header class="bg-white border-b px-4 py-2 flex justify-between items-center shadow-sm shrink-0 z-30" :style="`background-color: var(--header-bg); border-color: var(--border-color);`">
+    <!-- 🔐 PANTALLA DE LOGIN -->
+    <div x-show="!isAuthenticated" class="fixed inset-0 z-[100] bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-96 max-w-[90vw]">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="text-3xl">📦</span>
+                </div>
+                <h1 class="text-2xl font-black text-slate-800">STOCKS LOGISTICA</h1>
+                <p class="text-sm text-slate-500 mt-1">Dashboard de Inventario</p>
+            </div>
+            
+            <form @submit.prevent="handleLogin()" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">👤 Usuario</label>
+                    <input type="text" x-model="loginUser" 
+                        class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors"
+                        placeholder="Ingrese su usuario" autocomplete="username">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">🔒 Contraseña</label>
+                    <input type="password" x-model="loginPass" 
+                        class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors"
+                        placeholder="Ingrese su contraseña" autocomplete="current-password">
+                </div>
+                
+                <div x-show="loginError" class="bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-lg flex items-center gap-2">
+                    <span>⚠️</span>
+                    <span x-text="loginError"></span>
+                </div>
+                
+                <button type="submit" 
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <span>Ingresar</span>
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center text-xs text-slate-400">
+                © 2026 - Sistema de Gestión de Inventario
+            </div>
+        </div>
+    </div>
+
+    <header x-show="isAuthenticated" class="bg-white border-b px-4 py-2 flex justify-between items-center shadow-sm shrink-0 z-30" :style="`background-color: var(--header-bg); border-color: var(--border-color);`">
         <div class="flex items-center gap-3">
             <div class="bg-indigo-700 text-white font-bold px-2 py-1 rounded text-xs shadow">STOCKS LOGISTICA</div>
             <div>
@@ -161,6 +203,9 @@
             <button @click="toggleTheme()" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition text-lg" title="Alternar tema oscuro/claro">
                 <span x-show="!darkMode">🌙</span>
                 <span x-show="darkMode">☀️</span>
+            </button>
+            <button @click="handleLogout()" class="p-1.5 hover:bg-red-100 text-red-500 rounded transition text-sm" title="Cerrar sesión">
+                🚪
             </button>
         </div>
 
@@ -236,7 +281,7 @@
         </div>
     </header>
 
-    <main class="flex-1 flex flex-col p-4 overflow-hidden bg-slate-100 relative">
+    <main x-show="isAuthenticated" class="flex-1 flex flex-col p-4 overflow-hidden bg-slate-100 relative">
 
         <div x-show="isLoading" class="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
             <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
@@ -261,7 +306,7 @@
                 </template>
             </div>
 
-            <div class="bg-indigo-50 border-b px-4 py-2 flex justify-between items-center text-xs sticky top-0 z-20" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard'">
+            <div class="bg-indigo-50 border-b px-4 py-2 flex justify-between items-center text-xs sticky top-0 z-20" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard' && currentTab !== 'simplex'">
                 <div class="font-bold text-indigo-800 uppercase tracking-wide flex items-center gap-2">
                     <span class="text-lg">📍</span> <span x-text="getHeaderTitle()"></span>
                 </div>
@@ -270,7 +315,7 @@
                 </div>
             </div>
 
-            <div class="p-2 border-b bg-white flex gap-3 items-center shrink-0" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard'">
+            <div class="p-2 border-b bg-white flex gap-3 items-center shrink-0" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard' && currentTab !== 'simplex'">
                 <div class="relative">
                     <span class="absolute left-2 top-1.5 text-slate-400">🔍</span>
                     <input type="text" x-model="search" @input="clearTimeout(searchTimeout); searchTimeout = setTimeout(() => $nextTick(), 300)" placeholder="Buscar SKU, Nombre, Marca, Proveedor..." class="border rounded pl-7 pr-3 py-1.5 text-xs w-64 focus:outline-none focus:border-blue-400 shadow-sm">
@@ -311,15 +356,35 @@
                     </div>
                 </div>
 
-                <div x-show="currentTab === 'vencimientos'" class="flex items-center gap-2 bg-orange-50 px-2 py-1 rounded border border-orange-100">
+                <div x-show="currentTab === 'vencimientos'" class="flex items-center gap-2 bg-orange-50 px-2 py-1 rounded border border-orange-100 flex-wrap">
                     <label class="text-[10px] font-bold text-orange-700 uppercase">Vencimiento:</label>
-                    <select x-model="filterLotesRange" class="text-xs border rounded p-1 text-orange-800 focus:outline-none">
-                        <option value="all">Todos</option>
-                        <option value="0-30">🔴 Crítico (0-30 días)</option>
-                        <option value="31-60">🟠 Riesgo (31-60 días)</option>
-                        <option value="61-90">🟡 Alerta (61-90 días)</option>
-                        <option value="90+">🟢 Seguro (+90 días)</option>
-                    </select>
+                    <div class="flex gap-2 flex-wrap">
+                        <label class="flex items-center gap-1 cursor-pointer hover:bg-orange-100 px-1.5 py-0.5 rounded transition-colors">
+                            <input type="checkbox" value="0-30" x-model="filterLotesRanges" class="rounded border-red-400 text-red-600 focus:ring-0 w-3 h-3">
+                            <span class="text-[10px] text-red-700 font-medium">🔴 Crítico (0-30d)</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer hover:bg-orange-100 px-1.5 py-0.5 rounded transition-colors">
+                            <input type="checkbox" value="31-60" x-model="filterLotesRanges" class="rounded border-orange-400 text-orange-600 focus:ring-0 w-3 h-3">
+                            <span class="text-[10px] text-orange-700 font-medium">🟠 Riesgo (31-60d)</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer hover:bg-orange-100 px-1.5 py-0.5 rounded transition-colors">
+                            <input type="checkbox" value="61-90" x-model="filterLotesRanges" class="rounded border-yellow-400 text-yellow-600 focus:ring-0 w-3 h-3">
+                            <span class="text-[10px] text-yellow-700 font-medium">🟡 Alerta (61-90d)</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer hover:bg-orange-100 px-1.5 py-0.5 rounded transition-colors">
+                            <input type="checkbox" value="91-120" x-model="filterLotesRanges" class="rounded border-lime-400 text-lime-600 focus:ring-0 w-3 h-3">
+                            <span class="text-[10px] text-lime-700 font-medium">🟢 Moderado (91-120d)</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer hover:bg-orange-100 px-1.5 py-0.5 rounded transition-colors">
+                            <input type="checkbox" value="121-150" x-model="filterLotesRanges" class="rounded border-green-400 text-green-600 focus:ring-0 w-3 h-3">
+                            <span class="text-[10px] text-green-700 font-medium">🟢 Seguro (121-150d)</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer hover:bg-orange-100 px-1.5 py-0.5 rounded transition-colors">
+                            <input type="checkbox" value="150+" x-model="filterLotesRanges" class="rounded border-emerald-400 text-emerald-600 focus:ring-0 w-3 h-3">
+                            <span class="text-[10px] text-emerald-700 font-medium">🟢 Óptimo (+150d)</span>
+                        </label>
+                    </div>
+                    <button @click="filterLotesRanges = []" x-show="filterLotesRanges.length > 0" class="text-[10px] text-red-600 hover:text-red-800 ml-2 underline">Limpiar</button>
                 </div>
 
                 <div x-show="currentTab === 'otros_depositos'" class="flex items-center gap-2 bg-purple-50 px-2 py-1 rounded border border-purple-100">
@@ -331,6 +396,19 @@
                                 <span x-text="d" class="text-xs text-purple-800 font-bold"></span>
                             </label>
                         </template>
+                    </div>
+                </div>
+
+                <!-- 📊 BOTÓN REPORTE CARGOS ML -->
+                <div x-show="currentTab === 'cargos'" class="flex items-center gap-2 bg-amber-50 px-3 py-2 rounded border border-amber-200">
+                    <button @click="generateCargosReport()" 
+                        class="bg-gradient-to-r from-amber-600 to-amber-700 text-white px-4 py-2 rounded-lg font-bold text-xs hover:from-amber-700 hover:to-amber-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2">
+                        <span>📊</span>
+                        <span>Generar Reporte Completo de Cargos ML</span>
+                    </button>
+                    <div class="text-[10px] text-amber-700 font-medium">
+                        <div>✓ Informe por Analista y Fecha</div>
+                        <div>✓ Detalle de SKUs con Cargos</div>
                     </div>
                 </div>
 
@@ -353,7 +431,7 @@
                 </div>
             </div>
 
-            <div class="flex-1 overflow-auto table-container relative bg-white" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard'">
+            <div class="flex-1 overflow-auto table-container relative bg-white" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard' && currentTab !== 'simplex'">
                 <div x-show="filterOpportunityCost" class="bg-red-50 text-red-800 px-4 py-2 text-xs font-bold border-b border-red-100 flex justify-between items-center animate-in slide-in-from-top duration-300">
                     <div class="flex items-center gap-2">
                         <span class="text-lg animate-pulse">🔥</span>
@@ -384,8 +462,8 @@
 
                 <div x-show="filterArbitrage" class="bg-purple-50 text-purple-800 px-4 py-2 text-xs font-bold border-b border-purple-100 flex justify-between items-center animate-in slide-in-from-top duration-300">
                     <div class="flex items-center gap-2">
-                        <span class="text-lg animate-pulse">🔄</span>
-                        <span>OPORTUNIDAD ARBITRAJE: Mostrando SKUs para enviar urgente (Hay en Central -> Falta en Full).</span>
+                        <span class="text-lg animate-pulse">�</span>
+                        <span>ENVIAR A FULL: Mostrando SKUs para enviar urgente (Hay en Central -> Falta en Full).</span>
                     </div>
                     <button @click="filterArbitrage = false" class="text-[10px] underline hover:text-purple-950 bg-white px-2 py-1 rounded border border-purple-100 hover:bg-purple-50 transition">
                         Mostrar Todo
@@ -624,19 +702,7 @@
                     </div>
 
                     <!-- 🆕 SEGUNDA FILA: KPIs OPERATIVOS -->
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-                        <!-- Fill Rate -->
-                        <div class="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg p-4 shadow-lg text-white">
-                            <p class="text-emerald-100 text-xs font-medium">📦 FILL RATE</p>
-                            <p class="text-2xl font-bold mt-1" x-text="(kpiDashboard?.fillRate || 0).toFixed(1) + '%'"></p>
-                            <p class="text-[10px] text-emerald-200 mt-1">SKUs con stock disponible</p>
-                        </div>
-                        <!-- Rotación -->
-                        <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg p-4 shadow-lg text-white">
-                            <p class="text-blue-100 text-xs font-medium">🔄 ROTACIÓN</p>
-                            <p class="text-2xl font-bold mt-1" x-text="(kpiDashboard?.rotacionInv || 0).toFixed(2) + 'x'"></p>
-                            <p class="text-[10px] text-blue-200 mt-1">Veces/mes (venta/stock)</p>
-                        </div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
                         <!-- Forecast: VTAR vs VPD (cumplimiento objetivo) -->
                         <div class="bg-gradient-to-br from-cyan-600 to-cyan-700 rounded-lg p-4 shadow-lg text-white">
                             <p class="text-cyan-100 text-xs font-medium">🎯 CUMPLIMIENTO VPD</p>
@@ -653,9 +719,9 @@
                             <p class="text-2xl font-bold mt-1">$<span x-text="Math.round(kpiDashboard?.ventaPerdidaTotal || 0).toLocaleString()"></span></p>
                             <p class="text-[10px] text-rose-200 mt-1">Por quiebres de stock</p>
                         </div>
-                        <!-- Deuda ML -->
+                        <!-- Cargos ML -->
                         <div class="bg-gradient-to-br from-amber-600 to-amber-700 rounded-lg p-4 shadow-lg text-white">
-                            <p class="text-amber-100 text-xs font-medium">⚡ DEUDA ML</p>
+                            <p class="text-amber-100 text-xs font-medium">⚡ CARGOS ML</p>
                             <p class="text-2xl font-bold mt-1">$<span x-text="Math.round(kpiDashboard?.deudaTotal || 0).toLocaleString()"></span></p>
                             <p class="text-[10px] text-amber-200 mt-1">Cargos pendientes</p>
                         </div>
@@ -845,196 +911,6 @@
                             <p>👆 Busca y selecciona 1-5 items para ver la gráfica de comparación</p>
                         </div>
                     </div>
-                    
-                    <!-- 🛒 SHARE DE MERCADO - CONSULTA Y MÉTRICAS -->
-                    <div class="mb-8 bg-white rounded-lg p-6 shadow-lg border border-teal-300">
-                        <h2 class="text-xl font-bold text-teal-800 mb-4 flex justify-between items-center">
-                            <div class="flex items-center gap-3">
-                                <span>🛒 SHARE DE MERCADO</span>
-                                <select x-model="shareSelectedMonth" @change="updateShareMetrics()" 
-                                    class="text-sm bg-teal-100 border border-teal-400 rounded px-3 py-1 font-bold text-teal-800 cursor-pointer focus:ring-2 focus:ring-teal-500">
-                                    <template x-for="mes in shareMonths" :key="mes">
-                                        <option :value="mes" x-text="mes" :selected="mes === shareSelectedMonth"></option>
-                                    </template>
-                                </select>
-                            </div>
-                            <span class="text-xs bg-teal-50 text-teal-700 px-3 py-1 rounded border border-teal-200">Ventas Propias vs. Mercado Total</span>
-                        </h2>
-                        
-                        <!-- KPI Cards de SHARE -->
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                            <div class="bg-teal-50 border-l-4 border-teal-500 p-3 rounded">
-                                <div class="text-xs text-teal-600 font-medium">📊 SHARE Promedio</div>
-                                <div class="text-2xl font-bold text-teal-700" x-text="(shareMetrics?.shareProm || 0) + '%'"></div>
-                            </div>
-                            <div class="bg-green-50 border-l-4 border-green-500 p-3 rounded">
-                                <div class="text-xs text-green-600 font-medium">🏆 SKUs Líderes (>50%)</div>
-                                <div class="text-2xl font-bold text-green-700" x-text="shareMetrics?.skusLideres || 0"></div>
-                            </div>
-                            <div class="bg-orange-50 border-l-4 border-orange-500 p-3 rounded">
-                                <div class="text-xs text-orange-600 font-medium">⚠️ SKUs Débiles (&lt;10%)</div>
-                                <div class="text-2xl font-bold text-orange-700" x-text="shareMetrics?.skusDebiles || 0"></div>
-                            </div>
-                            <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded">
-                                <div class="text-xs text-blue-600 font-medium">💰 Valor SKUs Líderes</div>
-                                <div class="text-lg font-bold text-blue-700" x-text="formatMoney(shareMetrics?.valorLideres || 0)"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Buscador de SHARE -->
-                        <div class="bg-teal-50 p-4 rounded-lg border border-teal-200 mb-4">
-                            <h4 class="text-sm font-bold text-teal-800 mb-3">🔍 Consultar SHARE por SKU / MARCA / PROVEEDOR</h4>
-                            <div class="flex flex-wrap gap-2 mb-3">
-                                <label class="flex items-center gap-1 text-sm text-teal-700 cursor-pointer">
-                                    <input type="radio" x-model="shareSearchType" value="sku" class="w-4 h-4">
-                                    <span>SKU</span>
-                                </label>
-                                <label class="flex items-center gap-1 text-sm text-teal-700 cursor-pointer">
-                                    <input type="radio" x-model="shareSearchType" value="marca" class="w-4 h-4">
-                                    <span>Marca</span>
-                                </label>
-                                <label class="flex items-center gap-1 text-sm text-teal-700 cursor-pointer">
-                                    <input type="radio" x-model="shareSearchType" value="proveedor" class="w-4 h-4">
-                                    <span>Proveedor</span>
-                                </label>
-                            </div>
-                            <div class="flex gap-2">
-                                <input type="text" 
-                                    x-model="shareSearchText"
-                                    @keydown.enter="searchShare()"
-                                    placeholder="Ingrese SKU, Marca o Proveedor..."
-                                    class="flex-1 bg-white text-slate-800 p-2 rounded border border-teal-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-                                <button @click="searchShare()" 
-                                    class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded font-bold text-sm transition-colors">
-                                    🔍 Buscar
-                                </button>
-                                <button @click="shareSearchText=''; shareSearchResult=null" 
-                                    class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded text-sm">
-                                    ✕
-                                </button>
-                            </div>
-                            
-                            <!-- Resultado de búsqueda -->
-                            <div x-show="shareSearchResult && !shareSearchResult.error" class="mt-4 bg-white p-4 rounded-lg border border-teal-300">
-                                <div class="flex justify-between items-start mb-3">
-                                    <div>
-                                        <div class="text-xs text-slate-500 uppercase" x-text="shareSearchResult?.type"></div>
-                                        <div class="text-lg font-bold text-teal-800" x-text="shareSearchResult?.query"></div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="text-3xl font-black" 
-                                             :style="`color: ${parseFloat(shareSearchResult?.share) >= 50 ? '#16a34a' : (parseFloat(shareSearchResult?.share) >= 20 ? '#f59e0b' : '#dc2626')}`"
-                                             x-text="shareSearchResult?.share + '%'"></div>
-                                        <div class="text-xs text-slate-500" x-text="'SHARE ' + shareSelectedMonth"></div>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-3 gap-3 text-center text-xs mb-3">
-                                    <div class="bg-slate-50 p-2 rounded">
-                                        <div class="font-bold text-slate-800" x-text="shareSearchResult?.skusCount || 0"></div>
-                                        <div class="text-slate-500">SKUs Analizados</div>
-                                    </div>
-                                    <div class="bg-blue-50 p-2 rounded">
-                                        <div class="font-bold text-blue-700" x-text="(shareSearchResult?.vtaNoviembre || 0).toLocaleString()"></div>
-                                        <div class="text-blue-500" x-text="'Ventas Propias (' + shareSelectedMonth.substring(0,3) + ')'"></div>
-                                    </div>
-                                    <div class="bg-teal-50 p-2 rounded">
-                                        <div class="font-bold text-teal-700" x-text="(shareSearchResult?.qNoviembre || 0).toLocaleString()"></div>
-                                        <div class="text-teal-500" x-text="'Mercado Total (' + shareSelectedMonth.substring(0,3) + ')'"></div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Tabla de items -->
-                                <div x-show="shareSearchResult?.items?.length > 0" class="overflow-x-auto max-h-40 border rounded">
-                                    <table class="w-full text-[10px]">
-                                        <thead class="bg-slate-100 sticky top-0">
-                                            <tr><th class="p-1 text-left">SKU</th><th class="p-1 text-left">Descripción</th><th class="p-1 text-right">Vta. Nov</th><th class="p-1 text-right">Q Nov</th><th class="p-1 text-right">SHARE</th></tr>
-                                        </thead>
-                                        <tbody class="divide-y">
-                                            <template x-for="item in shareSearchResult?.items" :key="item.sku">
-                                                <tr class="hover:bg-teal-50">
-                                                    <td class="p-1 font-bold"><span x-show="item.bloqueado" class="mr-1" title="⚠️ BLOQUEADO">🚩</span><span x-text="item.sku"></span></td>
-                                                    <td class="p-1 truncate max-w-[150px]" x-text="item.desc"></td>
-                                                    <td class="p-1 text-right" x-text="item.vtaNov"></td>
-                                                    <td class="p-1 text-right" x-text="item.qNov"></td>
-                                                    <td class="p-1 text-right font-bold" 
-                                                        :style="`color: ${parseFloat(item.share) >= 50 ? '#16a34a' : (parseFloat(item.share) >= 20 ? '#f59e0b' : '#dc2626')}`"
-                                                        x-text="item.share + '%'"></td>
-                                                </tr>
-                                            </template>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            
-                            <!-- Error de búsqueda -->
-                            <div x-show="shareSearchResult?.error" class="mt-4 bg-red-50 p-3 rounded border border-red-200 text-red-700 text-sm">
-                                <span x-text="shareSearchResult?.message"></span>
-                            </div>
-                        </div>
-                        
-                        <!-- Top 10 SHARE -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <!-- Top 10 Mejores -->
-                            <div class="border-l-4 border-green-500 p-3 bg-green-50 rounded">
-                                <div class="text-sm font-bold text-green-800 mb-2">🏆 Top 10 Mayor SHARE</div>
-                                <div class="text-xs text-slate-600 space-y-1 max-h-48 overflow-y-auto">
-                                    <template x-for="item in shareMetrics?.topSkus" :key="item.sku">
-                                        <div class="bg-white p-2 rounded border-l-2 border-green-400 flex justify-between items-center">
-                                            <div>
-                                                <div class="font-bold text-slate-700"><span x-show="item.bloqueado" class="mr-1" title="⚠️ BLOQUEADO">🚩</span><span x-text="item.sku"></span></div>
-                                                <div class="text-[9px] text-slate-500" x-text="item.marca"></div>
-                                            </div>
-                                            <div class="text-right">
-                                                <div class="font-black text-green-600" x-text="item.shareNov?.toFixed(1) + '%'"></div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                            
-                            <!-- Top 10 Peores (Oportunidad) -->
-                            <div class="border-l-4 border-orange-500 p-3 bg-orange-50 rounded">
-                                <div class="text-sm font-bold text-orange-800 mb-2">📈 Top 10 Menor SHARE (Oportunidad)</div>
-                                <div class="text-xs text-slate-600 space-y-1 max-h-48 overflow-y-auto">
-                                    <template x-for="item in shareMetrics?.worstSkus" :key="item.sku">
-                                        <div class="bg-white p-2 rounded border-l-2 border-orange-400 flex justify-between items-center">
-                                            <div>
-                                                <div class="font-bold text-slate-700"><span x-show="item.bloqueado" class="mr-1" title="⚠️ BLOQUEADO">🚩</span><span x-text="item.sku"></span></div>
-                                                <div class="text-[9px] text-slate-500" x-text="item.marca"></div>
-                                            </div>
-                                            <div class="text-right">
-                                                <div class="font-black text-orange-600" x-text="item.shareNov?.toFixed(1) + '%'"></div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- SHARE por Marca -->
-                        <div class="border rounded p-3 bg-slate-50">
-                            <div class="text-sm font-bold text-slate-700 mb-2">📦 SHARE por Marca (Top 15)</div>
-                            <div class="overflow-x-auto max-h-48">
-                                <table class="w-full text-xs">
-                                    <thead class="bg-slate-200 sticky top-0">
-                                        <tr><th class="p-2 text-left">Marca</th><th class="p-2 text-center">SKUs</th><th class="p-2 text-right">SHARE Prom.</th><th class="p-2 text-right">SHARE Total</th></tr>
-                                    </thead>
-                                    <tbody class="divide-y">
-                                        <template x-for="m in shareMetrics?.byMarca" :key="m.marca">
-                                            <tr class="hover:bg-teal-50 cursor-pointer" @click="shareSearchType='marca'; shareSearchText=m.marca; searchShare()">
-                                                <td class="p-2 font-bold" x-text="m.marca"></td>
-                                                <td class="p-2 text-center" x-text="m.skus"></td>
-                                                <td class="p-2 text-right" x-text="m.shareProm + '%'"></td>
-                                                <td class="p-2 text-right font-bold" 
-                                                    :style="`color: ${parseFloat(m.shareTotal) >= 50 ? '#16a34a' : (parseFloat(m.shareTotal) >= 20 ? '#f59e0b' : '#dc2626')}`"
-                                                    x-text="m.shareTotal + '%'"></td>
-                                            </tr>
-                                        </template>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -1054,8 +930,8 @@
                     <div @click="switchTab('consolidado'); filterArbitrage = true;" 
                          class="bg-purple-50 p-4 rounded-lg border-l-4 border-l-purple-600 shadow-sm card-hover border border-purple-100 relative overflow-hidden group cursor-pointer transition-transform hover:scale-[1.02]" 
                          title="Clic para ver oportunidades de movimiento de stock">
-                        <div class="absolute right-2 top-2 text-2xl opacity-20 group-hover:scale-125 transition-transform">🔄</div>
-                        <div class="text-[10px] font-bold text-purple-800 uppercase tracking-wider">Arbitraje (Rescate)</div>
+                        <div class="absolute right-2 top-2 text-2xl opacity-20 group-hover:scale-125 transition-transform">�</div>
+                        <div class="text-[10px] font-bold text-purple-800 uppercase tracking-wider">Enviar a Full</div>
                         <div class="text-2xl font-black text-purple-600 mt-1" x-text="formatMoney(kpis.arbitrageTotal)"></div>
                         <div class="text-[9px] text-purple-500 font-bold mt-1 bg-purple-100 inline-block px-1 rounded">Mover Central -> Full</div>
                     </div>
@@ -1063,7 +939,7 @@
 
 
                     <div class="bg-white p-4 rounded-lg border-l-4 border-l-emerald-500 shadow-sm card-hover" @click="switchTab('resumen')">
-                        <div class="text-xs font-bold text-slate-400 uppercase">Inversión Sugerida</div>
+                        <div class="text-xs font-bold text-slate-400 uppercase">Inversión Sugerida para Compras</div>
                         <div class="text-2xl font-bold text-emerald-700" x-text="formatMoney(kpis.compra)"></div>
                         <div class="text-xs text-emerald-600" x-text="kpis.skusCompra + ' SKUs a pedir'"></div>
                     </div>
@@ -1080,10 +956,10 @@
                         <div class="text-xs text-slate-400">Mercadería Comprada</div>
                     </div>
 
-                    <div class="bg-white p-4 rounded-lg border-l-4 border-l-red-500 shadow-sm card-hover" @click="switchTab('inmovilizado')">
-                        <div class="text-xs font-bold text-slate-400 uppercase">Capital Inmovilizado</div>
-                        <div class="text-2xl font-bold text-red-700" x-text="formatMoney(kpis.inmovilizado)"></div>
-                        <div class="text-xs text-red-600">Stock > 45 días</div>
+                    <div class="bg-white p-4 rounded-lg border-l-4 border-l-purple-500 shadow-sm card-hover" @click="switchTab('inmovilizado')">
+                        <div class="text-xs font-bold text-slate-400 uppercase">Costo Sobrestock</div>
+                        <div class="text-2xl font-bold text-purple-700" x-text="formatMoney(kpis.inmovilizado)"></div>
+                        <div class="text-xs text-purple-600">Unidades excedentes > 45 días</div>
                     </div>
                 </div>
 
@@ -1092,13 +968,13 @@
                         <div class="bg-white p-4 rounded-lg shadow border flex flex-col gap-4">
                             <div class="flex justify-between items-center border-b pb-2">
                                 <h3 class="text-sm font-bold text-red-700 uppercase">Cargos por Analista</h3>
-                                <div class="text-right"><div class="text-[9px] text-slate-400 uppercase">Total Deuda Acumulada</div><div class="text-lg font-bold text-red-600" x-text="formatMoney(metrics.totalDeudaAnalistas)"></div></div>
+                                <div class="text-right"><div class="text-[9px] text-slate-400 uppercase">Total Cargos Acumulados</div><div class="text-lg font-bold text-red-600" x-text="formatMoney(metrics.totalDeudaAnalistas)"></div></div>
                             </div>
                             <div class="h-48 w-full"><canvas id="chartAnalista"></canvas></div>
 
                             <div class="overflow-x-auto max-h-48 border rounded mt-2">
                                 <table class="w-full text-xs">
-                                    <thead class="bg-slate-100 font-bold text-slate-600 sticky top-0"><tr><td class="p-2">Analista</td><td class="p-2 text-center">SKUs</td><td class="p-2 text-center">Unidades</td><td class="p-2 text-right">Deuda Total</td></tr></thead>
+                                    <thead class="bg-slate-100 font-bold text-slate-600 sticky top-0"><tr><td class="p-2">Analista</td><td class="p-2 text-center">SKUs</td><td class="p-2 text-center">Unidades</td><td class="p-2 text-right">Cargos Total</td></tr></thead>
                                     <tbody class="divide-y">
                                         <template x-for="a in metrics.analistasTable" :key="a.name">
                                             <tr class="hover:bg-red-50 cursor-pointer" @click="switchTab('cargos'); activeFilters['analista'] = [a.name];">
@@ -1115,7 +991,7 @@
                            
 
                             <div class="border-t pt-4 mt-2">
-                                <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Evolución Deuda Total (Histórico)</h4>
+                                <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Evolución Cargos Total (Histórico)</h4>
                                 <div class="h-32 w-full"><canvas id="chartDeudaHistory"></canvas></div>
                             </div>
                         </div>
@@ -1172,11 +1048,6 @@
                                     <div class="text-[10px]" x-text="matrixCounts['CZ'] || 0"></div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="bg-white p-4 rounded-lg shadow border border-indigo-100">
-                            <h3 class="text-sm font-bold text-indigo-700 uppercase border-b pb-2 mb-2">Distribución Capital por Marca (Pareto)</h3>
-                            <div class="h-48 w-full"><canvas id="chartBrands"></canvas></div>
                         </div>
 
                     </div>
@@ -1246,72 +1117,6 @@
                                     <div class="flex justify-between"><span class="text-green-600 font-bold">● Saludable (18-30)</span> <b x-text="metrics.health.s"></b></div>
                                     <div class="flex justify-between"><span class="text-yellow-600 font-bold">● Alerta (31-45)</span> <b x-text="metrics.health.a"></b></div>
                                     <div class="flex justify-between"><span class="text-purple-600 font-bold">● Sobrestock (>45)</span> <b x-text="metrics.health.o"></b></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-4 rounded-lg shadow border border-red-200 bg-red-50/50">
-                            <h3 class="text-sm font-bold text-red-700 uppercase border-b border-red-200 pb-2 mb-3">🔥 Top 5 Riesgo Inminente (Stock < Lead Time)</h3>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-[10px]">
-                                    <thead><tr class="text-red-800"><th class="text-left pb-1">SKU</th><th class="text-left pb-1">Desc</th><th class="text-right pb-1">Stock</th><th class="text-right pb-1">Vtar</th><th class="text-right pb-1">Días Stock</th></tr></thead>
-                                    <tbody class="divide-y divide-red-200">
-                                        <template x-for="r in metrics.topRisks" :key="r.sku">
-                                            <tr class="hover:bg-red-100 cursor-pointer" @click="openModal(r)">
-                                                <td class="py-2 font-bold" x-text="r.sku"></td>
-                                                <td class="py-2 truncate max-w-[150px]" x-text="r.desc"></td>
-                                                <td class="py-2 text-right" x-text="r.stock"></td>
-                                                <td class="py-2 text-right" x-text="r.vtar"></td>
-                                                <td class="py-2 text-right font-bold text-red-600" x-text="r.days.toFixed(1) + 'd'"></td>
-                                            </tr>
-                                        </template>
-                                        <tr x-show="metrics.topRisks.length === 0"><td colspan="5" class="py-4 text-center text-slate-500">✅ No hay riesgos inminentes detectados.</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-4 rounded-lg shadow border border-slate-300 bg-slate-50">
-                            <h3 class="text-sm font-bold text-slate-700 uppercase border-b border-slate-300 pb-2 mb-3">⚰️ Top 5 "Huesos" (Alto Valor, 0 Venta)</h3>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-[10px]">
-                                    <thead><tr class="text-slate-600"><th class="text-left pb-1">SKU</th><th class="text-left pb-1">Desc</th><th class="text-right pb-1">Stock Valorizado</th><th class="text-right pb-1">Venta Diario</th></tr></thead>
-                                    <tbody class="divide-y divide-slate-200">
-                                        <template x-for="h in metrics.huesos" :key="h.sku">
-                                            <tr class="hover:bg-slate-200 cursor-pointer" @click="openModal(h)">
-                                                <td class="py-2 font-bold" x-text="h.sku"></td>
-                                                <td class="py-2 truncate max-w-[150px]" x-text="h.desc"></td>
-                                                <td class="py-2 text-right font-bold text-slate-800" x-text="formatMoney(h.stockValorizado)"></td>
-                                                <td class="py-2 text-right text-red-500 font-bold" x-text="h.vtarTotal.toFixed(2)"></td>
-                                            </tr>
-                                        </template>
-                                        <tr x-show="metrics.huesos.length === 0"><td colspan="4" class="py-4 text-center text-slate-500">👍 No se detectaron huesos críticos.</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-4 rounded-lg shadow border border-indigo-100">
-                            <h3 class="text-sm font-bold text-indigo-700 uppercase border-b pb-2 mb-3">Precisión de Venta (Real vs Proyectada)</h3>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <div class="text-xs font-bold text-center mb-2 text-green-700">Venta > Proyección (Supera)</div>
-                                    <table class="w-full text-[10px]">
-                                        <tr class="border-b"><td class="py-1">1% - 50%</td><td class="text-right font-bold" x-text="metrics.deviationStats['1-50%'] + '%'"></td></tr>
-                                        <tr class="border-b"><td class="py-1">51% - 75%</td><td class="text-right font-bold" x-text="metrics.deviationStats['51-75%'] + '%'"></td></tr>
-                                        <tr class="border-b"><td class="py-1">76% - 100%</td><td class="text-right font-bold" x-text="metrics.deviationStats['76-100%'] + '%'"></td></tr>
-                                        <tr class="border-b"><td class="py-1">101% - 125%</td><td class="text-right font-bold" x-text="metrics.deviationStats['101-125%'] + '%'"></td></tr>
-                                        <tr class="border-b"><td class="py-1">126% - 150%</td><td class="text-right font-bold" x-text="metrics.deviationStats['126-150%'] + '%'"></td></tr>
-                                        <tr><td class="py-1">> 151%</td><td class="text-right font-bold" x-text="metrics.deviationStats['>150%'] + '%'"></td></tr>
-                                    </table>
-                                </div>
-                                <div>
-                                    <div class="text-xs font-bold text-center mb-2 text-red-700">Venta < Proyección (No Supera)</div>
-                                    <table class="w-full text-[10px]">
-                                        <tr class="border-b"><td class="py-1">-1% a -50%</td><td class="text-right font-bold" x-text="metrics.deviationStats['-1 to -50%'] + '%'"></td></tr>
-                                        <tr class="border-b"><td class="py-1">-51% a -75%</td><td class="text-right font-bold" x-text="metrics.deviationStats['-51 to -75%'] + '%'"></td></tr>
-                                        <tr><td class="py-1">-76% a -100%</td><td class="text-right font-bold" x-text="metrics.deviationStats['-76 to -100%'] + '%'"></td></tr>
-                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -1397,7 +1202,7 @@
                     <!-- 🎯 NUEVA MÉTRICA: Sub_Perfil + Cobertura en Dep80 -->
                     <div class="bg-white p-4 rounded-lg shadow border border-emerald-200 mb-6">
                         <h3 class="text-sm font-bold text-emerald-700 uppercase border-b pb-2 mb-3 flex justify-between items-center">
-                            <span>🎯 Análisis Sub_Perfil + Cobertura Depósito 80 (30 días)</span>
+                            <span>🎯 Análisis Sub_Perfil + Cobertura Depósito 80</span>
                             <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded border border-emerald-100">Killer, Normal, Baja Rotación, Verano</span>
                         </h3>
                         <div class="overflow-x-auto">
@@ -1405,202 +1210,65 @@
                                 <thead class="bg-emerald-50 text-emerald-800 font-bold uppercase sticky top-0">
                                     <tr>
                                         <td class="p-2">Sub_Perfil</td>
-                                        <td class="p-2 text-center">Cant. Productos</td>
-                                        <td class="p-2 text-center">% del Total</td>
+                                        <td class="p-2 text-center">SKUs</td>
+                                        <td class="p-2 text-center">%</td>
                                         <td class="p-2 text-right">Stock Dep80</td>
-                                        <td class="p-2 text-right">VTAR Promedio</td>
-                                        <td class="p-2 text-center">Cobertura %</td>
-                                        <td class="p-2 text-center">Cobertura (días)</td>
+                                        <td class="p-2 text-right">VTAR Total</td>
+                                        <td class="p-2 text-center">Días Stock</td>
+                                        <td class="p-2 text-center">Estado</td>
+                                        <td class="p-2 text-right">Sobrestock</td>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y">
                                     <template x-for="sp in metrics.subPerfilCoverage" :key="sp.subPerfil">
                                         <tr class="hover:bg-emerald-50 cursor-pointer transition-colors" 
-                                            @click="switchTab('consolidado'); activeFilters['subPerfil'] = [sp.subPerfil];">
+                                            @click="switchTab('dep80'); activeFilters['subPerfil'] = [sp.subPerfil];">
                                             <td class="p-2 font-bold text-slate-700" x-text="sp.subPerfil"></td>
                                             <td class="p-2 text-center font-bold text-slate-800" x-text="sp.cantProductos"></td>
                                             <td class="p-2 text-center">
-                                                <span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold" x-text="sp.porcentajeProductos + '%'"></span>
+                                                <span class="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded text-[10px] font-bold" x-text="sp.porcentajeProductos + '%'"></span>
                                             </td>
                                             <td class="p-2 text-right font-mono text-slate-700" x-text="sp.stockDep80.toLocaleString()"></td>
-                                            <td class="p-2 text-right font-mono text-slate-600" x-text="sp.vtarPromedio"></td>
+                                            <td class="p-2 text-right font-mono text-slate-600" x-text="parseFloat(sp.vtarTotal).toFixed(2)"></td>
                                             <td class="p-2 text-center">
-                                                <div class="flex items-center justify-center gap-1">
-                                                    <span class="text-[10px] font-bold" 
-                                                          :style="`color: ${sp.coberturaLabel >= 100 ? '#16a34a' : (sp.coberturaLabel >= 50 ? '#f59e0b' : '#dc2626')}`"
-                                                          x-text="sp.coberturaDias + '%'"></span>
-                                                    <div class="w-12 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                                        <div class="h-full transition-all" 
-                                                             :style="`width: ${Math.min(sp.coberturaLabel, 100)}%; background-color: ${sp.coberturaLabel >= 100 ? '#16a34a' : (sp.coberturaLabel >= 50 ? '#f59e0b' : '#dc2626')}`"></div>
-                                                    </div>
-                                                </div>
+                                                <span class="font-bold text-base" 
+                                                      :class="sp.coberturaDias > 45 ? 'text-purple-600' : (sp.coberturaDias >= 30 ? 'text-green-600' : (sp.coberturaDias >= 15 ? 'text-yellow-600' : 'text-red-600'))"
+                                                      x-text="sp.coberturaDias + 'd'"></span>
                                             </td>
-                                            <td class="p-2 text-center font-bold" 
-                                                :style="`color: ${sp.coberturaLabel >= 30 ? '#16a34a' : (sp.coberturaLabel >= 15 ? '#f59e0b' : '#dc2626')}`"
-                                                x-text="Math.round((sp.coberturaDias / 100) * 30).toFixed(0) + 'd'"></td>
+                                            <td class="p-2 text-center">
+                                                <span class="px-2 py-1 rounded text-[10px] font-bold"
+                                                      :class="sp.coberturaDias > 45 ? 'bg-purple-100 text-purple-800' : (sp.coberturaDias >= 30 ? 'bg-green-100 text-green-800' : (sp.coberturaDias >= 15 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'))"
+                                                      x-text="sp.coberturaDias > 45 ? '🟣 Sobrestock' : (sp.coberturaDias >= 30 ? '✅ Saludable' : (sp.coberturaDias >= 15 ? '⚠️ Alerta' : '🔴 Crítico'))"></span>
+                                            </td>
+                                            <td class="p-2 text-right">
+                                                <template x-if="sp.unidadesSobrestock > 0">
+                                                    <span class="font-bold text-purple-700 bg-purple-50 px-2 py-1 rounded border border-purple-200" 
+                                                          x-text="'+' + sp.unidadesSobrestock.toLocaleString() + ' u.'"></span>
+                                                </template>
+                                                <template x-if="sp.unidadesSobrestock <= 0">
+                                                    <span class="text-slate-400">-</span>
+                                                </template>
+                                            </td>
                                         </tr>
                                     </template>
                                     <tr x-show="!metrics.subPerfilCoverage || metrics.subPerfilCoverage.length === 0">
-                                        <td colspan="7" class="py-4 text-center text-slate-400">Cargando datos...</td>
+                                        <td colspan="8" class="py-4 text-center text-slate-400">Cargando datos...</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
-                        <div class="mt-3 text-[9px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-100">
-                            <strong>Interpretación:</strong> Cobertura % = (Stock en Dep80 / VTAR Promedio / 30 días) × 100. 
-                            Si es <strong>< 50%</strong> = Riesgo de desabastecimiento; <strong>50-100%</strong> = Aceptable; <strong>> 100%</strong> = Sobrestocked.
+                        <div class="mt-3 text-[9px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-100 grid grid-cols-4 gap-2 text-center">
+                            <div><span class="inline-block w-3 h-3 rounded bg-red-500 mr-1"></span><strong class="text-red-600">< 15d</strong> Crítico</div>
+                            <div><span class="inline-block w-3 h-3 rounded bg-yellow-500 mr-1"></span><strong class="text-yellow-600">15-30d</strong> Alerta</div>
+                            <div><span class="inline-block w-3 h-3 rounded bg-green-500 mr-1"></span><strong class="text-green-600">30-45d</strong> Saludable</div>
+                            <div><span class="inline-block w-3 h-3 rounded bg-purple-500 mr-1"></span><strong class="text-purple-600">> 45d</strong> Sobrestock</div>
+                        </div>
+                        <div class="mt-2 text-[9px] text-slate-500 bg-purple-50 p-2 rounded border border-purple-100">
+                            <strong>📦 Sobrestock:</strong> Unidades que exceden los 45 días de cobertura. Fórmula: <code class="bg-white px-1 rounded">Stock - (VTAR × 45)</code>
                         </div>
                     </div>
 
-                    <!-- 🎯 OPCIÓN 1: MATRIZ DE RIESGO -->
-                    <div class="bg-white p-4 rounded-lg shadow border border-red-200 mb-6">
-                        <h3 class="text-sm font-bold text-red-700 uppercase border-b pb-2 mb-3 flex justify-between items-center">
-                            <span>🎲 Matriz de Riesgo: Cobertura vs Rotación</span>
-                            <span class="text-[10px] bg-red-50 text-red-700 px-2 py-1 rounded border border-red-100">2x2 Cuadrantes</span>
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- ROJO -->
-                            <div class="bg-red-50 border-l-4 border-red-600 p-3 rounded">
-                                <div class="text-sm font-bold text-red-700 flex items-center gap-2 mb-2">
-                                    <span class="text-2xl">🔴</span> Dinero Congelado
-                                    <span class="text-xs bg-red-100 px-2 py-1 rounded" x-text="metrics.riskMatrix?.RED?.count || 0 + ' SKUs'"></span>
-                                </div>
-                                <div class="text-xs text-slate-600 bg-white p-2 rounded max-h-32 overflow-y-auto">
-                                    <template x-for="item in metrics.riskMatrix?.RED?.items.slice(0,5)" :key="item.sku">
-                                        <div class="py-1 border-b text-[9px]"><span x-show="item.bloqueado" class="mr-1" title="⚠️ BLOQUEADO">🚩</span><strong x-text="item.sku"></strong> • Stock: <span x-text="item.stock"></span> • $<span x-text="item.valor"></span></div>
-                                    </template>
-                                </div>
-                            </div>
-                            
-                            <!-- NARANJA -->
-                            <div class="bg-orange-50 border-l-4 border-orange-500 p-3 rounded">
-                                <div class="text-sm font-bold text-orange-700 flex items-center gap-2 mb-2">
-                                    <span class="text-2xl">🟠</span> Bajo Perfil
-                                    <span class="text-xs bg-orange-100 px-2 py-1 rounded" x-text="metrics.riskMatrix?.ORANGE?.count || 0 + ' SKUs'"></span>
-                                </div>
-                                <div class="text-xs text-slate-600 bg-white p-2 rounded max-h-32 overflow-y-auto">
-                                    <template x-for="item in metrics.riskMatrix?.ORANGE?.items.slice(0,5)" :key="item.sku">
-                                        <div class="py-1 border-b text-[9px]"><span x-show="item.bloqueado" class="mr-1" title="⚠️ BLOQUEADO">🚩</span><strong x-text="item.sku"></strong> • Stock: <span x-text="item.stock"></span> • $<span x-text="item.valor"></span></div>
-                                    </template>
-                                </div>
-                            </div>
-                            
-                            <!-- AMARILLO -->
-                            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded">
-                                <div class="text-sm font-bold text-yellow-700 flex items-center gap-2 mb-2">
-                                    <span class="text-2xl">🟡</span> Riesgo Desabast.
-                                    <span class="text-xs bg-yellow-100 px-2 py-1 rounded" x-text="metrics.riskMatrix?.YELLOW?.count || 0 + ' SKUs'"></span>
-                                </div>
-                                <div class="text-xs text-slate-600 bg-white p-2 rounded max-h-32 overflow-y-auto">
-                                    <template x-for="item in metrics.riskMatrix?.YELLOW?.items.slice(0,5)" :key="item.sku">
-                                        <div class="py-1 border-b text-[9px]"><span x-show="item.bloqueado" class="mr-1" title="⚠️ BLOQUEADO">🚩</span><strong x-text="item.sku"></strong> • Cobertura: <span x-text="item.cobertura + 'd'"></span> • $<span x-text="item.valor"></span></div>
-                                    </template>
-                                </div>
-                            </div>
-                            
-                            <!-- VERDE -->
-                            <div class="bg-green-50 border-l-4 border-green-600 p-3 rounded">
-                                <div class="text-sm font-bold text-green-700 flex items-center gap-2 mb-2">
-                                    <span class="text-2xl">🟢</span> Ideal
-                                    <span class="text-xs bg-green-100 px-2 py-1 rounded" x-text="metrics.riskMatrix?.GREEN?.count || 0 + ' SKUs'"></span>
-                                </div>
-                                <div class="text-xs text-slate-600 bg-white p-2 rounded max-h-32 overflow-y-auto">
-                                    <template x-for="item in metrics.riskMatrix?.GREEN?.items.slice(0,5)" :key="item.sku">
-                                        <div class="py-1 border-b text-[9px]"><span x-show="item.bloqueado" class="mr-1" title="⚠️ BLOQUEADO">🚩</span><strong x-text="item.sku"></strong> • VTAR: <span x-text="item.vtar.toFixed(1)"></span> • $<span x-text="item.valor"></span></div>
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 🎯 OPCIÓN 2: FORECAST DE COMPRA (30 y 45 días) -->
-                    <div class="bg-white p-4 rounded-lg shadow border border-blue-200 mb-6">
-                        <h3 class="text-sm font-bold text-blue-700 uppercase border-b pb-2 mb-3 flex justify-between items-center">
-                            <span>📈 Forecast de Necesidad de Compra (30 y 45 días)</span>
-                            <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100">Proyección por Proveedor</span>
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <!-- 30 días -->
-                            <div class="border-l-4 border-blue-500 p-3 bg-blue-50 rounded">
-                                <div class="text-sm font-bold text-blue-800 mb-2">📅 Próximos 30 días</div>
-                                <div class="text-2xl font-bold text-blue-600 mb-2" x-text="'$' + metrics.forecastSummary?.f30"></div>
-                                <div class="text-xs text-slate-600 space-y-1">
-                                    <template x-for="f in metrics.forecast30" :key="f.prov">
-                                        <div class="flex justify-between bg-white p-1 rounded">
-                                            <span class="font-bold" x-text="f.prov"></span>
-                                            <span x-text="f.count + ' SKUs • $' + f.monto"></span>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                            
-                            <!-- 45 días -->
-                            <div class="border-l-4 border-purple-500 p-3 bg-purple-50 rounded">
-                                <div class="text-sm font-bold text-purple-800 mb-2">📅 Próximos 45 días</div>
-                                <div class="text-2xl font-bold text-purple-600 mb-2" x-text="'$' + metrics.forecastSummary?.f45"></div>
-                                <div class="text-xs text-slate-600 space-y-1">
-                                    <template x-for="f in metrics.forecast45" :key="f.prov">
-                                        <div class="flex justify-between bg-white p-1 rounded">
-                                            <span class="font-bold" x-text="f.prov"></span>
-                                            <span x-text="f.count + ' SKUs • $' + f.monto"></span>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 🎯 OPCIÓN 3: ANÁLISIS LEAD TIME vs COBERTURA -->
-                    <div class="bg-white p-4 rounded-lg shadow border border-orange-200 mb-6">
-                        <h3 class="text-sm font-bold text-orange-700 uppercase border-b pb-2 mb-3 flex justify-between items-center">
-                            <span>⏱️ Análisis Lead Time vs Cobertura</span>
-                            <span class="text-[10px] bg-orange-50 text-orange-700 px-2 py-1 rounded border border-orange-100">Riesgo de Desabastecimiento</span>
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                            <!-- CRÍTICO -->
-                            <div class="bg-red-50 border-l-4 border-red-600 p-3 rounded">
-                                <div class="text-sm font-bold text-red-700 mb-2">🔴 CRÍTICO <span class="text-xs" x-text="'(' + metrics.ltAnalysis?.criticalCount + ' SKUs)'"></span></div>
-                                <div class="text-xs text-slate-600 space-y-1 max-h-40 overflow-y-auto">
-                                    <template x-for="item in metrics.ltAnalysis?.CRITICAL" :key="item.sku">
-                                        <div class="bg-white p-1 rounded border-l-2 border-red-400 text-[9px]">
-                                            <div class="font-bold"><span x-show="item.bloqueado" class="mr-1" title="⚠️ BLOQUEADO">🚩</span><span x-text="item.sku"></span></div>
-                                            <div>LT: <span x-text="item.lt + 'd'"></span> | Cobertura: <span x-text="item.cobertura + 'd'"></span></div>
-                                            <div class="text-red-600 font-bold">GAP: <span x-text="item.gap + 'd'"></span></div>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                            
-                            <!-- EN RIESGO -->
-                            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded">
-                                <div class="text-sm font-bold text-yellow-700 mb-2">🟠 EN RIESGO <span class="text-xs" x-text="'(' + metrics.ltAnalysis?.atRiskCount + ' SKUs)'"></span></div>
-                                <div class="text-xs text-slate-600 space-y-1 max-h-40 overflow-y-auto">
-                                    <template x-for="item in metrics.ltAnalysis?.AT_RISK" :key="item.sku">
-                                        <div class="bg-white p-1 rounded border-l-2 border-yellow-400 text-[9px]">
-                                            <div class="font-bold"><span x-show="item.bloqueado" class="mr-1" title="⚠️ BLOQUEADO">🚩</span><span x-text="item.sku"></span></div>
-                                            <div>LT: <span x-text="item.lt + 'd'"></span> | Cobertura: <span x-text="item.cobertura + 'd'"></span></div>
-                                            <div class="text-yellow-600 font-bold">GAP: <span x-text="item.gap + 'd'"></span></div>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                            
-                            <!-- OK -->
-                            <div class="bg-green-50 border-l-4 border-green-600 p-3 rounded">
-                                <div class="text-sm font-bold text-green-700 mb-2">🟢 OK <span class="text-xs" x-text="'(' + (metrics.ltAnalysis?.OK?.length || 0) + ' SKUs)'"></span></div>
-                                <div class="text-xs text-slate-600 space-y-1 max-h-40 overflow-y-auto">
-                                    <template x-for="item in metrics.ltAnalysis?.OK.slice(0,5)" :key="item.sku">
-                                        <div class="bg-white p-1 rounded border-l-2 border-green-400 text-[9px]">
-                                            <div class="font-bold"><span x-show="item.bloqueado" class="mr-1" title="⚠️ BLOQUEADO">🚩</span><span x-text="item.sku"></span></div>
-                                            <div>LT: <span x-text="item.lt + 'd'"></span> | Cobertura: <span x-text="item.cobertura + 'd'"></span></div>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 🎯 OPCIÓN 4: HEALTH SCORE -->
+                    <!-- 🎯 HEALTH SCORE DEL INVENTARIO -->
                     <div class="bg-white p-4 rounded-lg shadow border border-indigo-200 mb-6">
                         <h3 class="text-sm font-bold text-indigo-700 uppercase border-b pb-2 mb-3">🏥 Health Score del Inventario</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1613,53 +1281,60 @@
                                 <div class="text-lg font-bold mt-3" x-show="metrics.healthScore?.overall >= 75">✅ SALUDABLE</div>
                                 <div class="text-lg font-bold mt-3 text-yellow-700" x-show="metrics.healthScore?.overall >= 50 && metrics.healthScore?.overall < 75">⚠️ MODERADO</div>
                                 <div class="text-lg font-bold mt-3 text-red-700" x-show="metrics.healthScore?.overall < 50">🚨 CRÍTICO</div>
-                                <div class="text-sm text-slate-600 mt-2" x-text="metrics.healthScore?.trend === '↑' ? '↗️ Mejorando' : (metrics.healthScore?.trend === '↓' ? '↘️ Empeorando' : '→ Sin cambios')"></div>
+                                <div class="text-sm text-slate-600 mt-2" x-text="metrics.healthScore?.trend === '↑' ? '↗️ Mejorando' : (metrics.healthScore?.trend === '↓' ? '↘️ Empeorando' : '→ Estable')"></div>
                             </div>
                             
                             <!-- Desglose de Componentes -->
-                            <div class="space-y-2">
+                            <div class="space-y-3">
                                 <div>
                                     <div class="flex justify-between items-center mb-1">
-                                        <span class="text-sm font-bold text-slate-700">Cobertura (40%)</span>
-                                        <span class="text-sm font-bold" :style="`color: ${metrics.healthScore?.components?.cobertura >= 75 ? '#16a34a' : '#f59e0b'}`" x-text="metrics.healthScore?.components?.cobertura + '%'"></span>
+                                        <span class="text-xs text-slate-600">Cobertura (40%) <span class="text-[9px] text-slate-400">SKUs con 15-45 días stock</span></span>
+                                        <span class="text-sm font-bold" :style="`color: ${metrics.healthScore?.components?.cobertura >= 75 ? '#16a34a' : (metrics.healthScore?.components?.cobertura >= 50 ? '#f59e0b' : '#dc2626')}`" x-text="metrics.healthScore?.components?.cobertura + '%'"></span>
                                     </div>
-                                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                                        <div class="h-full bg-blue-500" :style="`width: ${metrics.healthScore?.components?.cobertura}%`"></div>
+                                    <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                                        <div class="h-full bg-blue-500 transition-all" :style="`width: ${metrics.healthScore?.components?.cobertura}%`"></div>
                                     </div>
+                                    <div class="text-[9px] text-slate-400 mt-0.5" x-text="(metrics.healthScore?.details?.skusSaludables || 0) + ' de ' + (metrics.healthScore?.details?.skusConStock || 0) + ' SKUs'"></div>
                                 </div>
                                 <div>
                                     <div class="flex justify-between items-center mb-1">
-                                        <span class="text-sm font-bold text-slate-700">Rotación (25%)</span>
-                                        <span class="text-sm font-bold" :style="`color: ${metrics.healthScore?.components?.rotacion >= 75 ? '#16a34a' : '#f59e0b'}`" x-text="metrics.healthScore?.components?.rotacion + '%'"></span>
+                                        <span class="text-xs text-slate-600">Rotación (25%) <span class="text-[9px] text-slate-400">SKUs con venta activa</span></span>
+                                        <span class="text-sm font-bold" :style="`color: ${metrics.healthScore?.components?.rotacion >= 75 ? '#16a34a' : (metrics.healthScore?.components?.rotacion >= 50 ? '#f59e0b' : '#dc2626')}`" x-text="metrics.healthScore?.components?.rotacion + '%'"></span>
                                     </div>
-                                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                                        <div class="h-full bg-purple-500" :style="`width: ${metrics.healthScore?.components?.rotacion}%`"></div>
+                                    <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                                        <div class="h-full bg-purple-500 transition-all" :style="`width: ${metrics.healthScore?.components?.rotacion}%`"></div>
                                     </div>
+                                    <div class="text-[9px] text-slate-400 mt-0.5" x-text="(metrics.healthScore?.details?.skusActivos || 0) + ' SKUs activos'"></div>
                                 </div>
                                 <div>
                                     <div class="flex justify-between items-center mb-1">
-                                        <span class="text-sm font-bold text-slate-700">Eficiencia Capital (20%)</span>
-                                        <span class="text-sm font-bold" :style="`color: ${metrics.healthScore?.components?.capital >= 75 ? '#16a34a' : '#f59e0b'}`" x-text="metrics.healthScore?.components?.capital + '%'"></span>
+                                        <span class="text-xs text-slate-600">Eficiencia Capital (20%) <span class="text-[9px] text-slate-400">$ en stock ≤45 días</span></span>
+                                        <span class="text-sm font-bold" :style="`color: ${metrics.healthScore?.components?.capital >= 75 ? '#16a34a' : (metrics.healthScore?.components?.capital >= 50 ? '#f59e0b' : '#dc2626')}`" x-text="metrics.healthScore?.components?.capital + '%'"></span>
                                     </div>
-                                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                                        <div class="h-full bg-emerald-500" :style="`width: ${metrics.healthScore?.components?.capital}%`"></div>
+                                    <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                                        <div class="h-full bg-emerald-500 transition-all" :style="`width: ${metrics.healthScore?.components?.capital}%`"></div>
                                     </div>
+                                    <div class="text-[9px] text-slate-400 mt-0.5" x-text="formatMoney(metrics.healthScore?.details?.capitalSaludable || 0) + ' de ' + formatMoney(metrics.healthScore?.details?.capitalTotal || 0)"></div>
                                 </div>
                                 <div>
                                     <div class="flex justify-between items-center mb-1">
-                                        <span class="text-sm font-bold text-slate-700">Gestión Deuda (15%)</span>
-                                        <span class="text-sm font-bold" :style="`color: ${metrics.healthScore?.components?.deuda >= 75 ? '#16a34a' : '#f59e0b'}`" x-text="metrics.healthScore?.components?.deuda + '%'"></span>
+                                        <span class="text-xs text-slate-600">Gestión Cargos (15%) <span class="text-[9px] text-slate-400">Menos cargos = mejor</span></span>
+                                        <span class="text-sm font-bold" :style="`color: ${metrics.healthScore?.components?.deuda >= 75 ? '#16a34a' : (metrics.healthScore?.components?.deuda >= 50 ? '#f59e0b' : '#dc2626')}`" x-text="metrics.healthScore?.components?.deuda + '%'"></span>
                                     </div>
-                                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                                        <div class="h-full bg-orange-500" :style="`width: ${metrics.healthScore?.components?.deuda}%`"></div>
+                                    <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                                        <div class="h-full bg-orange-500 transition-all" :style="`width: ${metrics.healthScore?.components?.deuda}%`"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        <div class="mt-4 text-[9px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-100 grid grid-cols-3 gap-2 text-center">
+                            <div><span class="inline-block w-3 h-3 rounded bg-red-500 mr-1"></span><strong>< 50</strong> Crítico</div>
+                            <div><span class="inline-block w-3 h-3 rounded bg-yellow-500 mr-1"></span><strong>50-74</strong> Moderado</div>
+                            <div><span class="inline-block w-3 h-3 rounded bg-green-500 mr-1"></span><strong>≥ 75</strong> Saludable</div>
+                        </div>
                     </div>
 
-                    <div class="bg-white p-4 rounded-lg shadow border lg:col-span-2">
-                        <div class="bg-white p-4 rounded-lg shadow border border-slate-200 mb-6">
+                    <div class="bg-white p-4 rounded-lg shadow border border-slate-200 lg:col-span-2">
                     <h3 class="text-sm font-bold text-slate-700 uppercase border-b pb-2 mb-3 flex justify-between items-center">
                         <span>🐢 Envejecimiento de Stock (Aging)</span>
                         <span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-1 rounded border border-gray-200">Capital Inmovilizado por Antigüedad</span>
@@ -1695,34 +1370,247 @@
                         </div>
                     </div>
                 </div>
-                
-                        <h3 class="text-sm font-bold text-emerald-700 uppercase border-b pb-2 mb-3">Top 10 Sugerencias de Compra ($)</h3>
-                        <div class="overflow-x-auto max-h-64 border rounded">
-                            <table class="w-full text-xs">
-                                <thead class="bg-slate-100 font-bold text-slate-600 sticky top-0"><tr><td class="p-2">SKU</td><td class="p-2">Descripción</td><td class="p-2">Proveedor</td><td class="p-2 text-right">U. a Pedir</td><td class="p-2 text-right">Inversión</td></tr></thead>
-                                <tbody class="divide-y">
-                                    <template x-for="item in masterData.filter(i=>i.inversion>0).sort((a,b)=>b.inversion-a.inversion).slice(0,10)" :key="item.sku">
-                                        <tr class="hover:bg-slate-50 cursor-pointer" @click="openModal(item)">
-                                            <td class="p-2 font-bold text-slate-700"><span x-show="item.bloqueado" class="mr-1" title="⚠️ BLOQUEADO">🚩</span><span x-text="item.sku"></span></td><td class="p-2 truncate max-w-[200px]" x-text="item.desc"></td><td class="p-2" x-text="item.prov"></td><td class="p-2 text-right font-bold" x-text="item.comprarU"></td><td class="p-2 text-right font-mono text-emerald-600 font-bold" x-text="formatMoney(item.inversion)"></td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
+            </div>
+        </div>
+
+        <!-- 📊 TAB SIMPLEX - Ventas por Mes (2025/2026) -->
+        <div class="flex-1 overflow-y-auto bg-gradient-to-b from-emerald-50 to-white p-4" x-show="currentTab === 'simplex'">
+            <div class="max-w-7xl mx-auto">
+                <!-- KPIs Compactos arriba -->
+                <div class="grid grid-cols-4 gap-2 mb-3">
+                    <div class="bg-white rounded-lg shadow-sm p-2 border-l-4 border-emerald-500 flex items-center justify-between">
+                        <div class="text-xs text-slate-500 font-bold">SKUs</div>
+                        <div class="text-lg font-bold text-emerald-700" x-text="(simplexData2025.length + simplexData2026.length) || 0"></div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm p-2 border-l-4 border-blue-500 flex items-center justify-between">
+                        <div class="text-xs text-slate-500 font-bold">Unidades</div>
+                        <div class="text-lg font-bold text-blue-700" x-text="[...simplexData2025, ...simplexData2026].reduce((a,d) => a + d.qTotal, 0).toLocaleString()"></div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm p-2 border-l-4 border-purple-500 flex items-center justify-between">
+                        <div class="text-xs text-slate-500 font-bold">Venta</div>
+                        <div class="text-lg font-bold text-purple-700" x-text="formatMoney([...simplexData2025, ...simplexData2026].reduce((a,d) => a + d.ventaTotal, 0))"></div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm p-2 border-l-4 border-orange-500 flex items-center justify-between">
+                        <div class="text-xs text-slate-500 font-bold">Marcas</div>
+                        <div class="text-lg font-bold text-orange-700" x-text="[...new Set([...simplexData2025, ...simplexData2026].map(d => d.marca))].length"></div>
+                    </div>
+                </div>
+
+                <!-- Barra de controles compacta -->
+                <div class="bg-white rounded-lg shadow-sm border border-emerald-200 p-3 mb-3">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Buscar por -->
+                        <div class="flex items-center gap-1">
+                            <span class="text-xs font-bold text-slate-600">Buscar:</span>
+                            <label class="cursor-pointer px-2 py-1 rounded-full text-xs transition-colors"
+                                :class="simplexSearchType === 'sku' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                                <input type="radio" x-model="simplexSearchType" value="sku" class="hidden"> SKU
+                            </label>
+                            <label class="cursor-pointer px-2 py-1 rounded-full text-xs transition-colors"
+                                :class="simplexSearchType === 'marca' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                                <input type="radio" x-model="simplexSearchType" value="marca" class="hidden"> Marca
+                            </label>
+                            <label class="cursor-pointer px-2 py-1 rounded-full text-xs transition-colors"
+                                :class="simplexSearchType === 'proveedor' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                                <input type="radio" x-model="simplexSearchType" value="proveedor" class="hidden"> Proveedor
+                            </label>
+                        </div>
+
+                        <div class="h-6 w-px bg-slate-300"></div>
+
+                        <!-- Años -->
+                        <div class="flex items-center gap-1">
+                            <span class="text-xs font-bold text-slate-600">Año:</span>
+                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors flex items-center gap-1"
+                                :class="simplexYears.y2025 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                                <input type="checkbox" x-model="simplexYears.y2025" @change="updateSimplexActiveData()" class="hidden"> 2025
+                            </label>
+                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors flex items-center gap-1"
+                                :class="simplexYears.y2026 ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                                <input type="checkbox" x-model="simplexYears.y2026" @change="updateSimplexActiveData()" class="hidden"> 2026
+                            </label>
+                        </div>
+
+                        <div class="h-6 w-px bg-slate-300"></div>
+
+                        <!-- Métrica -->
+                        <div class="flex items-center gap-1">
+                            <span class="text-xs font-bold text-slate-600">Mostrar:</span>
+                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors"
+                                :class="simplexMetric === 'unidades' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                                <input type="radio" x-model="simplexMetric" value="unidades" class="hidden"> Unidades
+                            </label>
+                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors"
+                                :class="simplexMetric === 'importe' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                                <input type="radio" x-model="simplexMetric" value="importe" class="hidden"> Importe
+                            </label>
+                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors"
+                                :class="simplexMetric === 'ambos' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                                <input type="radio" x-model="simplexMetric" value="ambos" class="hidden"> Ambos
+                            </label>
+                        </div>
+
+                        <div class="h-6 w-px bg-slate-300"></div>
+
+                        <!-- Vista -->
+                        <div class="flex items-center gap-1">
+                            <span class="text-xs font-bold text-slate-600">Vista:</span>
+                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors"
+                                :class="simplexViewMode === 'horizontal' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                                <input type="radio" x-model="simplexViewMode" value="horizontal" class="hidden"> ↔️ Tabla
+                            </label>
+                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors"
+                                :class="simplexViewMode === 'vertical' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                                <input type="radio" x-model="simplexViewMode" value="vertical" class="hidden"> ↕️ Cards
+                            </label>
+                        </div>
+
+                        <!-- Buscador -->
+                        <div class="flex-1 flex gap-2">
+                            <div class="relative flex-1">
+                                <span class="absolute left-2 top-1.5 text-emerald-400 text-sm">🔍</span>
+                                <input type="text" 
+                                    x-model="simplexSearchText"
+                                    @input="filterSimplexData(); updateSimplexChart()"
+                                    @keydown.enter="filterSimplexData(); updateSimplexChart()"
+                                    :placeholder="simplexSearchType === 'sku' ? 'Buscar SKU...' : simplexSearchType === 'marca' ? 'Buscar Marca...' : 'Buscar Proveedor...'"
+                                    class="w-full pl-7 pr-3 py-1.5 rounded border border-slate-300 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            </div>
+                            <button @click="filterSimplexData(); updateSimplexChart()" 
+                                class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded font-bold text-xs">
+                                Buscar
+                            </button>
+                            <button @click="simplexSearchText=''; simplexFilteredData=[]; updateSimplexChart()" 
+                                class="bg-slate-200 hover:bg-slate-300 text-slate-600 px-2 py-1.5 rounded text-xs">
+                                ✕
+                            </button>
                         </div>
                     </div>
-                    <div class="bg-white p-4 rounded-lg shadow border lg:col-span-2">
-                        <h3 class="text-sm font-bold text-emerald-700 uppercase border-b pb-2 mb-3">Inversión Sugerida por Proveedor (Top 20)</h3>
-                        <div class="overflow-x-auto max-h-64 border rounded">
-                            <table class="w-full text-xs">
-                                <thead class="bg-slate-100 font-bold text-slate-600 sticky top-0"><tr><td class="p-2 border-b">Proveedor</td><td class="p-2 border-b text-right">Importe a Comprar ($)</td><td class="p-2 border-b text-center">% del Total</td></tr></thead>
-                                <tbody class="divide-y">
-                                    <template x-for="p in metrics.proveedores" :key="p.name">
-                                        <tr class="hover:bg-slate-50"><td class="p-2 font-medium" x-text="p.name"></td><td class="p-2 text-right font-mono text-emerald-700 font-bold" x-text="formatMoney(p.val)"></td><td class="p-2 text-center text-slate-400" x-text="((p.val / kpis.compra)*100).toFixed(1) + '%'"></td></tr>
-                                    </template>
-                                </tbody>
-                            </table>
+                </div>
+
+                <!-- Gráfico de evolución (arriba de resultados) -->
+                <div x-show="simplexFilteredData.length > 0" class="bg-white rounded-lg shadow-sm border border-slate-200 p-3 mb-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-sm font-bold text-slate-700">📈 Evolución Mensual</h3>
+                        <div class="text-xs text-slate-500">
+                            <span x-show="simplexYears.y2025 && simplexYears.y2026">Comparando 2025 vs 2026</span>
+                            <span x-show="simplexYears.y2025 && !simplexYears.y2026">Año 2025</span>
+                            <span x-show="!simplexYears.y2025 && simplexYears.y2026">Año 2026</span>
                         </div>
                     </div>
+                    <div class="h-48">
+                        <canvas id="simplexEvolutionChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Resultados -->
+                <div x-show="simplexFilteredData.length > 0" class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-100 px-3 py-2 border-b flex justify-between items-center">
+                        <div class="text-sm font-bold text-slate-700">
+                            📊 <span class="text-emerald-600" x-text="simplexFilteredData.length"></span> registros
+                        </div>
+                        <div class="text-xs text-slate-500 flex items-center gap-2">
+                            <span x-show="simplexYears.y2025 && simplexYears.y2026">2025 + 2026</span>
+                            <span x-show="simplexYears.y2025 && !simplexYears.y2026">2025</span>
+                            <span x-show="!simplexYears.y2025 && simplexYears.y2026">2026</span>
+                            <span>|</span>
+                            <span x-text="simplexMetric === 'unidades' ? 'Unidades' : simplexMetric === 'importe' ? 'Importe' : 'Ambos'"></span>
+                        </div>
+                    </div>
+
+                    <!-- VISTA HORIZONTAL (meses en columnas) -->
+                    <div x-show="simplexViewMode === 'horizontal'" class="overflow-x-auto max-h-[400px]">
+                        <table class="w-full text-xs">
+                            <thead class="bg-emerald-100 sticky top-0 z-10">
+                                <tr>
+                                    <template x-for="col in getSimplexColumns()" :key="col.key">
+                                        <th class="p-1.5 text-left font-bold text-emerald-800 border-b border-emerald-200 whitespace-nowrap"
+                                            :class="[...simplexMeses2025, ...simplexMeses2026].includes(col.key) ? 'bg-emerald-200 text-center min-w-[80px]' : ''">
+                                            <span x-text="col.label"></span>
+                                        </th>
+                                    </template>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <template x-for="(row, idx) in simplexFilteredData" :key="idx">
+                                    <tr class="hover:bg-emerald-50 transition-colors"
+                                        :class="row.year === 2026 ? 'bg-indigo-50/30' : ''">
+                                        <template x-for="col in getSimplexColumns()" :key="col.key">
+                                            <td class="p-1.5 border-b border-slate-100"
+                                                :class="{
+                                                    'font-bold text-slate-800': col.key === 'sku' || col.key === 'marca' || col.key === 'prov',
+                                                    'text-center bg-slate-50': [...simplexMeses2025, ...simplexMeses2026].includes(col.key),
+                                                    'text-right font-mono': col.key === 'qTotal' || col.key === 'ventaTotal',
+                                                    'text-center font-bold': col.key === 'year'
+                                                }">
+                                                <span x-text="getSimplexCellValue(row, col)"></span>
+                                            </td>
+                                        </template>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- VISTA VERTICAL (meses en filas) -->
+                    <div x-show="simplexViewMode === 'vertical'" class="overflow-y-auto max-h-[600px] p-4">
+                        <template x-for="(row, idx) in simplexFilteredData" :key="idx">
+                            <div class="mb-4 bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                                <!-- Header del registro -->
+                                <div class="text-white px-4 py-2 flex justify-between items-center"
+                                    :class="row.year === 2026 ? 'bg-indigo-600' : 'bg-emerald-600'">
+                                    <div class="flex items-center gap-2">
+                                        <span class="bg-white/20 px-2 py-0.5 rounded text-xs font-bold" x-text="row.year || '2025'"></span>
+                                        <span class="font-bold" x-text="row.sku || row.marca || row.prov"></span>
+                                        <span x-show="row.desc" class="text-white/70 text-sm" x-text="'- ' + row.desc"></span>
+                                    </div>
+                                    <div class="text-right text-sm">
+                                        <span class="font-bold" x-text="(row.qTotal || 0).toLocaleString() + ' u'"></span>
+                                        <span class="text-white/70 ml-2" x-text="formatMoney(row.ventaTotal || 0)"></span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Tabla de meses vertical compacta -->
+                                <div class="p-2">
+                                    <table class="w-full text-xs">
+                                        <thead class="bg-slate-100">
+                                            <tr>
+                                                <th class="p-1.5 text-left font-bold text-slate-600">MES</th>
+                                                <th x-show="simplexMetric !== 'importe'" class="p-1.5 text-right font-bold text-slate-600">UNIDADES</th>
+                                                <th x-show="simplexMetric !== 'unidades'" class="p-1.5 text-right font-bold text-slate-600">VENTA ($)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y">
+                                            <template x-for="mes in (row.year === 2026 ? simplexMeses2026 : simplexMeses2025)" :key="mes">
+                                                <tr class="hover:bg-emerald-50" :class="(row[mes]?.q || 0) > 0 ? '' : 'opacity-40'">
+                                                    <td class="p-1.5 font-bold text-slate-700 uppercase" x-text="mes"></td>
+                                                    <td x-show="simplexMetric !== 'importe'" class="p-1.5 text-right font-mono" 
+                                                        :class="(row[mes]?.q || 0) > 0 ? 'text-emerald-700 font-bold' : 'text-slate-400'"
+                                                        x-text="(row[mes]?.q || 0).toLocaleString()"></td>
+                                                    <td x-show="simplexMetric !== 'unidades'" class="p-1.5 text-right font-mono"
+                                                        :class="(row[mes]?.venta || 0) > 0 ? 'text-blue-700 font-bold' : 'text-slate-400'"
+                                                        x-text="formatMoney(row[mes]?.venta || 0)"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Sin resultados -->
+                <div x-show="simplexSearchText.length >= 2 && simplexFilteredData.length === 0" class="bg-yellow-50 rounded-lg shadow-sm p-6 text-center border border-yellow-200">
+                    <div class="text-3xl mb-2">🔍</div>
+                    <h3 class="text-sm font-bold text-yellow-700 mb-1">No se encontraron resultados</h3>
+                    <p class="text-yellow-600 text-xs">No hay datos para "<span x-text="simplexSearchText" class="font-bold"></span>"</p>
+                </div>
+
+                <!-- Estado inicial (sin búsqueda) -->
+                <div x-show="simplexSearchText.length < 2 && simplexFilteredData.length === 0" class="bg-slate-50 rounded-lg p-6 text-center border border-dashed border-slate-300">
+                    <div class="text-3xl mb-2">🔍</div>
+                    <p class="text-slate-500 text-sm">Ingresa al menos 2 caracteres para buscar</p>
                 </div>
             </div>
         </div>
@@ -2184,6 +2072,12 @@
 //--  ---
         window.inventoryApp = function() {
             return {
+                // 🔐 Sistema de Login
+                isAuthenticated: false,
+                loginUser: '',
+                loginPass: '',
+                loginError: '',
+                
                 isLoading: false, loadingMsg: '', dataReady: false, fileName: null, lastUpdate: null,
                 darkMode: true, // Por defecto tema oscuro
                 
@@ -2239,7 +2133,7 @@
 
                 currentTab: 'consolidado', currentPage: 1, pageSize: 50, search: '', sortCol: 'qEnviar', sortAsc: false,
 
-                filterLotesRange: 'all', selectedEnvioFechas: [], activeFilters: {}, filterMenuOpen: null,
+                filterLotesRanges: [], selectedEnvioFechas: [], activeFilters: {}, filterMenuOpen: null,
                 editingCell: null, columnMaxValues: {}, copyFeedback: false, historyData: [], debtHistory: [],
 
                 availableOtherDeps: ['80', '82', '86', '87', '89'],
@@ -2249,6 +2143,21 @@
                 chatMessages: [{type: 'bot', text: '¡Hola! Soy tu asistente de inventario. Pregúntame por un SKU, Marca o usa los botones rápidos.'}],
 
                 lookups: { mapML: {}, mapCargos: {}, mapEnvios: {}, mapCanasta: {}, mapMLA: {}, mapSTA19: {} },
+
+                // 📊 SIMPLEX - Ventas por mes (2025 y 2026)
+                simplexData2025: [],
+                simplexData2026: [],
+                simplexData: [], // Datos activos según selección de año
+                simplexFilteredData: [],
+                simplexSearchType: 'sku', // 'sku' | 'marca' | 'proveedor'
+                simplexSearchText: '',
+                simplexViewMode: 'horizontal', // 'horizontal' | 'vertical'
+                simplexYears: { y2025: true, y2026: false }, // Años seleccionados
+                simplexMetric: 'ambos', // 'unidades' | 'importe' | 'ambos'
+                simplexMeses2025: ['ene-25','feb-25','mar-25','abr-25','may-25','jun-25','jul-25','ago-25','sept-25','oct-25','nov-25','dic-25'],
+                simplexMeses2026: ['ene-26','feb-26','mar-26','abr-26','may-26','jun-26','jul-26','ago-26','sept-26','oct-26','nov-26','dic-26'],
+                simplexMeses: ['ene-25','feb-25','mar-25','abr-25','may-25','jun-25','jul-25','ago-25','sept-25','oct-25','nov-25','dic-25'], // Activos
+                simplexChartInstance: null,
 
                 kpis: { compra:0, envios:0, valorEnvios:0, lotesVencidos:0, skusCompra:0, cantImpulsar:0, enCamino: 0, inmovilizado: 0 },
                 
@@ -2266,21 +2175,389 @@
                     { id: 'dashboard', label: '⚡ Dashboard KPI' },
                     { id: 'metricas', label: '📊 Métricas' },
                     { id: 'matriz_det', label: '🚦 Detalle Matriz' },
-                    { id: 'market', label: '🛒 Market' },
                     { id: 'consolidado', label: '🌍 Consolidado' },
                     { id: 'proveedores', label: '🏭 Proveedores' },
                     { id: 'otros_depositos', label: '🏭 Otros Depósitos' },
-                    { id: 'inmovilizado', label: '⚠️ Stock > 45d' },
+                    { id: 'inmovilizado', label: '📦 SOBRESTOCK' },
                     { id: 'dep80', label: '📦 Envíos Full' },
                     { id: 'resumen', label: '🛒 Compras' },
+                    { id: 'simplex', label: '📊 SIMPLEX' },
                     { id: 'detalle', label: '📋 Maestro' },
                     { id: 'cargos', label: '⚠️ Cargos ML' },
                     { id: 'enviados', label: '🚚 Hist. Envíos' },
-                    { id: 'vencimientos', label: '📅 Lotes' }
+                    { id: 'vencimientos', label: '📅 Vencimientos' }
                 ],
                 chartInstances: {},
 
+                // 📊 GENERAR REPORTE COMPLETO DE CARGOS ML
+                generateCargosReport() {
+                    if (!this.rawData.cargos || this.rawData.cargos.length <= 1) {
+                        alert('❌ No hay datos de cargos cargados. Por favor, importa un archivo Excel con la hoja "Cargos".');
+                        return;
+                    }
+
+                    if (!this.rawData.grafana || this.rawData.grafana.length <= 1) {
+                        alert('❌ No hay datos de Grafana cargados. Necesario para obtener Analista, Marca y Proveedor.');
+                        return;
+                    }
+
+                    try {
+                        // ===== CREAR LOOKUP DESDE GRAFANA (SKU -> {analista, marca, prov, desc}) =====
+                        const headersGrafana = this.rawData.grafana[0];
+                        const iSkuGrafana = this.findColumnIndex(headersGrafana, ['SKU']);
+                        const iAnalistaGrafana = this.findColumnIndex(headersGrafana, ['Analista', 'ANALISTA']);
+                        const iMarcaGrafana = this.findColumnIndex(headersGrafana, ['Marca', 'MARCA']);
+                        const iProvGrafana = this.findColumnIndex(headersGrafana, ['Prov', 'PROV', 'Proveedor', 'PROVEEDOR']);
+                        const iDescGrafana = this.findColumnIndex(headersGrafana, ['Descripcion', 'DESCRIPCION', 'Desc', 'DESC']);
+
+                        const mapSkuGrafana = {};
+                        this.rawData.grafana.slice(1).forEach(row => {
+                            const sku = this.cleanString(row[iSkuGrafana]);
+                            if (sku && sku !== 'TOTAL') {
+                                mapSkuGrafana[sku] = {
+                                    analista: row[iAnalistaGrafana] || 'Sin Analista',
+                                    marca: row[iMarcaGrafana] || 'S/D',
+                                    prov: row[iProvGrafana] || 'S/D',
+                                    desc: row[iDescGrafana] || ''
+                                };
+                            }
+                        });
+
+                        // ===== PROCESAR DATOS DE CARGOS =====
+                        const headersCargos = this.rawData.cargos[0];
+                        const iSku = this.findColumnIndex(headersCargos, ['SKU']);
+                        const iDesc = this.findColumnIndex(headersCargos, ['Descripcion', 'DESCRIPCION']);
+                        const iUnidades = this.findColumnIndex(headersCargos, ['UNIDADES CON CARGO', 'Unidades']);
+                        const iCargoPorUni = this.findColumnIndex(headersCargos, ['Cargo por unidad', 'CARGO POR UNIDAD']);
+                        const iFecha = this.findColumnIndex(headersCargos, ['Fecha de Cargos', 'FECHA DE CARGOS', 'FECHA']);
+
+                        // Estructuras de datos
+                        const cargosPorAnalista = {}; // { analista: {skus: Set, unidades: 0, importe: 0} }
+                        const cargosPorAnalistaFecha = {}; // { analista: { fecha: importe } } - para evolución
+                        const cargosDetallados = [];
+                        const fechasSet = new Set();
+                        let ultimaFecha = null;
+                        let ultimaFechaSerial = 0;
+
+                        this.rawData.cargos.slice(1).forEach(row => {
+                            const sku = this.cleanString(row[iSku]);
+                            if (!sku || sku === 'TOTAL') return;
+
+                            const fechaSerial = row[iFecha];
+                            const fechaStr = typeof fechaSerial === 'number' ? this.excelDateToJSDate(fechaSerial) : (fechaSerial || 'Sin Fecha');
+                            const unidades = this.parseNumber(row[iUnidades]);
+                            const cargoPorUni = this.parseNumber(row[iCargoPorUni]);
+                            const importe = unidades * cargoPorUni;
+
+                            // Rastrear última fecha
+                            if (typeof fechaSerial === 'number' && fechaSerial > ultimaFechaSerial) {
+                                ultimaFechaSerial = fechaSerial;
+                                ultimaFecha = fechaStr;
+                            }
+
+                            fechasSet.add(fechaStr);
+
+                            // Obtener datos de Grafana
+                            const datosGrafana = mapSkuGrafana[sku] || { analista: 'Sin Analista', marca: 'S/D', prov: 'S/D', desc: '' };
+                            const analista = datosGrafana.analista;
+                            const marca = datosGrafana.marca;
+                            const prov = datosGrafana.prov;
+                            const desc = row[iDesc] || datosGrafana.desc || '';
+
+                            // Agrupar por analista para resumen
+                            if (!cargosPorAnalista[analista]) {
+                                cargosPorAnalista[analista] = { skus: new Set(), unidades: 0, importe: 0 };
+                            }
+                            cargosPorAnalista[analista].skus.add(sku);
+                            cargosPorAnalista[analista].unidades += unidades;
+                            cargosPorAnalista[analista].importe += importe;
+
+                            // Agrupar por analista Y fecha para evolución
+                            if (!cargosPorAnalistaFecha[analista]) {
+                                cargosPorAnalistaFecha[analista] = {};
+                            }
+                            if (!cargosPorAnalistaFecha[analista][fechaStr]) {
+                                cargosPorAnalistaFecha[analista][fechaStr] = 0;
+                            }
+                            cargosPorAnalistaFecha[analista][fechaStr] += importe;
+
+                            // Detalle para segunda hoja
+                            cargosDetallados.push({
+                                fecha: fechaStr,
+                                analista,
+                                sku,
+                                descripcion: desc,
+                                marca,
+                                prov,
+                                unidades,
+                                importe
+                            });
+                        });
+
+                        // Ordenar fechas cronológicamente
+                        const fechasOrdenadas = Array.from(fechasSet).sort((a, b) => {
+                            const parseDate = (str) => {
+                                const parts = str.split('/');
+                                if (parts.length === 3) {
+                                    return new Date(parts[2], parts[1] - 1, parts[0]);
+                                }
+                                return new Date(str);
+                            };
+                            return parseDate(a) - parseDate(b);
+                        });
+
+                        const primeraFecha = fechasOrdenadas[0];
+                        const analistas = Object.keys(cargosPorAnalista).sort();
+                        
+                        // Calcular totales globales
+                        let totalSkus = 0, totalUnidadesGlobal = 0, totalImporteGlobal = 0;
+                        analistas.forEach(a => {
+                            totalSkus += cargosPorAnalista[a].skus.size;
+                            totalUnidadesGlobal += cargosPorAnalista[a].unidades;
+                            totalImporteGlobal += cargosPorAnalista[a].importe;
+                        });
+
+                        // Función para crear barra visual ASCII
+                        const createBar = (pct, maxLen = 20) => {
+                            const filled = Math.round((pct / 100) * maxLen);
+                            return '█'.repeat(filled) + '░'.repeat(maxLen - filled);
+                        };
+
+                        const wb = XLSX.utils.book_new();
+
+                        // ========== HOJA 1: INFORME EJECUTIVO COMPLETO ==========
+                        const ws1Data = [];
+
+                        // Título
+                        ws1Data.push(['═══════════════════════════════════════════════════════════════════']);
+                        ws1Data.push(['                    INFORME EJECUTIVO DE CARGOS ML']);
+                        ws1Data.push(['═══════════════════════════════════════════════════════════════════']);
+                        ws1Data.push(['Generado:', new Date().toLocaleString('es-AR')]);
+                        ws1Data.push(['Período analizado:', `${primeraFecha} al ${ultimaFecha}`]);
+                        ws1Data.push(['Total Cargos Acumulados:', `$ ${totalImporteGlobal.toLocaleString('es-AR')}`]);
+                        ws1Data.push([]);
+
+                        // ─── TABLA 1: RANKING DE ANALISTAS (Mayor a menor) ───
+                        ws1Data.push(['───────────────────────────────────────────────────────────────────']);
+                        ws1Data.push(['📊 RANKING DE ANALISTAS POR CARGOS TOTALES']);
+                        ws1Data.push(['───────────────────────────────────────────────────────────────────']);
+                        ws1Data.push(['#', 'Analista', 'SKUs', 'Unidades', 'Cargos Total ($)', '% Participación', 'Gráfico']);
+
+                        const ranking = analistas.map(a => ({
+                            analista: a,
+                            skus: cargosPorAnalista[a].skus.size,
+                            unidades: cargosPorAnalista[a].unidades,
+                            importe: cargosPorAnalista[a].importe,
+                            pct: (cargosPorAnalista[a].importe / totalImporteGlobal) * 100
+                        })).sort((a, b) => b.importe - a.importe);
+
+                        ranking.forEach((r, idx) => {
+                            ws1Data.push([
+                                idx + 1,
+                                r.analista,
+                                r.skus,
+                                r.unidades,
+                                r.importe,
+                                `${r.pct.toFixed(1)}%`,
+                                createBar(r.pct)
+                            ]);
+                        });
+                        ws1Data.push(['', 'TOTAL', totalSkus, totalUnidadesGlobal, totalImporteGlobal, '100%', createBar(100)]);
+                        ws1Data.push([]);
+                        ws1Data.push([]);
+
+                        // ─── TABLA 2: EVOLUCIÓN POR FECHA (Importes) ───
+                        ws1Data.push(['───────────────────────────────────────────────────────────────────']);
+                        ws1Data.push(['📈 EVOLUCIÓN DE CARGOS POR FECHA (Importes $)']);
+                        ws1Data.push(['───────────────────────────────────────────────────────────────────']);
+                        
+                        const headerEvol = ['Analista', ...fechasOrdenadas, 'TOTAL'];
+                        ws1Data.push(headerEvol);
+
+                        const totalesPorFecha = {};
+                        fechasOrdenadas.forEach(f => totalesPorFecha[f] = 0);
+
+                        ranking.forEach(r => {
+                            const row = [r.analista];
+                            let totalAnalista = 0;
+                            fechasOrdenadas.forEach(fecha => {
+                                const val = cargosPorAnalistaFecha[r.analista][fecha] || 0;
+                                row.push(val);
+                                totalesPorFecha[fecha] += val;
+                                totalAnalista += val;
+                            });
+                            row.push(totalAnalista);
+                            ws1Data.push(row);
+                        });
+
+                        const rowTotalFechas = ['TOTAL'];
+                        let grandTotal = 0;
+                        fechasOrdenadas.forEach(f => {
+                            rowTotalFechas.push(totalesPorFecha[f]);
+                            grandTotal += totalesPorFecha[f];
+                        });
+                        rowTotalFechas.push(grandTotal);
+                        ws1Data.push(rowTotalFechas);
+                        ws1Data.push([]);
+                        ws1Data.push([]);
+
+                        // ─── TABLA 3: PARTICIPACIÓN % POR FECHA ───
+                        ws1Data.push(['───────────────────────────────────────────────────────────────────']);
+                        ws1Data.push(['📊 PARTICIPACIÓN PORCENTUAL POR FECHA']);
+                        ws1Data.push(['───────────────────────────────────────────────────────────────────']);
+                        
+                        const headerPct = ['Analista', ...fechasOrdenadas.map(f => `% ${f}`)];
+                        ws1Data.push(headerPct);
+
+                        ranking.forEach(r => {
+                            const row = [r.analista];
+                            fechasOrdenadas.forEach(fecha => {
+                                const val = cargosPorAnalistaFecha[r.analista][fecha] || 0;
+                                const totalFecha = totalesPorFecha[fecha] || 1;
+                                const pct = (val / totalFecha) * 100;
+                                row.push(`${pct.toFixed(1)}%`);
+                            });
+                            ws1Data.push(row);
+                        });
+                        ws1Data.push([]);
+                        ws1Data.push([]);
+
+                        // ─── TABLA 4: VARIACIÓN ENTRE FECHAS ───
+                        if (fechasOrdenadas.length >= 2) {
+                            ws1Data.push(['───────────────────────────────────────────────────────────────────']);
+                            ws1Data.push(['📉 VARIACIÓN ENTRE PRIMERA Y ÚLTIMA FECHA']);
+                            ws1Data.push(['───────────────────────────────────────────────────────────────────']);
+                            ws1Data.push(['Analista', `${primeraFecha}`, `${ultimaFecha}`, 'Variación ($)', 'Variación (%)', 'Tendencia']);
+
+                            ranking.forEach(r => {
+                                const valPrimera = cargosPorAnalistaFecha[r.analista][primeraFecha] || 0;
+                                const valUltima = cargosPorAnalistaFecha[r.analista][ultimaFecha] || 0;
+                                const variacionAbs = valUltima - valPrimera;
+                                const variacionPct = valPrimera > 0 ? ((valUltima - valPrimera) / valPrimera) * 100 : (valUltima > 0 ? 100 : 0);
+                                const tendencia = variacionAbs > 0 ? '📈 SUBIÓ' : (variacionAbs < 0 ? '📉 BAJÓ' : '➡️ IGUAL');
+                                
+                                ws1Data.push([
+                                    r.analista,
+                                    valPrimera,
+                                    valUltima,
+                                    variacionAbs,
+                                    `${variacionPct.toFixed(1)}%`,
+                                    tendencia
+                                ]);
+                            });
+                            ws1Data.push([]);
+                            ws1Data.push([]);
+                        }
+
+                        // ─── TABLA 5: RESUMEN ESTADÍSTICO ───
+                        ws1Data.push(['───────────────────────────────────────────────────────────────────']);
+                        ws1Data.push(['📋 RESUMEN ESTADÍSTICO']);
+                        ws1Data.push(['───────────────────────────────────────────────────────────────────']);
+                        
+                        const maxAnalista = ranking[0];
+                        const minAnalista = ranking[ranking.length - 1];
+                        const promedio = totalImporteGlobal / analistas.length;
+
+                        ws1Data.push(['Métrica', 'Valor']);
+                        ws1Data.push(['Total Analistas', analistas.length]);
+                        ws1Data.push(['Total SKUs con Cargos', totalSkus]);
+                        ws1Data.push(['Total Unidades Afectadas', totalUnidadesGlobal]);
+                        ws1Data.push(['Importe Total Cargos', `$ ${totalImporteGlobal.toLocaleString('es-AR')}`]);
+                        ws1Data.push(['Promedio por Analista', `$ ${Math.round(promedio).toLocaleString('es-AR')}`]);
+                        ws1Data.push(['Mayor Responsable', `${maxAnalista.analista} (${maxAnalista.pct.toFixed(1)}%)`]);
+                        ws1Data.push(['Menor Responsable', `${minAnalista.analista} (${minAnalista.pct.toFixed(1)}%)`]);
+                        ws1Data.push(['Fechas Analizadas', fechasOrdenadas.length]);
+
+                        const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
+                        
+                        // Anchos de columna
+                        const maxCols = Math.max(7, fechasOrdenadas.length + 2);
+                        const colWidths1 = [{ wch: 20 }];
+                        for (let i = 1; i < maxCols; i++) colWidths1.push({ wch: 16 });
+                        colWidths1.push({ wch: 22 }); // Gráfico
+                        ws1['!cols'] = colWidths1;
+
+                        XLSX.utils.book_append_sheet(wb, ws1, 'Informe de Cargos');
+
+                        // ========== HOJA 2: DETALLE POR ANALISTA (ÚLTIMA FECHA) ==========
+                        const detalleUltimaFecha = cargosDetallados.filter(c => c.fecha === ultimaFecha);
+                        detalleUltimaFecha.sort((a, b) => {
+                            if (a.analista !== b.analista) return a.analista.localeCompare(b.analista);
+                            return b.importe - a.importe;
+                        });
+
+                        const ws2Data = [];
+                        ws2Data.push(['═══════════════════════════════════════════════════════════════════════════════════════']);
+                        ws2Data.push([`DETALLE DE CARGOS - FECHA: ${ultimaFecha || 'N/A'}`]);
+                        ws2Data.push(['═══════════════════════════════════════════════════════════════════════════════════════']);
+                        ws2Data.push([]);
+                        ws2Data.push(['FECHA', 'ANALISTA', 'SKU', 'DESCRIPCION', 'MARCA', 'PROVEEDOR', 'CANTIDAD', 'IMPORTE ($)']);
+
+                        let currentAnalista = '';
+                        let subtotalUnidades = 0;
+                        let subtotalImporte = 0;
+
+                        detalleUltimaFecha.forEach((item, idx) => {
+                            if (currentAnalista && currentAnalista !== item.analista) {
+                                ws2Data.push(['', `► SUBTOTAL ${currentAnalista}`, '', '', '', '', subtotalUnidades, subtotalImporte]);
+                                ws2Data.push([]);
+                                subtotalUnidades = 0;
+                                subtotalImporte = 0;
+                            }
+                            currentAnalista = item.analista;
+                            subtotalUnidades += item.unidades;
+                            subtotalImporte += item.importe;
+
+                            ws2Data.push([
+                                item.fecha,
+                                item.analista,
+                                item.sku,
+                                item.descripcion,
+                                item.marca,
+                                item.prov,
+                                item.unidades,
+                                item.importe
+                            ]);
+                        });
+
+                        if (currentAnalista) {
+                            ws2Data.push(['', `► SUBTOTAL ${currentAnalista}`, '', '', '', '', subtotalUnidades, subtotalImporte]);
+                        }
+
+                        const totalUnidadesDetalle = detalleUltimaFecha.reduce((a, b) => a + b.unidades, 0);
+                        const totalImportesDetalle = detalleUltimaFecha.reduce((a, b) => a + b.importe, 0);
+                        ws2Data.push([]);
+                        ws2Data.push(['═══════', '════════════════════', '═══════', '═══════════════', '═══════', '═══════', '═══════', '════════════']);
+                        ws2Data.push(['', '★ TOTAL GENERAL', '', '', '', '', totalUnidadesDetalle, totalImportesDetalle]);
+
+                        const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
+                        ws2['!cols'] = [
+                            { wch: 12 }, { wch: 22 }, { wch: 14 }, { wch: 35 },
+                            { wch: 18 }, { wch: 18 }, { wch: 12 }, { wch: 15 }
+                        ];
+
+                        XLSX.utils.book_append_sheet(wb, ws2, 'Detalle por Analista');
+
+                        // Descargar archivo
+                        const fechaHoy = new Date().toISOString().split('T')[0];
+                        XLSX.writeFile(wb, `Reporte_Cargos_ML_${fechaHoy}.xlsx`);
+
+                        console.log('[REPORTE CARGOS] ✅ Excel generado exitosamente');
+                        alert('✅ Reporte de Cargos ML generado!\n\n📊 Incluye:\n• Ranking con gráfico visual\n• Evolución por Fecha\n• Participación %\n• Variación entre fechas\n• Estadísticas\n• Detalle con subtotales');
+
+                    } catch (error) {
+                        console.error('[REPORTE CARGOS] ❌ Error:', error);
+                        alert(`❌ Error al generar reporte: ${error.message}`);
+                    }
+                },
+
                 async initApp() {
+                    // 🔐 Verificar si ya está autenticado (sesión guardada)
+                    const savedAuth = sessionStorage.getItem('inventoryAuth');
+                    if(savedAuth === 'true') {
+                        this.isAuthenticated = true;
+                    }
+                    
                     // 🎨 Cargar tema guardado (por defecto: oscuro)
                     const savedTheme = localStorage.getItem('inventoryAppTheme');
                     if (savedTheme === 'light') {
@@ -2299,7 +2576,7 @@
                         if(main && main.length) {
                             const meta = await DB.load('meta');
                             this.fileName = meta?.fileName; this.lastUpdate = meta?.date;
-                            for(let k of ['grafana','pbi','sml','pml','cargos','enviados','vto','canasta','mla','sta19']) this.rawData[k] = await DB.load(k);
+                            for(let k of ['grafana','pbi','sml','pml','cargos','enviados','vto','canasta','mla','sta19','simplex']) this.rawData[k] = await DB.load(k);
                             this.strategyOverrides = await DB.load('strategyOverrides') || {};
                             this.historyData = await DB.getHistory();
                             this.debtHistory = await DB.getDebtHistory();
@@ -2308,6 +2585,31 @@
                             this.processAll();
                         } else { this.isLoading = false; }
                     } catch(e) { console.error(e); this.isLoading = false; }
+                },
+
+                // 🔐 Manejar Login
+                handleLogin() {
+                    const validUser = 'Lpared';
+                    const validPass = '1979';
+                    
+                    if(this.loginUser === validUser && this.loginPass === validPass) {
+                        this.isAuthenticated = true;
+                        this.loginError = '';
+                        sessionStorage.setItem('inventoryAuth', 'true');
+                        console.log('[AUTH] ✅ Login exitoso');
+                    } else {
+                        this.loginError = 'Usuario o contraseña incorrectos';
+                        console.log('[AUTH] ❌ Login fallido');
+                    }
+                },
+
+                // 🔐 Cerrar sesión
+                handleLogout() {
+                    this.isAuthenticated = false;
+                    sessionStorage.removeItem('inventoryAuth');
+                    this.loginUser = '';
+                    this.loginPass = '';
+                    console.log('[AUTH] Sesión cerrada');
                 },
 
                 toggleTheme() {
@@ -2377,6 +2679,8 @@
                         this.rawData.canasta = getSheet(['canasta']);
                         this.rawData.mla = getSheet(['mla']);
                         this.rawData.sta19 = getSheet(['sta19', 'sta 19']);
+                        this.rawData.simplex = getSheet(['simplex2025', 'simplex']);
+                        this.rawData.simplex2026 = getSheet(['simplex2026']);
                         
                         if(this.rawData.grafana.length === 0) {
                             throw new Error("❌ No se encontró la hoja 'Grafana' o está vacía.");
@@ -2391,7 +2695,7 @@
                         // Guardar después del procesamiento en segundo plano
                         setTimeout(async () => {
                             try {
-                                for(let k of ['grafana','pbi','sml','pml','cargos','enviados','vto','canasta','mla','sta19']) {
+                                for(let k of ['grafana','pbi','sml','pml','cargos','enviados','vto','canasta','mla','sta19','simplex','simplex2026']) {
                                     if(this.rawData[k] && this.rawData[k].length > 0) {
                                         // Clonar manualmente para evitar problemas
                                         const cleanData = this.rawData[k].map(row => 
@@ -2442,6 +2746,8 @@
                             this.rawData.canasta = getSheet(['canasta']);
                             this.rawData.mla = getSheet(['mla']);
                             this.rawData.sta19 = getSheet(['sta19', 'sta 19']);
+                            this.rawData.simplex = getSheet(['simplex2025', 'simplex']);
+                            this.rawData.simplex2026 = getSheet(['simplex2026']);
 
                             if(this.rawData.grafana.length === 0) {
                                 throw new Error("❌ No se encontró la hoja 'Grafana' o está vacía.\n\nVerifica que tu Excel tenga una hoja con ese nombre.");
@@ -2751,8 +3057,8 @@
                                     <div class="text-emerald-500 text-[9px]">Sugerido</div>
                                     <div class="font-bold">${this.formatMoney(this.kpis.compra)}</div>
                                 </div>
-                                <div class="bg-red-50 p-1 rounded">
-                                    <div class="text-red-500 text-[9px]">Inmovilizado</div>
+                                <div class="bg-purple-50 p-1 rounded">
+                                    <div class="text-purple-500 text-[9px]">Sobrestock</div>
                                     <div class="font-bold">${this.formatMoney(this.kpis.inmovilizado)}</div>
                                 </div>
                             </div>
@@ -3508,21 +3814,28 @@
                                 const matchedSp = subPerfilNames.find(name => sp.toLowerCase().includes(name.toLowerCase()));
                                 if(matchedSp) {
                                     subPerfilStats[matchedSp].count++;
-                                    subPerfilStats[matchedSp].stock += (item.vtar80 || 0); // Stock en dep80
-                                    subPerfilStats[matchedSp].vtar += (item.vtarTotal || 0); // VTAR (venta promedio diaria)
+                                    subPerfilStats[matchedSp].stock += (item.pbi?.dep80 || 0); // Stock FÍSICO en dep80
+                                    subPerfilStats[matchedSp].vtar += (item.vtar80 || 0); // VTAR del dep80 (venta diaria)
                                 }
                             });
 
                             const totalSkusDep80 = Object.values(subPerfilStats).reduce((acc, s) => acc + s.count, 0);
-                            const subPerfilCoverageData = Object.entries(subPerfilStats).map(([name, stats]) => ({
-                                subPerfil: name,
-                                porcentajeProductos: totalSkusDep80 > 0 ? ((stats.count / totalSkusDep80) * 100).toFixed(1) : 0,
-                                cantProductos: stats.count,
-                                stockDep80: stats.stock.toFixed(0),
-                                vtarPromedio: (stats.count > 0 ? (stats.vtar / stats.count) : 0).toFixed(2),
-                                coberturaDias: stats.vtar > 0 ? ((stats.stock / stats.vtar) / 30 * 100).toFixed(1) : 0,
-                                coberturaLabel: stats.vtar > 0 ? ((stats.stock / stats.vtar) / 30 * 100).toFixed(0) : 0
-                            }));
+                            const subPerfilCoverageData = Object.entries(subPerfilStats).map(([name, stats]) => {
+                                const coberturaDias = stats.vtar > 0 ? Math.round(stats.stock / stats.vtar) : 0;
+                                const stockSaludable = Math.round(stats.vtar * 45); // Stock máximo saludable (45 días)
+                                const unidadesSobrestock = coberturaDias > 45 ? Math.round(stats.stock - stockSaludable) : 0;
+                                
+                                return {
+                                    subPerfil: name,
+                                    porcentajeProductos: totalSkusDep80 > 0 ? ((stats.count / totalSkusDep80) * 100).toFixed(1) : 0,
+                                    cantProductos: stats.count,
+                                    stockDep80: Math.round(stats.stock),
+                                    vtarTotal: stats.vtar.toFixed(2),
+                                    coberturaDias: coberturaDias,
+                                    stockSaludable: stockSaludable,
+                                    unidadesSobrestock: unidadesSobrestock
+                                };
+                            });
 
                             this.metrics.subPerfilCoverage = subPerfilCoverageData;
                             console.log('[INFO] Sub_Perfil Cobertura:', subPerfilCoverageData);
@@ -3634,27 +3947,55 @@
                             };
                             console.log('[INFO] Lead Time Analysis:', this.metrics.ltAnalysis);
 
-                            // 🎯 OPCIÓN 4: HEALTH SCORE GENERAL
-                            const coberturaSKUs = this.masterData.filter(m => m.stockGrafana > 0 && (m.vtar80 / (m.vtarTotal || 1)) * 30 >= 30).length;
-                            const coberturaScore = (coberturaSKUs / Math.max(this.masterData.filter(m => m.stockGrafana > 0).length, 1)) * 100;
+                            // 🎯 HEALTH SCORE - CORREGIDO
+                            // 1. COBERTURA (40%): % de SKUs con stock entre 15-45 días (rango saludable)
+                            const skusConStock = this.masterData.filter(m => m.stockGrafana > 0);
+                            const skusSaludables = skusConStock.filter(m => {
+                                const diasStock = m.vtarTotal > 0 ? m.stockGrafana / m.vtarTotal : 0;
+                                return diasStock >= 15 && diasStock <= 45;
+                            }).length;
+                            const coberturaScore = skusConStock.length > 0 
+                                ? (skusSaludables / skusConStock.length) * 100 
+                                : 0;
                             
-                            const rotacionSKUs = this.masterData.filter(m => m.vtarTotal >= vtarMediana).length;
-                            const rotacionScore = (rotacionSKUs / Math.max(this.masterData.length, 1)) * 100;
+                            // 2. ROTACIÓN (25%): % de SKUs activos (con venta > 0)
+                            const skusActivos = this.masterData.filter(m => m.vtarTotal > 0).length;
+                            const rotacionScore = this.masterData.length > 0 
+                                ? (skusActivos / this.masterData.length) * 100 
+                                : 0;
                             
+                            // 3. EFICIENCIA CAPITAL (20%): % del capital en productos que rotan (no inmovilizados)
                             const capitalTotal = this.masterData.reduce((a,m) => a + (m.stockValorizado || 0), 0);
-                            const capitalRotado = this.masterData.filter(m => m.vtarTotal > 0).reduce((a,m) => a + (m.stockValorizado || 0), 0);
-                            const capitalScore = capitalTotal > 0 ? (capitalRotado / capitalTotal) * 100 : 50;
+                            const capitalSaludable = this.masterData.filter(m => {
+                                const diasStock = m.vtarTotal > 0 ? m.stockGrafana / m.vtarTotal : 999;
+                                return diasStock <= 45; // No inmovilizado
+                            }).reduce((a,m) => a + (m.stockValorizado || 0), 0);
+                            const capitalScore = capitalTotal > 0 ? (capitalSaludable / capitalTotal) * 100 : 50;
                             
-                            const deudaTotal = this.metrics.totalDeudaAnalistas || 0;
-                            const deudaHistAvg = this.debtHistory.length > 0 
+                            // 4. GESTIÓN CARGOS (15%): Inverso de cargos vs historial
+                            const cargosTotal = this.metrics.totalDeudaAnalistas || 0;
+                            const cargosHistAvg = this.debtHistory.length > 0 
                                 ? this.debtHistory.reduce((a,d) => a + (d.val || 0), 0) / this.debtHistory.length
                                 : 0;
-                            const deudaScore = deudaHistAvg > 0 ? Math.max(0, 100 - (deudaTotal / deudaHistAvg) * 50) : 80;
+                            const cargosScore = cargosHistAvg > 0 
+                                ? Math.min(100, Math.max(0, 100 - (cargosTotal / cargosHistAvg) * 50))
+                                : (cargosTotal === 0 ? 100 : 50);
                             
-                            const healthScore = Math.round((coberturaScore * 0.4 + rotacionScore * 0.25 + capitalScore * 0.2 + deudaScore * 0.15));
-                            const healthTrend = this.debtHistory.length > 1 
-                                ? (this.debtHistory[this.debtHistory.length - 1].val > this.debtHistory[0].val ? '↓' : '↑')
-                                : '→';
+                            // SCORE FINAL PONDERADO
+                            const healthScore = Math.round(
+                                (coberturaScore * 0.4) + 
+                                (rotacionScore * 0.25) + 
+                                (capitalScore * 0.2) + 
+                                (cargosScore * 0.15)
+                            );
+                            
+                            // TENDENCIA: Comparar con historial previo si existe
+                            let healthTrend = '→';
+                            if (this.historyData && this.historyData.length > 1) {
+                                const prevHealthScore = this.metrics.healthScore?.overall || healthScore;
+                                if (healthScore > prevHealthScore + 2) healthTrend = '↑';
+                                else if (healthScore < prevHealthScore - 2) healthTrend = '↓';
+                            }
                             
                             this.metrics.healthScore = {
                                 overall: healthScore,
@@ -3663,7 +4004,14 @@
                                     cobertura: Math.round(coberturaScore),
                                     rotacion: Math.round(rotacionScore),
                                     capital: Math.round(capitalScore),
-                                    deuda: Math.round(deudaScore)
+                                    deuda: Math.round(cargosScore)
+                                },
+                                details: {
+                                    skusSaludables: skusSaludables,
+                                    skusConStock: skusConStock.length,
+                                    skusActivos: skusActivos,
+                                    capitalSaludable: capitalSaludable,
+                                    capitalTotal: capitalTotal
                                 }
                             };
                             console.log('[INFO] Health Score:', this.metrics.healthScore);
@@ -3749,9 +4097,9 @@
 
                             // 📊 OPCIÓN 2: DASHBOARD KPI EJECUTIVO
                             // Calcular métricas adicionales
-                            const skusConStock = this.masterData.filter(m => m.stockGrafana > 0).length;
+                            const skusConStockKpi = this.masterData.filter(m => m.stockGrafana > 0).length;
                             const skusTotales = this.masterData.length;
-                            const fillRate = skusTotales > 0 ? (skusConStock / skusTotales) * 100 : 0;
+                            const fillRate = skusTotales > 0 ? (skusConStockKpi / skusTotales) * 100 : 0;
                             
                             const stockTotal = this.masterData.reduce((a,m) => a + (m.stockGrafana || 0), 0);
                             const venta30dTotal = this.masterData.reduce((a,m) => a + (m.vta30d || 0), 0);
@@ -3914,6 +4262,9 @@
 
                             // 🛒 MÉTRICAS DE SHARE DE MERCADO - Calcular dinámicamente según mes seleccionado
                             this.updateShareMetrics();
+
+                            // 📊 SIMPLEX2025 - Procesar datos de ventas por mes
+                            this.processSimplexData();
 
                             this.updateKPIs();
                             this.calculateColumnMaxes();
@@ -4078,7 +4429,17 @@
                         ventaPerdida,
                         isArbitrage, arbitrageVal,
                         bloqueado,
-                        mla, estadoMLA, ean
+                        mla, estadoMLA, ean,
+                        // SOBRESTOCK: Unidades que exceden los 45 días
+                        unidadesExcedentes: diasStock > 45 && item.vtarTotal > 0 
+                            ? Math.round((diasStock - 45) * item.vtarTotal) 
+                            : 0,
+                        costoExcedente: diasStock > 45 && item.vtarTotal > 0 
+                            ? Math.round((diasStock - 45) * item.vtarTotal) * item.costo 
+                            : 0,
+                        pctExcedente: diasStock > 45 && item.vtarTotal > 0 && item.stockGrafana > 0
+                            ? Math.round(((diasStock - 45) * item.vtarTotal) / item.stockGrafana * 100 * 10) / 10
+                            : 0
                     };
                 },
 
@@ -4260,11 +4621,19 @@
                         d = d.filter(i => i.abc_xyz === code);
                     }
 
-                    if(this.currentTab === 'vencimientos' && this.filterLotesRange !== 'all') {
-                        if(this.filterLotesRange === '0-30') d = d.filter(l => l.dias <= 30);
-                        else if(this.filterLotesRange === '31-60') d = d.filter(l => l.dias > 30 && l.dias <= 60);
-                        else if(this.filterLotesRange === '61-90') d = d.filter(l => l.dias > 60 && l.dias <= 90);
-                        else if(this.filterLotesRange === '90+') d = d.filter(l => l.dias > 90);
+                    if(this.currentTab === 'vencimientos' && this.filterLotesRanges.length > 0) {
+                        d = d.filter(l => {
+                            const dias = l.dias;
+                            return this.filterLotesRanges.some(range => {
+                                if(range === '0-30') return dias <= 30;
+                                if(range === '31-60') return dias > 30 && dias <= 60;
+                                if(range === '61-90') return dias > 60 && dias <= 90;
+                                if(range === '91-120') return dias > 90 && dias <= 120;
+                                if(range === '121-150') return dias > 120 && dias <= 150;
+                                if(range === '150+') return dias > 150;
+                                return false;
+                            });
+                        });
                     }
                     if(this.currentTab === 'enviados' && this.selectedEnvioFechas.length > 0) d = d.filter(e => this.selectedEnvioFechas.includes(e.fecha));
 
@@ -4849,6 +5218,604 @@
                     }
                 },
 
+                // 📊 SIMPLEX - PROCESAR DATOS DE VENTAS POR MES (detecta año por MES)
+                processSimplexData() {
+                    console.log('[SIMPLEX] Iniciando procesamiento...');
+                    
+                    const sheetKey = 'simplex';
+                    if(!this.rawData[sheetKey] || this.rawData[sheetKey].length < 2) {
+                        console.log('[SIMPLEX] ❌ Hoja no encontrada');
+                        this.simplexData2025 = [];
+                        this.simplexData2026 = [];
+                        return;
+                    }
+
+                    const clean = (s) => String(s||'').trim().toUpperCase();
+                    const num = (v) => { 
+                        if(typeof v === 'number') return v; 
+                        if(!v) return 0; 
+                        let s = String(v).replace(/[$\s]/g,'');
+                        if(s.includes('.') && s.includes(',')) {
+                            s = s.replace(/\./g, '').replace(',', '.');
+                        } else if(s.includes(',')) {
+                            s = s.replace(',', '.');
+                        }
+                        return parseFloat(s) || 0; 
+                    };
+                    const idx = (row, keys) => row.findIndex(c => keys.some(k => String(c).trim().toUpperCase().includes(k.toUpperCase())));
+
+                    const h = this.rawData[sheetKey][0];
+                    const iSku = idx(h, ['COD_ARTICU', 'SKU']);
+                    const iDesc = idx(h, ['DESCRIPCIO', 'DESCRIPCION']);
+                    const iQ = idx(h, ['Q']);
+                    const iVenta = idx(h, ['VENTA']);
+                    const iProv = idx(h, ['CA_967_PROVEEDOR', 'PROVEEDOR']);
+                    const iMarca = idx(h, ['CA_967_MARCA', 'MARCA']);
+                    const iAnalista = idx(h, ['CA_967_ANALISTA', 'ANALISTA']);
+                    const iMes = idx(h, ['MES']);
+                    const iPuntoVenta = idx(h, ['NOMBRE_VEN', 'PUNTO DE VENTA', 'PUNTO_VENTA']);
+
+                    if(iSku === -1 || iMes === -1) {
+                        console.warn('[SIMPLEX] ❌ Columnas no encontradas');
+                        return;
+                    }
+
+                    // Mapeo de nombres de mes a clave
+                    const mesNombreToKey = (mesStr, year) => {
+                        const m = String(mesStr).toLowerCase().trim();
+                        const suffix = year === 2025 ? '-25' : '-26';
+                        const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+                        for(let i = 0; i < meses.length; i++) {
+                            if(m.includes(meses[i])) {
+                                // Septiembre especial
+                                return (i === 8 ? 'sept' : meses[i]) + suffix;
+                            }
+                        }
+                        return null;
+                    };
+
+                    const dataMap2025 = {};
+                    const dataMap2026 = {};
+
+                    this.rawData[sheetKey].slice(1).forEach(r => {
+                        const sku = clean(r[iSku]);
+                        if(!sku || sku === 'TOTAL') return;
+
+                        const mesRaw = String(r[iMes] || '').trim();
+                        const year = mesRaw.includes('26') ? 2026 : 2025;
+                        const mesKey = mesNombreToKey(mesRaw, year);
+                        
+                        const dataMap = year === 2025 ? dataMap2025 : dataMap2026;
+                        const meses = year === 2025 ? this.simplexMeses2025 : this.simplexMeses2026;
+                        
+                        const q = num(r[iQ]);
+                        const venta = num(r[iVenta]);
+
+                        if(!dataMap[sku]) {
+                            dataMap[sku] = {
+                                sku, desc: r[iDesc] || '-', marca: r[iMarca] || '-',
+                                prov: r[iProv] || '-', analista: r[iAnalista] || '-',
+                                puntoVenta: r[iPuntoVenta] || '-', qTotal: 0, ventaTotal: 0, year
+                            };
+                            meses.forEach(m => dataMap[sku][m] = { q: 0, venta: 0 });
+                        }
+
+                        dataMap[sku].qTotal += q;
+                        dataMap[sku].ventaTotal += venta;
+                        
+                        if(mesKey && dataMap[sku][mesKey]) {
+                            dataMap[sku][mesKey].q += q;
+                            dataMap[sku][mesKey].venta += venta;
+                        }
+                    });
+
+                    this.simplexData2025 = Object.values(dataMap2025);
+                    this.simplexData2026 = Object.values(dataMap2026);
+                    console.log('[SIMPLEX] 2025:', this.simplexData2025.length, '| 2026:', this.simplexData2026.length);
+                    this.updateSimplexActiveData();
+                },
+
+                // Procesar una hoja específica de SIMPLEX
+                _processSimplexYear(sheetKey, year) {
+                    try {
+                        const suffix = year === 2025 ? '-25' : '-26';
+                        const meses = year === 2025 ? this.simplexMeses2025 : this.simplexMeses2026;
+                        
+                        if(!this.rawData[sheetKey] || this.rawData[sheetKey].length < 2) {
+                            console.log(`[SIMPLEX ${year}] ❌ Hoja no encontrada o vacía`);
+                            if(year === 2025) this.simplexData2025 = [];
+                            else this.simplexData2026 = [];
+                            return;
+                        }
+                        
+                        console.log(`[SIMPLEX ${year}] ✅ Procesando ${this.rawData[sheetKey].length} filas`);
+
+                        const clean = (s) => String(s||'').trim().toUpperCase();
+                        const num = (v) => { 
+                            if(typeof v === 'number') return v; 
+                            if(!v) return 0; 
+                            // Limpiar y convertir: quitar $, espacios, y manejar coma decimal
+                            let s = String(v).replace(/[$\s]/g,'');
+                            // Si tiene punto Y coma, el punto es miles (formato AR)
+                            if(s.includes('.') && s.includes(',')) {
+                                s = s.replace(/\./g, '').replace(',', '.');
+                            } else if(s.includes(',')) {
+                                // Solo coma = decimal
+                                s = s.replace(',', '.');
+                            }
+                            return parseFloat(s) || 0; 
+                        };
+                        
+                        // Normaliza el mes del Excel al formato del array (ene-25, sept-26, etc)
+                        const normalizeMes = (mesStr) => {
+                            if(!mesStr) return null;
+                            const m = String(mesStr).toLowerCase().trim();
+                            // Mapeo de abreviaciones de mes a formato estándar
+                            const mesMap = {
+                                'ene': 'ene', 'enero': 'ene',
+                                'feb': 'feb', 'febrero': 'feb',
+                                'mar': 'mar', 'marzo': 'mar',
+                                'abr': 'abr', 'abril': 'abr',
+                                'may': 'may', 'mayo': 'may',
+                                'jun': 'jun', 'junio': 'jun',
+                                'jul': 'jul', 'julio': 'jul',
+                                'ago': 'ago', 'agosto': 'ago',
+                                'sep': 'sept', 'sept': 'sept', 'septiembre': 'sept',
+                                'oct': 'oct', 'octubre': 'oct',
+                                'nov': 'nov', 'noviembre': 'nov',
+                                'dic': 'dic', 'diciembre': 'dic'
+                            };
+                            // Extraer nombre de mes y año
+                            const match = m.match(/^([a-z]+)[-\s]?(\d{2,4})$/);
+                            if(match) {
+                                const mesNombre = mesMap[match[1]] || match[1];
+                                let anio = match[2];
+                                if(anio.length === 4) anio = anio.slice(-2);
+                                return `${mesNombre}-${anio}`;
+                            }
+                            return null;
+                        };
+                        
+                        const idx = (row, keys) => row.findIndex(c => keys.some(k => String(c).trim().toUpperCase().includes(k.toUpperCase())));
+
+                        const h = this.rawData[sheetKey][0];
+
+                        // Índices de columnas
+                        const iSku = idx(h, ['COD_ARTICU', 'SKU']);
+                        const iDesc = idx(h, ['DESCRIPCIO', 'DESCRIPCION']);
+                        const iQ = idx(h, ['Q']);
+                        const iVenta = idx(h, ['VENTA']);
+                        const iProv = idx(h, ['CA_967_PROVEEDOR', 'PROVEEDOR']);
+                        const iMarca = idx(h, ['CA_967_MARCA', 'MARCA']);
+                        const iAnalista = idx(h, ['CA_967_ANALISTA', 'ANALISTA']);
+                        const iMes = idx(h, ['MES']);
+                        const iPuntoVenta = idx(h, ['NOMBRE_VEN', 'PUNTO DE VENTA', 'PUNTO_VENTA']);
+
+                        console.log(`[SIMPLEX ${year}] Índices - SKU:${iSku}, Q:${iQ}, VENTA:${iVenta}, MES:${iMes}`);
+
+                        if(iSku === -1 || iMes === -1) {
+                            console.warn(`[SIMPLEX ${year}] ❌ Columnas críticas no encontradas`);
+                            if(year === 2025) this.simplexData2025 = [];
+                            else this.simplexData2026 = [];
+                            return;
+                        }
+
+                        // Mostrar primeros valores para debug
+                        const fila1 = this.rawData[sheetKey][1];
+                        console.log(`[SIMPLEX ${year}] Fila 1 - MES: "${fila1[iMes]}" | Q: ${fila1[iQ]} | VENTA: ${fila1[iVenta]}`);
+                        console.log(`[SIMPLEX ${year}] Meses esperados:`, meses);
+
+                        // Procesar filas
+                        const dataMap = {};
+                        let mesesOk = 0, mesesFail = 0;
+                        const mesesNoEncontrados = new Set();
+                        
+                        this.rawData[sheetKey].slice(1).forEach((r, idx) => {
+                            const sku = clean(r[iSku]);
+                            if(!sku || sku === 'TOTAL') return;
+
+                            // Obtener mes: normalizar al formato del array (ej: "sep-26" → "sept-26")
+                            const mesRaw = String(r[iMes] || '').trim();
+                            const mesKey = normalizeMes(mesRaw);
+                            
+                            const q = num(r[iQ]);
+                            const venta = num(r[iVenta]);
+
+                            if(!dataMap[sku]) {
+                                dataMap[sku] = {
+                                    sku, 
+                                    desc: r[iDesc] || '-', 
+                                    marca: r[iMarca] || '-',
+                                    prov: r[iProv] || '-', 
+                                    analista: r[iAnalista] || '-',
+                                    puntoVenta: r[iPuntoVenta] || '-', 
+                                    qTotal: 0, 
+                                    ventaTotal: 0, 
+                                    year
+                                };
+                                // Inicializar todos los meses en 0
+                                meses.forEach(m => dataMap[sku][m] = { q: 0, venta: 0 });
+                            }
+
+                            dataMap[sku].qTotal += q;
+                            dataMap[sku].ventaTotal += venta;
+                            
+                            // Verificar si el mes normalizado existe en el objeto
+                            if(mesKey && dataMap[sku].hasOwnProperty(mesKey)) {
+                                dataMap[sku][mesKey].q += q;
+                                dataMap[sku][mesKey].venta += venta;
+                                mesesOk++;
+                            } else {
+                                mesesFail++;
+                                mesesNoEncontrados.add(`"${mesRaw}" → "${mesKey}"`);
+                            }
+                        });
+                        
+                        console.log(`[SIMPLEX ${year}] 📊 Meses OK=${mesesOk}, FAIL=${mesesFail}`);
+                        if(mesesFail > 0) {
+                            console.warn(`[SIMPLEX ${year}] ❌ Meses no encontrados:`, [...mesesNoEncontrados]);
+                        }
+
+                        const result = Object.values(dataMap);
+                        if(year === 2025) this.simplexData2025 = result;
+                        else this.simplexData2026 = result;
+                        
+                        // Debug: mostrar primer SKU con valores de meses
+                        if(result.length > 0) {
+                            const p = result[0];
+                            const mesConDatos = meses.find(m => p[m]?.q > 0);
+                            console.log(`[SIMPLEX ${year}] Primer SKU: ${p.sku} | qTotal: ${p.qTotal} | Mes con datos: ${mesConDatos || 'NINGUNO'} = ${p[mesConDatos]?.q || 0}u`);
+                        }
+                        
+                        console.log(`[SIMPLEX ${year}] ✅ Total SKUs: ${result.length}`);
+                    } catch(e) {
+                        console.error(`[SIMPLEX ${year}] Error:`, e);
+                        if(year === 2025) this.simplexData2025 = [];
+                        else this.simplexData2026 = [];
+                    }
+                },
+
+                // Actualizar datos activos según selección de años
+                updateSimplexActiveData() {
+                    let data = [];
+                    let meses = [];
+                    
+                    console.log('[SIMPLEX] updateSimplexActiveData - simplexData2025:', this.simplexData2025.length, '| simplexData2026:', this.simplexData2026.length);
+                    
+                    if(this.simplexYears.y2025 && this.simplexYears.y2026) {
+                        // Ambos años: combinar datos
+                        data = [...this.simplexData2025, ...this.simplexData2026];
+                        meses = [...this.simplexMeses2025, ...this.simplexMeses2026];
+                        console.log('[SIMPLEX] Combinando ambos años. Total:', data.length);
+                    } else if(this.simplexYears.y2025) {
+                        data = this.simplexData2025;
+                        meses = this.simplexMeses2025;
+                    } else if(this.simplexYears.y2026) {
+                        data = this.simplexData2026;
+                        meses = this.simplexMeses2026;
+                    }
+                    
+                    // Verificar años en los datos
+                    const años = [...new Set(data.map(d => d.year))];
+                    console.log('[SIMPLEX] Años en data combinada:', años);
+                    
+                    this.simplexData = data;
+                    this.simplexMeses = meses;
+                    this.filterSimplexData();
+                    this.updateSimplexChart();
+                },
+
+                // Actualizar gráfico de evolución SIMPLEX
+                updateSimplexChart() {
+                    // Usar nextTick para asegurar que el DOM está actualizado
+                    this.$nextTick(() => {
+                        const canvas = document.getElementById('simplexEvolutionChart');
+                        if(!canvas) {
+                            console.log('[SIMPLEX Chart] Canvas no encontrado');
+                            return;
+                        }
+                        
+                        if(this.simplexChartInstance) {
+                            this.simplexChartInstance.destroy();
+                            this.simplexChartInstance = null;
+                        }
+                        
+                        if(this.simplexFilteredData.length === 0) {
+                            console.log('[SIMPLEX Chart] Sin datos filtrados');
+                            return;
+                        }
+                        
+                        console.log('[SIMPLEX Chart] Generando gráfico con', this.simplexFilteredData.length, 'registros');
+                        console.log('[SIMPLEX Chart] Años en datos:', this.simplexFilteredData.map(d => d.year));
+                        
+                        // DEBUG: Ver estructura de datos 2026
+                        const datos2026 = this.simplexFilteredData.filter(d => d.year === 2026);
+                        if(datos2026.length > 0) {
+                            console.log('[SIMPLEX Chart] 🔍 Primer registro 2026:', datos2026[0]);
+                            console.log('[SIMPLEX Chart] 🔍 Meses 2026 en registro:', this.simplexMeses2026.map(m => `${m}: ${datos2026[0][m]?.q || 0}u`));
+                        }
+                        
+                        const mesesLabels = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                        const datasets = [];
+                        
+                        // Consolidar datos de los resultados filtrados
+                        const totals2025 = this.simplexMeses2025.map(m => 
+                            this.simplexFilteredData.filter(d => d.year === 2025).reduce((sum, d) => sum + (d[m]?.q || 0), 0)
+                        );
+                        const totals2026 = this.simplexMeses2026.map(m => 
+                            this.simplexFilteredData.filter(d => d.year === 2026).reduce((sum, d) => sum + (d[m]?.q || 0), 0)
+                        );
+                        const ventas2025 = this.simplexMeses2025.map(m => 
+                            this.simplexFilteredData.filter(d => d.year === 2025).reduce((sum, d) => sum + (d[m]?.venta || 0), 0)
+                        );
+                        const ventas2026 = this.simplexMeses2026.map(m => 
+                            this.simplexFilteredData.filter(d => d.year === 2026).reduce((sum, d) => sum + (d[m]?.venta || 0), 0)
+                        );
+                        
+                        console.log('[SIMPLEX Chart] totals2025:', totals2025.reduce((a,b) => a+b, 0), '| totals2026:', totals2026.reduce((a,b) => a+b, 0));
+                        
+                        const showUnits = this.simplexMetric === 'unidades' || this.simplexMetric === 'ambos';
+                        const showSales = this.simplexMetric === 'importe' || this.simplexMetric === 'ambos';
+                        
+                        if(this.simplexYears.y2025) {
+                            if(showUnits) {
+                                datasets.push({
+                                    label: 'Unidades 2025',
+                                    data: totals2025,
+                                    borderColor: '#10b981',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                    fill: true,
+                                    tension: 0.3,
+                                    yAxisID: 'y'
+                                });
+                            }
+                            if(showSales) {
+                                datasets.push({
+                                    label: 'Venta $ 2025',
+                                    data: ventas2025,
+                                    borderColor: '#3b82f6',
+                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                    fill: true,
+                                    tension: 0.3,
+                                    yAxisID: 'y1',
+                                    borderDash: showUnits ? [5, 5] : []
+                                });
+                            }
+                        }
+                        
+                        if(this.simplexYears.y2026) {
+                            if(showUnits) {
+                                datasets.push({
+                                    label: 'Unidades 2026',
+                                    data: totals2026,
+                                    borderColor: '#8b5cf6',
+                                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                                    fill: true,
+                                    tension: 0.3,
+                                    yAxisID: 'y'
+                                });
+                            }
+                            if(showSales) {
+                                datasets.push({
+                                    label: 'Venta $ 2026',
+                                    data: ventas2026,
+                                    borderColor: '#f59e0b',
+                                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                    fill: true,
+                                    tension: 0.3,
+                                    yAxisID: 'y1',
+                                    borderDash: showUnits ? [5, 5] : []
+                                });
+                            }
+                        }
+                    
+                        console.log('[SIMPLEX Chart] Datasets creados:', datasets.length, datasets.map(d => d.label));
+                    
+                        if(datasets.length === 0) {
+                            console.warn('[SIMPLEX Chart] ⚠️ No hay datasets para mostrar');
+                            return;
+                        }
+                        
+                        const ctx = canvas.getContext('2d');
+                        this.simplexChartInstance = new Chart(ctx, {
+                            type: 'line',
+                            data: { labels: mesesLabels, datasets },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                                legend: { position: 'top', labels: { font: { size: 10 } } },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => {
+                                            const val = ctx.parsed.y;
+                                            if(ctx.dataset.label.includes('Venta')) {
+                                                return ctx.dataset.label + ': ' + this.formatMoney(val);
+                                            }
+                                            return ctx.dataset.label + ': ' + val.toLocaleString() + ' u';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    type: 'linear',
+                                    display: showUnits,
+                                    position: 'left',
+                                    title: { display: true, text: 'Unidades', font: { size: 10 } },
+                                    ticks: { font: { size: 9 } }
+                                },
+                                y1: {
+                                    type: 'linear',
+                                    display: showSales,
+                                    position: 'right',
+                                    title: { display: true, text: 'Venta $', font: { size: 10 } },
+                                    grid: { drawOnChartArea: false },
+                                    ticks: { 
+                                        font: { size: 9 },
+                                        callback: v => this.formatMoney(v)
+                                    }
+                                },
+                                x: { ticks: { font: { size: 9 } } }
+                            }
+                        }
+                        });
+                    }); // Cierre de $nextTick
+                },
+
+                // 📊 SIMPLEX - FILTRAR Y BUSCAR DATOS
+                filterSimplexData() {
+                    const query = (this.simplexSearchText || '').toUpperCase().trim();
+                    if(query.length < 2) {
+                        this.simplexFilteredData = [];
+                        return;
+                    }
+
+                    const type = this.simplexSearchType;
+                    let results = [];
+                    
+                    // Función para crear estructura inicial de meses
+                    const initMeses = () => {
+                        const obj = {};
+                        this.simplexMeses2025.forEach(m => obj[m] = { q: 0, venta: 0 });
+                        this.simplexMeses2026.forEach(m => obj[m] = { q: 0, venta: 0 });
+                        return obj;
+                    };
+
+                    if(type === 'sku') {
+                        // Búsqueda por SKU: mostrar detalle individual (preservar year)
+                        results = this.simplexData.filter(d => d.sku.includes(query));
+                    } else if(type === 'marca') {
+                        // Búsqueda por MARCA: consolidar por marca + año
+                        const marcaMap = {};
+                        this.simplexData.filter(d => (d.marca || '').toUpperCase().includes(query)).forEach(d => {
+                            const key = d.marca + '_' + d.year;
+                            if(!marcaMap[key]) {
+                                marcaMap[key] = {
+                                    marca: d.marca, prov: d.prov, analista: d.analista,
+                                    puntoVenta: '-', qTotal: 0, ventaTotal: 0, year: d.year,
+                                    ...initMeses()
+                                };
+                            }
+                            marcaMap[key].qTotal += d.qTotal;
+                            marcaMap[key].ventaTotal += d.ventaTotal;
+                            const meses = d.year === 2025 ? this.simplexMeses2025 : this.simplexMeses2026;
+                            meses.forEach(mes => {
+                                if(marcaMap[key][mes] && d[mes]) {
+                                    marcaMap[key][mes].q += d[mes].q || 0;
+                                    marcaMap[key][mes].venta += d[mes].venta || 0;
+                                }
+                            });
+                        });
+                        results = Object.values(marcaMap);
+                    } else if(type === 'proveedor') {
+                        // Búsqueda por PROVEEDOR: consolidar por proveedor + año
+                        const provMap = {};
+                        this.simplexData.filter(d => (d.prov || '').toUpperCase().includes(query)).forEach(d => {
+                            const key = d.prov + '_' + d.year;
+                            if(!provMap[key]) {
+                                provMap[key] = {
+                                    prov: d.prov, analista: d.analista,
+                                    puntoVenta: '-', qTotal: 0, ventaTotal: 0, year: d.year,
+                                    ...initMeses()
+                                };
+                            }
+                            provMap[key].qTotal += d.qTotal;
+                            provMap[key].ventaTotal += d.ventaTotal;
+                            const meses = d.year === 2025 ? this.simplexMeses2025 : this.simplexMeses2026;
+                            meses.forEach(mes => {
+                                if(provMap[key][mes] && d[mes]) {
+                                    provMap[key][mes].q += d[mes].q || 0;
+                                    provMap[key][mes].venta += d[mes].venta || 0;
+                                }
+                            });
+                        });
+                        results = Object.values(provMap);
+                    }
+
+                    this.simplexFilteredData = results;
+                    console.log('[SIMPLEX] Filtrado:', results.length, 'resultados. Años:', [...new Set(results.map(r => r.year))]);
+                    
+                    // Debug: mostrar resumen de resultados
+                    results.forEach(r => {
+                        const mes1_2025 = r['ene-25']?.q || 0;
+                        const mes1_2026 = r['ene-26']?.q || 0;
+                        console.log(`[SIMPLEX] ${r.marca || r.prov || r.sku} | año: ${r.year} | ene-25: ${mes1_2025} | ene-26: ${mes1_2026}`);
+                    });
+                },
+
+                // 📊 SIMPLEX - Obtener columnas dinámicas según tipo de búsqueda
+                getSimplexColumns() {
+                    // Columnas de meses genéricas (ENE, FEB, MAR... DIC) sin año
+                    const mesesGenericos = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+                    const mesesCols = mesesGenericos.map(m => ({ key: m, label: m }));
+                    
+                    const showBothYears = this.simplexYears.y2025 && this.simplexYears.y2026;
+                    
+                    const baseCols = [
+                        { key: 'year', label: 'AÑO' },
+                        { key: 'qTotal', label: 'Q TOTAL' },
+                        { key: 'ventaTotal', label: 'VENTA TOTAL' },
+                        ...mesesCols
+                    ];
+                    
+                    if(this.simplexSearchType === 'sku') {
+                        return [
+                            { key: 'sku', label: 'SKU' },
+                            { key: 'desc', label: 'DESCRIPCIÓN' },
+                            { key: 'marca', label: 'MARCA' },
+                            { key: 'prov', label: 'PROVEEDOR' },
+                            ...baseCols
+                        ];
+                    } else if(this.simplexSearchType === 'marca') {
+                        return [
+                            { key: 'marca', label: 'MARCA' },
+                            { key: 'prov', label: 'PROVEEDOR' },
+                            ...baseCols
+                        ];
+                    } else { // proveedor
+                        return [
+                            { key: 'prov', label: 'PROVEEDOR' },
+                            ...baseCols
+                        ];
+                    }
+                },
+
+                // 📊 SIMPLEX - Obtener valor de celda (maneja meses con Q y Venta según métrica)
+                getSimplexCellValue(row, col) {
+                    // Mapeo de columna genérica a mes específico del año de la fila
+                    const mesesMap = {
+                        'ENE': 'ene', 'FEB': 'feb', 'MAR': 'mar', 'ABR': 'abr',
+                        'MAY': 'may', 'JUN': 'jun', 'JUL': 'jul', 'AGO': 'ago',
+                        'SEP': 'sept', 'OCT': 'oct', 'NOV': 'nov', 'DIC': 'dic'
+                    };
+                    
+                    // Verificar si es una columna de mes genérica
+                    if(mesesMap[col.key]) {
+                        const suffix = row.year === 2025 ? '-25' : '-26';
+                        const mesKey = mesesMap[col.key] + suffix;
+                        const mesData = row[mesKey];
+                        if(mesData) {
+                            if(this.simplexMetric === 'unidades') {
+                                return (mesData.q || 0).toLocaleString() + ' u';
+                            } else if(this.simplexMetric === 'importe') {
+                                return this.formatMoney(mesData.venta || 0);
+                            } else {
+                                return `${(mesData.q || 0).toLocaleString()} u / ${this.formatMoney(mesData.venta || 0)}`;
+                            }
+                        }
+                        return this.simplexMetric === 'importe' ? '$0' : '0 u';
+                    }
+                    if(col.key === 'qTotal') {
+                        return (row[col.key] || 0).toLocaleString();
+                    }
+                    if(col.key === 'ventaTotal') {
+                        return this.formatMoney(row[col.key] || 0);
+                    }
+                    return row[col.key] || '-';
+                },
+
                 getDashboardItemOptions() {
                     if(this.dashboardAnalysisType === 'sku') {
                         return [...new Set(this.masterData.map(m => m.sku))].sort();
@@ -5033,15 +6000,21 @@
 
                     if(this.currentTab === 'inmovilizado') {
                         const inv = isFiltered
-                            ? this.filteredData.reduce((a,b)=>a+(b.stockValorizado||0),0)
+                            ? this.filteredData.reduce((a,b)=>a+(b.costoExcedente||0),0)
                             : this.kpis.inmovilizado;
+                        const unidadesExc = isFiltered
+                            ? this.filteredData.reduce((a,b)=>a+(b.unidadesExcedentes||0),0)
+                            : this.masterData.reduce((a,b)=>a+(b.unidadesExcedentes||0),0);
                         const filters = this.stockViejoFilters.length > 0 ? this.stockViejoFilters : ['>45'];
                         const filterLabel = filters.join(', ') + ' días';
                          return `
-                            <span class="${isFiltered?'text-red-600 font-bold':''}">Capital Inmovilizado (${filterLabel}):</span>
-                            <b class="ml-1 text-red-600">${this.formatMoney(inv)}</b>
+                            <span class="${isFiltered?'text-purple-600 font-bold':''}">Costo Sobrestock (${filterLabel}):</span>
+                            <b class="ml-1 text-purple-600">${this.formatMoney(inv)}</b>
+                            <span class="mx-2">|</span>
+                            <span>Unidades Excedentes:</span>
+                            <b class="ml-1">${unidadesExc.toLocaleString('es-AR')}</b>
                             <span class="ml-2 text-[9px]">${this.filteredData.length} SKUs</span>
-                            ${isFiltered ? '<span class="ml-2 text-[9px] bg-red-100 text-red-700 px-1 rounded">FILTRADO</span>' : ''}
+                            ${isFiltered ? '<span class="ml-2 text-[9px] bg-purple-100 text-purple-700 px-1 rounded">FILTRADO</span>' : ''}
                         `;
                     }
 
@@ -5078,29 +6051,6 @@
                 },
 
                 getColumns() {
-                    if(this.currentTab==='market') return [
-                        {key:'sku',label:'SKU'}, 
-                        {key:'desc',label:'DESCRIPCION'}, 
-                        {key:'marca',label:'MARCA'}, 
-                        {key:'stockGrafana',label:'STOCK TOTAL'},
-                        {key:'vtarTotal',label:'VTAR TOTAL'},
-                        {key:'vta59Total',label:'VENTA 59D'},
-                        {key:'vta30d',label:'VENTA 30D'},
-                        {key:'shareNov',label:'SHARE % NOV'},
-                        {key:'qEnero',label:'Q ENERO'},
-                        {key:'qFebrero',label:'Q FEBRERO'},
-                        {key:'qMarzo',label:'Q MARZO'},
-                        {key:'qAbril',label:'Q ABRIL'},
-                        {key:'qMayo',label:'Q MAYO'},
-                        {key:'qJunio',label:'Q JUNIO'},
-                        {key:'qJulio',label:'Q JULIO'},
-                        {key:'qAgosto',label:'Q AGOSTO'},
-                        {key:'qSeptiembre',label:'Q SEPTIEMBRE'},
-                        {key:'qOctubre',label:'Q OCTUBRE'},
-                        {key:'qNoviembre',label:'Q NOVIEMBRE'},
-                        {key:'qDiciembre',label:'Q DICIEMBRE'}
-                    ];
-                    
                     if(this.currentTab==='matriz_det') return [
                         {key:'sku',label:'SKU'}, {key:'desc',label:'DESCRIPCION'}, {key:'marca',label:'MARCA'}, {key:'prov',label:'PROVEEDOR'},
                         {key:'abc',label:'CLASIF. ABC'},
@@ -5148,7 +6098,8 @@
                     if(this.currentTab==='inmovilizado') return [
                         {key:'sku',label:'SKU'}, {key:'desc',label:'DESCRIPCION'}, {key:'marca',label:'MARCA'}, {key:'prov',label:'PROVEEDOR'},
                         {key:'stockGrafana',label:'STOCK TOTAL'}, {key:'vtarTotal',label:'VTAR TOTAL'}, {key:'diasStock',label:'DIAS STOCK'},
-                        {key:'stockValorizado',label:'COSTO TOTAL INMOVILIZADO'}
+                        {key:'unidadesExcedentes',label:'UNIDADES EXCEDENTES'}, {key:'costoExcedente',label:'COSTO EXCEDENTE'},
+                        {key:'pctExcedente',label:'% EXCEDENTE'}, {key:'stockValorizado',label:'COSTO TOTAL STOCK'}
                     ];
 
                     if(this.currentTab==='otros_depositos') return [
@@ -5353,13 +6304,63 @@
                        return share.toFixed(1) + '%';
                    }
                    
+                   // 📦 Formato para % EXCEDENTE
+                   if(c.key === 'pctExcedente') {
+                       const pct = r.pctExcedente || 0;
+                       if(pct === 0) return '-';
+                       return pct.toFixed(1) + '%';
+                   }
+                   
                    let val = c.key.split('.').reduce((o,i)=>(o?o[i]:0), r);
-                   if(c.key.includes('inversion') || c.key.includes('totalStockVal') || c.key.includes('inmoVal') || c.key.includes('valorizado') || c.key.includes('deuda') || c.key==='stockValorizado') return this.formatMoney(val);
+                   if(c.key.includes('inversion') || c.key.includes('totalStockVal') || c.key.includes('inmoVal') || c.key.includes('valorizado') || c.key.includes('deuda') || c.key==='stockValorizado' || c.key==='costoExcedente') return this.formatMoney(val);
                    if((c.key.includes('fecha') || c.key.includes('Ingreso') || c.key.includes('Vto')) && typeof val==='number') return new Date((val-25569)*86400000).toLocaleDateString('es-AR');
                    if(typeof val==='number') return c.key.includes('dias') ? val.toFixed(1) : (Number.isInteger(val) ? val : val.toFixed(2));
                    return val;
                },
                formatMoney(v) { return '$ '+(v||0).toLocaleString('es-AR',{maximumFractionDigits:0}); },
+               
+               // 🔧 Métodos auxiliares para procesamiento de datos
+               cleanString(str) {
+                   if (!str) return '';
+                   return String(str).trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+               },
+               
+               parseNumber(val) {
+                   if (val === null || val === undefined || val === '') return 0;
+                   if (typeof val === 'number') return val;
+                   const str = String(val).replace(/\s/g, '');
+                   if (str.includes(',') && str.includes('.')) {
+                       if (str.lastIndexOf(',') > str.lastIndexOf('.')) {
+                           return parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0;
+                       }
+                       return parseFloat(str.replace(/,/g, '')) || 0;
+                   }
+                   if (str.includes(',')) return parseFloat(str.replace(',', '.')) || 0;
+                   return parseFloat(str) || 0;
+               },
+               
+               findColumnIndex(headers, aliases) {
+                   for (let alias of aliases) {
+                       const idx = headers.findIndex(h => String(h).toUpperCase().includes(alias.toUpperCase()));
+                       if (idx > -1) return idx;
+                   }
+                   return -1;
+               },
+               
+               excelDateToJSDate(serial) {
+                   if (!serial || isNaN(serial)) return serial;
+                   try {
+                       const utc_days = Math.floor(serial - 25569);
+                       const utc_value = utc_days * 86400000;
+                       const date_info = new Date(utc_value);
+                       const day = String(date_info.getUTCDate()).padStart(2, '0');
+                       const month = String(date_info.getUTCMonth() + 1).padStart(2, '0');
+                       const year = date_info.getUTCFullYear();
+                       return `${day}/${month}/${year}`;
+                   } catch(e) {
+                       return serial;
+                   }
+               },
                
                // 🧊 Calcular valor de stock viejo según filtros seleccionados
                getStockViejoValue() {
@@ -5452,7 +6453,8 @@
                     this.kpis.valorEnvios = this.masterData.reduce((a,b)=>a+b.valorizado,0);
                     this.kpis.cantImpulsar = this.masterData.filter(b=>b.impulsar).length;
                     this.kpis.enCamino = this.masterData.reduce((a,b)=>a+(b.comprasEnCamino||0),0);
-                    this.kpis.inmovilizado = this.masterData.filter(i => i.diasStock > 45).reduce((a,b) => a + (b.stockGrafana * b.costo), 0);
+                    // SOBRESTOCK: Solo el costo de las unidades que EXCEDEN los 45 días
+                    this.kpis.inmovilizado = this.masterData.reduce((a,b) => a + (b.costoExcedente || 0), 0);
                     
                     // Venta Perdida (Feature anterior)
                     this.kpis.ventaPerdidaTotal = this.masterData.reduce((a,b) => a + (b.ventaPerdida || 0), 0);
@@ -5610,6 +6612,4 @@
    </script>
 </body>
 </html>
-
-
 
