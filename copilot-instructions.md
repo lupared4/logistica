@@ -2,178 +2,158 @@
 
 ## Arquitectura
 
-**Stack:** Alpine.js 3.x + Tailwind CSS + Chart.js 4.x + SheetJS (XLSX)  
-**Build:** Vite 5.x | **Tests:** Vitest | **Persistencia:** IndexedDB (db: `InvProV93`, versión 24)
+**Stack:** Alpine.js 3.13 + Tailwind CSS (CDN) + Chart.js 4.4 + SheetJS 0.18  
+**Build:** Vite 5.0 | **Tests:** Vitest 1.1 | **Persistencia:** IndexedDB (`InvProV93`, v24)
 
-### Estructura de código
 ```
-index.html              → Monolito principal con inventoryApp() en L2139
+index.html              → Monolito (~6173 líneas): inventoryApp() en <script> embebido - TODA la lógica
 src/
-├── data-processor.js   → Transformación Excel (generateSnapshot, buildLookups, validateSheet)
-├── utils.js            → formatMoney, parseNumber, logger, cleanString, findColumnIndex, MemoCache
-└── db.js               → IndexedDB: save(), load(), saveSnapshot() - 3 stores (Files, History, DebtHistory)
-tests/
-└── utils.test.js       → Tests unitarios con Vitest
+├── data-processor.js   → Transformación Excel: generateSnapshot(), buildLookups(), validateSheet()
+├── utils.js            → formatMoney, parseNumber, logger, cleanString, findColumnIndex, calculateLinearRegression
+└── db.js               → IndexedDB: save(), load(), saveSnapshot(), getHistory(), getDebtHistory()
+tests/utils.test.js     → Tests Vitest para src/utils.js
+vite.config.js          → Server en :8000, chunks: vendor(alpine+chart+xlsx)
 ```
 
-> ⚠️ **CRÍTICO:** La lógica de negocio vive en `index.html` dentro de `inventoryApp()` (línea 2139). NO existe `src/app.js` - todo el estado reactivo Alpine.js está en el HTML principal.
+> ⚠️ **CRÍTICO:** La lógica NO está en `src/app.js` (no existe). Todo el componente Alpine.js `inventoryApp()` vive dentro del `<script>` de `index.html`.
 
 ## Flujo de datos
 
 ```
-Excel(.xlsx) → SheetJS → data-processor.js (validación + consolidación por SKU)
-            → inventoryApp() en index.html (estado Alpine.js reactivo)
-            → db.js (persistencia IndexedDB con snapshots históricos)
+Excel(.xlsx/.xlsb) → SheetJS (XLSX.read) → data-processor.js (buildLookups) 
+→ inventoryApp() (Alpine.data) → calculateRowLogic() → IndexedDB (db.js)
 ```
 
-## Funciones críticas
+## Funciones clave y ubicaciones exactas
 
-| Función | Ubicación | Propósito |
-|---------|-----------|-----------|
-| `calculateRowLogic(item)` | index.html:L3933 | Cálculo compra/stock (UXB, SS, stockMin/Max, seasonalMult, ventaPerdida) |
-| `getColumns()` | index.html:L4934 | Define columnas visibles por tab |
-| `generateSnapshot()` | data-processor.js | Genera snapshots de VTAR por SKU para historial |
-| `buildLookups()` | data-processor.js | Mapea hojas auxiliares a objetos lookup |
-| `validateSheet()` | data-processor.js | Valida columnas requeridas en hojas Excel |
+| Función | Archivo | Línea exacta | Propósito |
+|---------|---------|--------------|-----------|
+| `inventoryApp()` | index.html | L146 (x-data) | Componente Alpine.js raíz |
+| `initApp()` | index.html | L2179 | Carga IndexedDB, inicializa tema oscuro/claro |
+| `calculateRowLogic(item)` | index.html | L3925 | **CORE:** Cálculo SS, stockMin/Max, UXB, estados salud |
+| `getColumns()` | index.html | L5662 | Define columnas visibles por tab (consolidado, dep80, etc.) |
+| `getCellClass(col, row)` | index.html | L5778 | Estilos condicionales celda (colores por umbral) |
+| `buildLookups(rawData)` | data-processor.js | L56 | Mapea hojas Excel → lookups (ML, Cargos, Envíos, MLA, STA19) |
+| `validateSheet(headers, requiredCols)` | data-processor.js | L23 | Valida columnas requeridas (throws Error) |
 
-### Utilidades disponibles (src/utils.js)
-```javascript
-formatMoney(v)              // "$ 1.234.567" (formato AR)
-parseNumber(v)              // Maneja "1.234,56" (AR) y "1,234.56" (US)
-cleanString(s)              // trim() + toUpperCase()
-findColumnIndex(row, keys)  // Busca columna por múltiples aliases
-excelDateToJSDate(serial)   // Serial Excel → "DD/MM/YYYY"
-calculateLinearRegression(y)// Predicción de tendencia
-detectAnomaly(data)         // Z-score > 2.5 = anomalía
-logger.info/warn/error/debug// Sistema de logging (nunca console.log directo)
-```
-
-## Estado Alpine.js (index.html)
-
-```javascript
-masterData      // Array SKUs consolidados (fuente de verdad)
-filteredData    // masterData + filtros (marca, proveedor, analista, abc)
-paginatedData   // Página actual para renderizado
-lookups         // { mapML, mapCargos, mapEnvios, mapPlanML, mapCanasta }
-params          // { diasCompra, diasSuc, diasFull }
-calcMethod      // 'vtar' (histórico) | 'vpd' (proyectado IA)
-currentTab      // 'metricas'|'consolidado'|'market'|'matriz_det'|'proveedores'|'dep80'|'resumen'|...
-```
-
-## Tabs disponibles
-
-`market`, `matriz_det`, `consolidado`, `proveedores`, `inmovilizado`, `otros_depositos`, `dep80`, `resumen`, `cargos`, `detalle`, `enviados`, `vencimientos`
-
-## Hojas Excel soportadas
-
-| Hoja | Clave rawData | Columnas clave | Propósito |
-|------|---------------|----------------|-----------|
-| **Grafana** | `grafana` | SKU, VTAR, Stock, Deposito | **Requerida** - datos principales |
-| PBI | `pbi` | SKU, DEP 1, DEP 80, DEP 81... | Stocks por depósito |
-| Stock ML | `sml` | SKU, IMPULSAR, ESTADO DE PUBLICACION, Calidad ok | Estado publicaciones ML |
-| Plan ML | `pml` | SKU, Recomendación, Unidades sugeridas | Recomendaciones ML |
-| Cargos | `cargos` | SKU, Unidades, Cargo por unidad, FECHA, Antigüedad | Penalizaciones (filtra última fecha) |
-| Enviados | `enviados` | SKU, ENVIO REALIZADO | Historial envíos |
-| Canasta | `canasta` | SKU, FLAG BLOQUEADOS | Bloqueados → 🚩 bandera roja |
-| MLA | `mla` | MLA, SKU, DESCRIPCION, ESTADO | Códigos publicación ML (Dep80) |
-| STA19 | `sta19` | SKU, EAN, PROV, DESCRIPCION... (+56 cols) | Datos maestros (EAN, UXB, precios) |
-
-## Comandos
+## Comandos dev
 
 ```bash
-npm run dev        # http://localhost:8000 (hot-reload, abre navegador auto)
-npm run build      # dist/ (producción con sourcemaps, vendor chunks separados)
-npm run preview    # Preview del build de producción
-npm test           # Vitest watch mode
-npm run test:ui    # Interfaz visual de tests
+npm run dev      # http://localhost:8000 (Vite hot-reload)
+npm run build    # Producción → dist/ (sourcemaps + manual chunks)
+npm run preview  # Preview de build
+npm test         # Vitest watch mode
+npm run test:ui  # Vitest UI (@vitest/ui)
 ```
 
-## Guía de modificaciones
+## Convenciones obligatorias
 
-| Tarea | Archivo | Buscar |
-|-------|---------|--------|
-| Agregar columna tabla | index.html | `getColumns()` (L4934) |
-| Cambiar cálculo compra/stock | index.html | `calculateRowLogic()` (L3933) |
-| Estilos condicionales celda | index.html | `getCellClass(c,r)` |
-| Nueva hoja Excel | data-processor.js | `buildLookups()` |
-| Nueva utilidad | src/utils.js | Exportar + test en tests/utils.test.js |
-| Cambiar persistencia | src/db.js | `save()`/`load()` |
-| Nuevo tab UI | index.html | `getColumns()` + template HTML |
+- **JSDoc:** Todas las funciones exportadas requieren `@param`, `@returns` (ver utils.js)
+- **Logging:** NUNCA `console.log` → usar `logger.info/warn/error()` de utils.js
+- **Imports:** extensión `.js` explícita (`import { x } from './utils.js'`) - ES Modules
+- **Columnas Excel:** `findColumnIndex(headers, ['NOMBRE', 'ALIAS'])` para tolerancia (busca por sinónimos)
+- **Números:** SIEMPRE `parseNumber(val)` (maneja formato AR `1.234,56` y US `1,234.56`)
+- **Strings:** SIEMPRE `cleanString(str)` → trim + uppercase + normalización
 
-## Convenciones del proyecto
+## Guía rápida de modificaciones
 
-- **JSDoc obligatorio** para funciones exportadas (`@param`, `@returns`, `@throws`)
-- **Logging:** `logger.info/warn/error/debug()` de utils.js (nunca `console.log` directo)
-- **Imports:** extensión `.js` explícita siempre (ES modules)
-- **Columnas Excel:** usar `findColumnIndex(headers, ['NOMBRE', 'ALIAS'])` para tolerancia a variantes
-- **Parseo numérico:** siempre `parseNumber()` (maneja formatos AR: `1.234,56` y USD: `1,234.56`)
-- **Strings:** limpiar con `cleanString()` → trim + uppercase
+| Tarea | Ubicación exacta | Ejemplo |
+|-------|------------------|---------|
+| Agregar columna a tabla | `getColumns()` en index.html (L5662) | `{key:'nuevoCampo', label:'ETIQUETA'}` |
+| Cambiar lógica compra/stock | `calculateRowLogic()` en index.html (L3925) | Modificar `necesidadExacta` o `comprarU` |
+| Nueva hoja Excel | `buildLookups()` en data-processor.js (L56+) | Agregar `if (rawData.nuevaHoja)` con `findColumnIndex` |
+| Nueva utilidad | Exportar en utils.js + test en tests/utils.test.js | Patrón: `export function foo()` + `describe('foo', ...)` |
 
-## Ejemplo: agregar nueva hoja Excel
+## Lógica de negocio crítica (calculateRowLogic L3925)
 
 ```javascript
-// En src/data-processor.js → buildLookups()
+// Stock Seguridad: 2.33 * vtarTotal * sqrt(leadTime)  [L3931]
+// Stock Mínimo: (vtarTotal * leadTime) + SS           [L3932]
+// Stock Máximo: vtarTotal * 30 (mín. stockMin)        [L3933-3934]
+
+// Compra por bultos (L3985-3990):
+const uxb = item.uxb || 1;  // Unidades por bulto
+cantBultos = Math.ceil(necesidadExacta / uxb);  // SIEMPRE hacia arriba
+comprarU = cantBultos * uxb;
+
+// Estados salud (L4010-4016):
+// Quiebre(≤10d), Por Quebrar(≤11-17d), Saludable(≤18-30d), Alerta(≤31-45d), Sobrestock(>45d)
+
+// Base cálculo seleccionable (L3969-3972):
+const baseVenta = this.calcMethod === 'vpd' && item.vpdCpra > 0 
+    ? item.vpdCpra   // VPD_Cpra (proyectado IA)
+    : item.vtarTotal; // VTAR (histórico)
+```
+
+## Patrón: agregar nueva hoja Excel
+
+```javascript
+// 1. En buildLookups() de data-processor.js (~L56+)
 if (rawData.nuevaHoja?.length) {
-    validateSheet(rawData.nuevaHoja[0], ['SKU', 'CAMPO_REQUERIDO']);
     const h = rawData.nuevaHoja[0];
-    const iSku = findColumnIndex(h, ['SKU']);
-    const iCampo = findColumnIndex(h, ['CAMPO_REQUERIDO', 'ALIAS']);
+    const iSku = findColumnIndex(h, ['SKU', 'CODIGO']);  // Tolerancia alias
+    const iCampo = findColumnIndex(h, ['MI_CAMPO']);
     
     rawData.nuevaHoja.slice(1).forEach(r => {
         const sku = cleanString(r[iSku]);
-        if (sku) lookups.mapNuevo[sku] = parseNumber(r[iCampo]);
+        if (sku && sku !== 'TOTAL') {
+            lookups.mapNuevoMapa[sku] = parseNumber(r[iCampo]);
+        }
     });
 }
+// 2. Retornar en objeto lookups: { ...lookups, mapNuevoMapa }
+// 3. En index.html initApp() (L2179+): agregar a rawData carga desde DB
 ```
-
-## Ejemplo: agregar nueva columna
-
-```javascript
-// En index.html → getColumns() dentro del tab correspondiente
-if(this.currentTab==='consolidado') return [
-    // ... columnas existentes ...
-    {key:'nuevoCampo', label:'NUEVA COLUMNA', editable: false}
-];
-```
-
-## Lógica de negocio clave (calculateRowLogic)
-
-- **Stock Seguridad (SS):** `2.33 * vtarTotal * sqrt(leadTime)`
-- **Stock Mínimo:** `(vtarTotal * leadTime) + SS`
-- **Compra por bultos:** siempre redondea hacia arriba con `Math.ceil(necesidad / uxb) * uxb`
-- **Días Stock:** `stockGrafana / vtarTotal` (999 si no hay venta)
-- **Estados Salud:** Quiebre (≤10d), Por Quebrar (≤17d), Saludable (≤30d), Alerta (≤45d), Sobrestock (>45d)
-- **Venta Perdida:** solo si stockRed ≤ 0 Y perfil = 'ACTIVO'
 
 ## Troubleshooting
 
-- **Excel no carga:** F12 → Console → buscar errores en `data-processor.js` (validación columnas con `validateSheet`)
-- **Datos no actualizan:** verificar que `masterData` se actualice y llamar `calculateRowLogic()` después de cambios
-- **Tests fallan:** verificar extensiones `.js` en imports y que Vitest esté corriendo
-- **IndexedDB corrupta:** F12 → Application → IndexedDB → eliminar `InvProV93`
-- **Columna no aparece:** revisar que esté en `getColumns()` para el tab correcto (L4934+)
+| Problema | Causa | Solución |
+|----------|-------|----------|
+| Excel no carga | Columnas faltantes | F12 → Ver errores `validateSheet` en consola (data-processor.js L23) |
+| Datos no actualizan | `masterData` modificado sin recalc | Llamar `recalculateGlobal()` o `calculateRowLogic(item)` |
+| IndexedDB corrupta | Cambio de versión/estructura | F12 → Application → IndexedDB → Eliminar `InvProV93` |
+| Tests fallan | Mock de módulos faltante | Verificar imports en tests/utils.test.js (usar paths relativos) |
 
-## Vendor chunks (Vite)
+## Hojas Excel soportadas
 
-El build separa automáticamente dependencias en `vendor.js`:
-- `alpinejs`, `chart.js`, `xlsx` → manualChunks en [vite.config.js](vite.config.js)
+| Hoja | Clave rawData | Columnas críticas | Validación |
+|------|---------------|-------------------|------------|
+| **Grafana** (requerida) | `grafana` | SKU, VTAR, Stock, Deposito, Costo, Lead Time | `validateSheet()` arroja error si falta |
+| PBI | `pbi` | SKU, DEP 1, DEP 80, DEP 81-89 | Opcional (deps L56+ data-processor.js) |
+| Stock ML | `sml` | SKU, IMPULSAR, ESTADO DE PUBLICACION | Opcional (L73+ data-processor.js) |
+| Cargos | `cargos` | SKU, Unidades, Cargo por unidad, FECHA | Opcional (L90+ data-processor.js) |
+| SIMPLEX2025 | `simplex` | COD_ARTICU/SKU, MES, Q, VENTA | Opcional (carga en initApp) |
+| MLA | `mla` | SKU, MLA (código ML), ESTADO | Opcional (lookups.mapMLA) |
+| STA19 | `sta19` | SKU, EAN | Opcional (lookups.mapSTA19) |
 
-## Patrones importantes
+## Estado Alpine.js principal (inventoryApp)
 
-### Iteración sobre hojas Excel
 ```javascript
-// Siempre: slice(1) para saltar headers, cleanString para SKUs
-rawData.hoja.slice(1).forEach(r => {
-    const sku = cleanString(r[iSku]);
-    if (sku && sku !== 'TOTAL') { /* procesar */ }
-});
+// index.html x-data="inventoryApp()" (L146)
+isAuthenticated    // Login (usuario: Lpared, pass: 1979)
+darkMode           // Tema oscuro/claro (localStorage)
+masterData         // Array[Object] - fuente de verdad tras calculateRowLogic()
+filteredData       // masterData + filtros (search, ABC, estado, etc.)
+lookups            // { mapML, mapCargos, mapEnvios, mapPlanML, mapMLA, mapSTA19, mapCanasta }
+calcMethod         // 'vtar' (histórico) | 'vpd' (proyectado IA) - switch en L214+ index.html
+currentTab         // 'consolidado' | 'dep80' | 'resumen' | 'vencimientos' | etc.
+params             // { diasCompra: 30, diasSuc: 7, diasFull: 30 }
+rawData            // { grafana, pbi, sml, cargos, vto, ... } - datos crudos Excel
 ```
 
-### Cálculo con método dual (VTAR vs VPD)
+## Testing
+
 ```javascript
-// En calculateRowLogic: usar calcMethod para elegir base
-const baseVenta = this.calcMethod === 'vpd' && item.vpdCpra > 0 
-    ? item.vpdCpra       // Proyectado IA
-    : item.vtarTotal;    // Histórico (default)
+// tests/utils.test.js - Coverage actual
+✅ formatMoney(num) → "$ 1.234.567"
+✅ excelDateToJSDate(44562) → "01/01/2022"
+✅ calculateLinearRegression(data) → { slope, nextVal }
+✅ calculateStandardDeviation(data, mean)
+✅ detectAnomaly(value, mean, stdDev)
+✅ cleanString(str) → uppercase + trim
+✅ parseNumber(str) → maneja "1.234,56" y "1,234.56"
+✅ findColumnIndex(headers, ['ALIAS1', 'ALIAS2'])
+
+// Agregar tests: import { describe, test, expect } from 'vitest'
 ```
 
