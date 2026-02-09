@@ -205,7 +205,7 @@
                 <span x-show="darkMode">☀️</span>
             </button>
             <button @click="handleLogout()" class="p-1.5 hover:bg-red-100 text-red-500 rounded transition text-sm" title="Cerrar sesión">
-                🚪
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
             </button>
         </div>
 
@@ -246,14 +246,6 @@
                 </div>
             </div>
             
-            <button @click="showSeasonalityModal = true" class="bg-orange-100 text-orange-700 hover:bg-orange-200 px-3 py-1 rounded text-xs font-bold transition flex items-center gap-1 border border-orange-200 ml-2">
-                <span>⚙️</span> Estacionalidad
-            </button>
-
-            <button @click="showSimulator = true" class="bg-purple-100 text-purple-700 hover:bg-purple-200 px-3 py-1 rounded text-xs font-bold transition flex items-center gap-1 border border-purple-200 ml-2">
-                <span>🎛️</span> Simulador
-            </button>
-
             <button @click="recalculateGlobal" class="bg-blue-100 text-blue-600 hover:bg-blue-200 px-2 py-1 rounded text-xs font-bold transition">↻ Recalcular</button>
         
             <button @click="focusMode = !focusMode" 
@@ -564,7 +556,6 @@
                                                     <span x-show="row.bloqueado" class="text-sm" title="⚠️ BLOQUEADO (Canasta)">🚩</span>
                                                     <span x-text="row.sku" class="font-bold text-slate-700"></span>
                                                     <span x-show="row.impulsar" class="text-[10px] bg-orange-100 text-orange-700 px-1 rounded border border-orange-200" title="Impulsar">🚀</span>
-                                                    <span x-show="row.seasonalMult && row.seasonalMult !== 1" class="text-[10px] bg-indigo-100 text-indigo-700 px-1 rounded border border-indigo-200" title="Estacionalidad Aplicada">❄️☀️</span>
                                                     <span x-show="row.criticalGap" class="text-sm ml-2" title="⚠️ QUIEBRE INEVITABLE">💀</span>
                                                     <span x-show="row.isAnomaly" class="text-sm ml-2 cursor-help" title="👁️ IA: Anomalía">👁️</span>
                                                 </div>
@@ -600,7 +591,6 @@
                 <span class="font-bold text-sm"><span x-text="selectedIds.length"></span> seleccionados</span>
                 <div class="h-4 w-px bg-slate-600"></div>
                 <button @click="applyBulkEdit('diasEstrategia')" class="hover:text-blue-300 text-xs font-bold">📅 Cambiar Días Est.</button>
-                <button @click="applyBulkEdit('seasonalMult')" class="hover:text-orange-300 text-xs font-bold">❄️ Multiplicador</button>
                 <div class="h-4 w-px bg-slate-600"></div>
                 <button @click="selectedIds = []" class="text-slate-400 hover:text-white text-xs">Cancelar</button>
             </div>
@@ -2172,20 +2162,21 @@
                 },
 
                 tabs: [
+                    { id: 'detalle', label: '📋 Grafana' },
+                    { id: 'consolidado', label: '🌍 Consolidado' },
+                    { id: 'matriz_det', label: '🚦 Detalle Matriz' },
+                    { id: 'dep80', label: '📦 Envíos Full' },
+                    { id: 'otros_depositos', label: '🏭 Otros Depósitos' },
+                    { id: 'enviados', label: '🚚 Hist. Envíos' },
+                    { id: 'resumen', label: '🛒 Compras' },
+                    { id: 'proveedores', label: '🏭 Proveedores' },
+                    { id: 'inmovilizado', label: '📦 SOBRESTOCK' },
+                    { id: 'cargos', label: '⚠️ Cargos ML' },
+                    { id: 'vencimientos', label: '📅 Vencimientos' },
+                    { id: 'combos', label: '🎁 COMBOS' },
                     { id: 'dashboard', label: '⚡ Dashboard KPI' },
                     { id: 'metricas', label: '📊 Métricas' },
-                    { id: 'matriz_det', label: '🚦 Detalle Matriz' },
-                    { id: 'consolidado', label: '🌍 Consolidado' },
-                    { id: 'proveedores', label: '🏭 Proveedores' },
-                    { id: 'otros_depositos', label: '🏭 Otros Depósitos' },
-                    { id: 'inmovilizado', label: '📦 SOBRESTOCK' },
-                    { id: 'dep80', label: '📦 Envíos Full' },
-                    { id: 'resumen', label: '🛒 Compras' },
-                    { id: 'simplex', label: '📊 SIMPLEX' },
-                    { id: 'detalle', label: '📋 Maestro' },
-                    { id: 'cargos', label: '⚠️ Cargos ML' },
-                    { id: 'enviados', label: '🚚 Hist. Envíos' },
-                    { id: 'vencimientos', label: '📅 Vencimientos' }
+                    { id: 'simplex', label: '📊 SIMPLEX' }
                 ],
                 chartInstances: {},
 
@@ -4587,6 +4578,7 @@
                     }
                     else if(this.currentTab === 'resumen') d = d.filter(i => i.comprarU > 0 || i.comprasEnCamino > 0);
                     else if(this.currentTab === 'cargos') d = d.filter(i => i.deuda > 0 || i.unidadesCargo > 0);
+                    else if(this.currentTab === 'combos') d = d.filter(i => (i.perfil || '').toUpperCase() === 'COMBO');
                     else if(this.currentTab === 'inmovilizado') {
                         // 🧊 Aplicar filtros de stock viejo seleccionados
                         const filters = this.stockViejoFilters.length > 0 ? this.stockViejoFilters : ['>45'];
@@ -6165,6 +6157,17 @@
                         {key:'dias',label:'DIAS AL VENCIMIENTO'}, 
                         {key:'stockComprometido',label:'STOCK LOTE'},
                         {key:'riesgoMonetario',label:'RIESGO ($) PROYECTADO'}
+                    ];
+                    if(this.currentTab==='combos') return [
+                        {key:'sku',label:'SKU'}, 
+                        {key:'desc',label:'DESCRIPCION'}, 
+                        {key:'prov',label:'PROVEEDOR'},
+                        {key:'pbi.dep1',label:'DEPOSITO 1'}, 
+                        {key:'pbi.dep80',label:'DEPOSITO 80'}, 
+                        {key:'stockGrafana',label:'STOCK TOTAL'},
+                        {key:'vtarTotal',label:'VTAR TOTAL (Tendencia)'}, 
+                        {key:'diasStock',label:'DIAS STOCK'},
+                        {key:'vta59Total',label:'VENTA 60 DÍAS'}
                     ];
                 },            
                     getCellClass(c,r) {
