@@ -1,0 +1,24 @@
+{
+  "name": "dashboard-inventario-logistica",
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Dashboard de gestión de inventario con Alpine.js, Chart.js y SheetJS",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "dependencies": {
+    "alpinejs": "^3.13.3",
+    "chart.js": "^4.4.1",
+    "chartjs-plugin-datalabels": "^2.2.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "vite": "^5.0.10",
+    "vitest": "^1.1.0",
+    "@vitest/ui": "^1.1.0"
+  }
+}
