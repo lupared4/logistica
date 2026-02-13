@@ -3275,7 +3275,24 @@
                             const data = {}; const hG = this.rawData.grafana[0];
                             const iSku = idx(hG, ['SKU']), iDep = idx(hG, ['Deposito']), iVtar = idx(hG, ['VTAR']), iVpd = idx(hG, ['VPD_Cpra']);
                             const iDesc = idx(hG, ['Descripcion']), iMarca = idx(hG, ['Marca']), iProv = idx(hG, ['Proveedor', 'Prov']), iAnalista = idx(hG, ['Analista']);
-                            const iCosto = idx(hG, ['Costo', 'Reposición']), iLt = idx(hG, ['Lead']), iDev = idx(hG, ['Desvío']), iStock = idx(hG, ['Stock']), iUxb = idx(hG, ['UXB']);
+                            const iCosto = idx(hG, ['Costo', 'Reposición', 'C_Repo', 'Máx. de Precio_Lista_900']), iLt = idx(hG, ['Lead']), iDev = idx(hG, ['Desvío']), iStock = idx(hG, ['Stock']), iUxb = idx(hG, ['UXB']);
+                            // Preprocesar mapa de costos STA19 si existe
+                            let sta19CostMap = {};
+                            if (this.rawData.sta19 && this.rawData.sta19.length) {
+                                const hSTA = this.rawData.sta19[0];
+                                const iSkuSTA = idx(hSTA, ['SKU']);
+                                const iCostoSTA = idx(hSTA, ['Máx. de Precio_Lista_900']);
+                                if (iSkuSTA > -1 && iCostoSTA > -1) {
+                                    this.rawData.sta19.slice(1).forEach(r => {
+                                        const sku = clean(r[iSkuSTA]);
+                                        if (sku) sta19CostMap[sku] = num(r[iCostoSTA]);
+                                    });
+                                }
+                            }
+                            if (iCosto === -1) {
+                                alert('❌ FALTA la columna COSTO o REPOSICIÓN en la hoja principal (Grafana). No se pueden calcular valores.');
+                                throw new Error('Columna de costo no encontrada en hoja principal');
+                            }
                             const iCamino = idx(hG, ['COMPRAS']), iVta59 = idx(hG, ['TOTAL VENDIDO', '59 DÍAS', 'VENDIDO 59']);
                             
                             const iPerfil = idx(hG, ['Perfil']);
@@ -3303,9 +3320,11 @@
                                 const esBloqueado = flagBloqVal === 'SI' || flagBloqVal === 'SÍ' || flagBloqVal === 'S' || flagBloqVal === 'TRUE' || flagBloqVal === '1';
 
                                 if(!data[sku]) {
+                                    let costoGrafana = num(r[iCosto]);
+                                    if (!costoGrafana && sta19CostMap[sku]) costoGrafana = sta19CostMap[sku];
                                     data[sku] = {
                                         sku, desc: r[iDesc], marca: r[iMarca]||'-', prov: r[iProv]||'-',
-                                        analista: r[iAnalista]||'-', costo: num(r[iCosto]),
+                                        analista: r[iAnalista]||'-', costo: costoGrafana,
                                         lt: num(r[iLt])||30,
                                         dev: 0,
                                         vpdCpra: num(r[iVpd]),
@@ -3396,11 +3415,21 @@
                                 this.rawData.pbi.slice(1).forEach(r => {
                                     const sku = clean(r[iP_S]);
                                     if(sku && !data[sku]) {
+                                        // Buscar costo en hoja principal si existe
+                                        let costoPrincipal = 0;
+                                        if (this.rawData.grafana && this.rawData.grafana.length) {
+                                            const idxSku = this.rawData.grafana.findIndex(row => clean(row[iSku]) === sku);
+                                            if (idxSku > 0) {
+                                                costoPrincipal = num(this.rawData.grafana[idxSku][iCosto]);
+                                            }
+                                        }
+                                        // Si no está en grafana, buscar en STA19
+                                        if (!costoPrincipal && sta19CostMap[sku]) costoPrincipal = sta19CostMap[sku];
                                         data[sku] = {
                                             sku, 
                                             desc: r[iP_Desc] || 'Producto solo en PBI (Falta en Grafana)',
                                             marca: 'S/D', prov: 'S/D', analista: 'S/D',
-                                            costo: 0, lt: 30, dev: 0, vpdCpra: 0, uxb: 1,
+                                            costo: costoPrincipal, lt: 30, dev: 0, vpdCpra: 0, uxb: 1,
                                             vtarTotal: 0, vtar80: 0, vtar1: 0, vtarSuc: 0,
                                             stockGrafana: 0, comprasEnCamino: 0, vta59Total: 0,
                                             histDaily: [], vtarBreakdown: {}, seasonalMult: 1,
@@ -3419,11 +3448,21 @@
                                 this.rawData.sml.slice(1).forEach(r => {
                                     const sku = clean(r[iS_S]);
                                     if(sku && !data[sku]) {
+                                        // Buscar costo en hoja principal si existe
+                                        let costoPrincipal = 0;
+                                        if (this.rawData.grafana && this.rawData.grafana.length) {
+                                            const idxSku = this.rawData.grafana.findIndex(row => clean(row[iSku]) === sku);
+                                            if (idxSku > 0) {
+                                                costoPrincipal = num(this.rawData.grafana[idxSku][iCosto]);
+                                            }
+                                        }
+                                        // Si no está en grafana, buscar en STA19
+                                        if (!costoPrincipal && sta19CostMap[sku]) costoPrincipal = sta19CostMap[sku];
                                         data[sku] = {
                                             sku, 
                                             desc: r[iS_Desc] || r[iS_Pub] || 'Producto solo en ML (Falta en Grafana)',
                                             marca: 'S/D', prov: 'S/D', analista: 'S/D',
-                                            costo: 0, lt: 30, dev: 0, vpdCpra: 0, uxb: 1,
+                                            costo: costoPrincipal, lt: 30, dev: 0, vpdCpra: 0, uxb: 1,
                                             vtarTotal: 0, vtar80: 0, vtar1: 0, vtarSuc: 0,
                                             stockGrafana: 0, comprasEnCamino: 0, vta59Total: 0,
                                             histDaily: [], vtarBreakdown: {}, seasonalMult: 1,
@@ -3645,28 +3684,30 @@
                                 return p;
                             });
 
-                            const provMap = {};
+                            // Unificar lógica: usar solo una declaración de provMap y sumar correctamente
+                            let provMapStock = {};
                             processed.forEach(item => {
                                 const pName = item.prov || 'S/D';
-                                if (!provMap[pName]) {
-                                    provMap[pName] = {
+                                if (!provMapStock[pName]) {
+                                    provMapStock[pName] = {
                                         id: Math.random().toString(36).substr(2,9),
                                         prov: pName,
                                         totalStockVal: 0,
-                                        totalVtar: 0,
                                         totalStockQty: 0,
+                                        totalVtar: 0,
                                         inmoVal: 0,
                                         inversion: 0
                                     };
                                 }
-                                provMap[pName].totalStockVal += (item.stockGrafana * item.costo);
-                                provMap[pName].totalStockQty += item.stockGrafana;
-                                provMap[pName].totalVtar += item.vtarTotal;
-                                if (item.diasStock > 45) provMap[pName].inmoVal += (item.stockGrafana * item.costo);
-                                provMap[pName].inversion += item.inversion;
+                                // Cálculo correcto usando costo
+                                provMapStock[pName].totalStockVal += (item.stockGrafana || 0) * (item.costo || 0);
+                                provMapStock[pName].totalStockQty += item.stockGrafana || 0;
+                                provMapStock[pName].totalVtar += item.vtarTotal || 0;
+                                // Sobrestock: solo unidades que exceden 45 días
+                                if ((item.diasStock || 0) > 45) provMapStock[pName].inmoVal += ((item.stockGrafana || 0) * (item.costo || 0));
+                                provMapStock[pName].inversion += item.inversion || 0;
                             });
-
-                            this.proveedoresData = Object.values(provMap).map(p => ({
+                            this.proveedoresData = Object.values(provMapStock).map(p => ({
                                 ...p,
                                 diasStockProm: p.totalVtar > 0 ? (p.totalStockQty / p.totalVtar) : 0
                             }));
@@ -4153,21 +4194,37 @@
                             this.metrics.totalDeudaAnalistas = totalDebt;
                             DB.saveDebtHistory(totalDebt);
 
-                            const provInmo = {};
-                            this.masterData.forEach(i => {
-                                if(i.diasStock > 45) {
-                                    const p = i.prov || 'S/D';
-                                    const val = i.stockGrafana * i.costo;
-                                    provInmo[p] = (provInmo[p] || 0) + val;
+                            const provMap = {};
+                            this.simplexData.filter(d => (d.prov || '').toUpperCase().includes(query)).forEach(d => {
+                                const key = d.prov + '_' + d.year;
+                                if(!provMap[key]) {
+                                    provMap[key] = {
+                                        prov: d.prov, analista: d.analista,
+                                        puntoVenta: '-', qTotal: 0, ventaTotal: 0, year: d.year,
+                                        totalStockVal: 0, // Importe stock actual
+                                        inmoVal: 0,       // Importe sobrestock >45d
+                                        inversion: 0,    // Total inversión a realizar
+                                        ...initMeses()
+                                    };
                                 }
+                                provMap[key].qTotal += d.qTotal || 0;
+                                provMap[key].ventaTotal += d.ventaTotal || 0;
+                                provMap[key].totalStockVal += d.totalStockVal || 0;
+                                provMap[key].inmoVal += d.inmoVal || 0;
+                                provMap[key].inversion += d.inversion || 0;
+                                const meses = d.year === 2025 ? this.simplexMeses2025 : this.simplexMeses2026;
+                                meses.forEach(mes => {
+                                    if(provMap[key][mes] && d[mes]) {
+                                        provMap[key][mes].q += d[mes].q || 0;
+                                        provMap[key][mes].venta += d[mes].venta || 0;
+                                    }
+                                });
                             });
-                            this.metrics.proveedoresInmo = Object.entries(provInmo).map(([name,val])=>({name,val})).sort((a,b)=>b.val-a.val).slice(0,20);
-
-                            const provBuy = {};
-                            const brandMap = {};
+                            results = Object.values(provMap);
+                            let provBuy = {};
+                            let brandMap = {};
                             this.masterData.forEach(i => {
                                 if(i.inversion>0) { const p=i.prov||'S/D'; provBuy[p]=(provBuy[p]||0)+i.inversion; }
-
                                 const b = i.marca || 'S/D';
                                 const val = i.stockGrafana * i.costo;
                                 brandMap[b] = (brandMap[b] || 0) + val;
