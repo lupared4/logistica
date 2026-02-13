@@ -90,13 +90,24 @@ export function cleanString(s) {
  * @param {any} v - Valor a convertir
  * @returns {number} Número parseado o 0
  */
+/**
+ * Parsea números en formato AR/US/EU: 1.234,56 | 1,234.56 | 1234,56 | 1234.56 | 0,117 | 0.117
+ * @param {any} v - Valor a convertir
+ * @returns {number} Número parseado o 0
+ */
 export function parseNumber(v) {
     if (typeof v === 'number') return v;
     if (!v) return 0;
     let s = String(v).replace(/[$\s]/g, '');
-    if (s.includes(',') && s.includes('.')) {
+    // Si tiene ambos separadores
+    if (s.match(/^\d{1,3}(\.\d{3})*,\d+$/)) {
+        // Formato AR/EU: 1.234,56 => 1234.56
         s = s.replace(/\./g, '').replace(',', '.');
+    } else if (s.match(/^\d{1,3}(,\d{3})*\.\d+$/)) {
+        // Formato US: 1,234.56 => 1234.56
+        s = s.replace(/,/g, '');
     } else if (s.includes(',')) {
+        // Solo coma decimal: 0,117 => 0.117
         s = s.replace(',', '.');
     }
     return parseFloat(s) || 0;
