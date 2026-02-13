@@ -3635,6 +3635,11 @@
                                     item.stability = 'S/D'; item.cv = 0; 
                                 }
 
+                                // Asegurar que cada item tenga el campo inversion correctamente calculado
+                                if (typeof item.inversion === 'undefined' || isNaN(item.inversion)) {
+                                    item.inversion = (item.stockGrafana || 0) * (item.costo || 0);
+                                }
+
                                 const p = this.calculateRowLogic(item);
                                 p.id = Math.random().toString(36).substr(2,9);
                                 return p;
