@@ -2574,7 +2574,17 @@
 
                             this.loadingMsg = 'PROCESANDO DATOS...';
                             this.processAll();
-                        } else { this.isLoading = false; }
+                        } else { 
+                            this.isLoading = false; 
+                            // Si no hay datos en IndexedDB y estamos en localhost, intentar cargar archivo local automáticamente
+                            try {
+                                const host = window.location.hostname;
+                                if (host === 'localhost' || host === '127.0.0.1') {
+                                    console.log('[INIT] No hay datos en DB — intentando cargar archivo local automáticamente');
+                                    this.loadLocalExcel().catch(e=>{ console.warn('[INIT] loadLocalExcel falló:', e.message); this.isLoading = false; });
+                                }
+                            } catch(e) { /* noop */ }
+                        }
                     } catch(e) { console.error(e); this.isLoading = false; }
                 },
 
