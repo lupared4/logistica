@@ -80,6 +80,11 @@ comprarU = cantBultos * uxb;
 // Estados salud (días de stock):
 // Quiebre(≤10d), Por Quebrar(11-17d), Saludable(18-30d), Alerta(31-45d), Sobrestock(>45d)
 
+## Regla de seguridad del repositorio
+
+Por favor, al modificar o eliminar funcionalidades, respeta la regla siguiente: NO romper otras solapas ni funcionalidades existentes; cualquier cambio que modifique el comportamiento de pestañas distintas debe ser revisado y probado manualmente (carga de Excel y login) y, preferiblemente, aprobado antes de commitear.
+
+
 // Base cálculo seleccionable:
 const baseVenta = this.calcMethod === 'vpd' && item.vpdCpra > 0 
     ? item.vpdCpra   // VPD_Cpra (proyectado IA)

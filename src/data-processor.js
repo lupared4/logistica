@@ -226,7 +226,8 @@ export function processGrafanaData(rawGrafana) {
         marca: findColumnIndex(hG, ['Marca']),
         prov: findColumnIndex(hG, ['Proveedor', 'Prov']),
         analista: findColumnIndex(hG, ['Analista']),
-        costo: findColumnIndex(hG, ['Costo', 'Reposición']),
+        // Incluir variantes de Costo de Reposición (ej. C_Repo)
+        costo: findColumnIndex(hG, ['Costo', 'Reposición', 'C_Repo', 'C_REPO', 'C REPO', 'C REPOSICION']),
         lt: findColumnIndex(hG, ['Lead']),
         stock: findColumnIndex(hG, ['Stock']),
         uxb: findColumnIndex(hG, ['UXB']),

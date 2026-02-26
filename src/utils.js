@@ -66,14 +66,15 @@ export function calculateStandardDeviation(arr, mean) {
  * @returns {boolean} true si el último valor es anómalo
  */
 export function detectAnomaly(data) {
-    if (data.length < 5) return false;
+    if (!Array.isArray(data) || data.length < 5) return false;
     const mean = data.reduce((a, b) => a + b, 0) / data.length;
     const variance = data.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / data.length;
     const stdDev = Math.sqrt(variance);
     if (stdDev === 0) return false;
     const lastVal = data[data.length - 1];
     const zScore = Math.abs((lastVal - mean) / stdDev);
-    return zScore > 2.5;
+    // Umbral más sensible (2.0) para detectar outliers moderados en series cortas
+    return zScore > 2.0;
 }
 
 /**
@@ -93,13 +94,40 @@ export function cleanString(s) {
 export function parseNumber(v) {
     if (typeof v === 'number') return v;
     if (!v) return 0;
-    let s = String(v).replace(/[$\s]/g, '');
-    if (s.includes(',') && s.includes('.')) {
-        s = s.replace(/\./g, '').replace(',', '.');
-    } else if (s.includes(',')) {
-        s = s.replace(',', '.');
+    let s = String(v).trim();
+    // Remove currency symbols and non-number letters
+    s = s.replace(/[\s\u00A0]/g, '');
+    s = s.replace(/[^0-9,\.\-]/g, '');
+
+    const hasComma = s.indexOf(',') !== -1;
+    const hasDot = s.indexOf('.') !== -1;
+
+    if (hasComma && hasDot) {
+        // Determine which separator appears last: that one is the decimal separator
+        const lastComma = s.lastIndexOf(',');
+        const lastDot = s.lastIndexOf('.');
+        if (lastDot > lastComma) {
+            // dot is decimal, remove comma thousands
+            s = s.replace(/,/g, '');
+        } else {
+            // comma is decimal, remove dot thousands and convert comma to dot
+            s = s.replace(/\./g, '').replace(/,/g, '.');
+        }
+    } else if (hasComma) {
+        // Ambiguous case: determine if comma is thousands sep or decimal sep
+        const parts = s.split(',');
+        const lastPart = parts[parts.length - 1];
+        if (lastPart.length === 3 && parts.length > 1) {
+            // likely thousands grouping like '1,234' or '1,234,567'
+            s = s.replace(/,/g, '');
+        } else {
+            // treat comma as decimal separator
+            s = s.replace(/,/g, '.');
+        }
     }
-    return parseFloat(s) || 0;
+
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : 0;
 }
 
 /**

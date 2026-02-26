@@ -1,107 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión Stocks & Logistica Luciano </title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
-    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        
-        /* 🎨 TEMA OSCURO/CLARO */
-        :root {
-            --bg-primary: #ffffff; --bg-secondary: #f1f5f9; --bg-tertiary: #e2e8f0;
-            --text-primary: #1e293b; --text-secondary: #64748b; --border-color: #cbd5e1;
-            --header-bg: #ffffff; --card-bg: #ffffff; --table-row-bg: #ffffff;
-        }
-        body.dark-theme {
-            --bg-primary: #1a1f2e; --bg-secondary: #242938; --bg-tertiary: #2d3344;
-            --text-primary: #f8fafc; --text-secondary: #a1a8b8; --border-color: #3d4455;
-            --header-bg: #242938; --card-bg: #2a3142; --table-row-bg: #2a3142;
-        }
-        
-        /* === TEMA OSCURO - ESTILOS COMPLETOS === */
-        body.dark-theme { background-color: var(--bg-secondary) !important; }
-        body.dark-theme .bg-white { background-color: var(--card-bg) !important; }
-        body.dark-theme .bg-slate-100, body.dark-theme .bg-slate-50 { background-color: var(--bg-secondary) !important; }
-        body.dark-theme .bg-gray-50, body.dark-theme .bg-gray-100, body.dark-theme .bg-gray-200 { background-color: var(--bg-tertiary) !important; }
-        
-        /* Textos con buen contraste */
-        body.dark-theme .text-slate-700, body.dark-theme .text-slate-800, body.dark-theme .text-slate-900,
-        body.dark-theme .text-gray-700, body.dark-theme .text-gray-800, body.dark-theme .text-gray-900 { color: #f1f5f9 !important; }
-        body.dark-theme .text-slate-500, body.dark-theme .text-slate-600,
-        body.dark-theme .text-gray-500, body.dark-theme .text-gray-600 { color: #b0b8c8 !important; }
-        body.dark-theme .text-black { color: #f8fafc !important; }
-        
-        /* Bordes visibles */
-        body.dark-theme .border-slate-200, body.dark-theme .border-slate-300,
-        body.dark-theme .border-gray-200, body.dark-theme .border-gray-300 { border-color: #3d4455 !important; }
-        
-        /* Inputs y selects legibles */
-        body.dark-theme input, body.dark-theme select, body.dark-theme textarea { 
-            background-color: #353b4d !important; color: #f1f5f9 !important; border-color: #4a5266 !important; 
-        }
-        body.dark-theme input::placeholder { color: #8891a5 !important; }
-        
-        /* Sombras suaves */
-        body.dark-theme .shadow, body.dark-theme .shadow-sm, body.dark-theme .shadow-md, body.dark-theme .shadow-lg { 
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important; 
-        }
-        
-        /* Gradientes del header */
-        body.dark-theme .from-slate-800 { --tw-gradient-from: #2d3344 !important; }
-        body.dark-theme .to-slate-900 { --tw-gradient-to: #1a1f2e !important; }
-        body.dark-theme .bg-gradient-to-r { background: linear-gradient(to right, #2d3344, #1a1f2e) !important; }
-        
-        /* Tarjetas y contenedores */
-        body.dark-theme .rounded-xl, body.dark-theme .rounded-lg, body.dark-theme .rounded-md { 
-            background-color: var(--card-bg) !important; 
-        }
-        
-        /* Botones */
-        body.dark-theme button:not(.tab-active):not([class*="bg-blue"]):not([class*="bg-green"]):not([class*="bg-red"]):not([class*="bg-yellow"]) { 
-            background-color: #353b4d !important; color: #f1f5f9 !important; 
-        }
-        
-        /* Divisores */
-        body.dark-theme .divide-slate-200 > * + *, body.dark-theme .divide-gray-200 > * + * { border-color: #3d4455 !important; }
-        
-        /* Tabla - filas legibles */
-        body.dark-theme table { background-color: var(--card-bg) !important; }
-        body.dark-theme tbody tr { background-color: var(--table-row-bg) !important; }
-        body.dark-theme tbody tr:nth-child(even) { background-color: #252a3a !important; }
-        body.dark-theme td { color: #e8ecf4 !important; border-color: #3d4455 !important; background-color: inherit !important; }
-        body.dark-theme th { background-color: #1e2433 !important; color: #f1f5f9 !important; }
-        
-        /* Hover de filas más visible */
-        body.dark-theme tr:hover td { background-color: #3a4158 !important; }
-        
-        /* Cards de métricas */
-        body.dark-theme [class*="bg-gradient"] { background: linear-gradient(135deg, #2d3344 0%, #353b4d 100%) !important; }
-        body.dark-theme .text-white { color: #f8fafc !important; }
-        
-        /* Tabs */
-        body.dark-theme .tab-inactive { color: #a1a8b8 !important; background: transparent !important; }
-        body.dark-theme .tab-active { background: var(--card-bg) !important; color: #60a5fa !important; border-color: #60a5fa !important; }
-        
-        /* Dropdowns y filtros */
-        body.dark-theme .filter-dropdown { background-color: #2a3142 !important; border-color: #4a5266 !important; }
-        body.dark-theme .filter-dropdown label { color: #e8ecf4 !important; }
-        
-        /* Scroll bars */
-        body.dark-theme ::-webkit-scrollbar { background-color: #1a1f2e; }
-        body.dark-theme ::-webkit-scrollbar-thumb { background-color: #4a5266; }
-        body.dark-theme ::-webkit-scrollbar-thumb:hover { background-color: #5a6276; }
-        
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-secondary); color: var(--text-primary); transition: background-color 0.3s ease, color 0.3s ease; }
-        [x-cloak] { display: none !important; }
+            <!-- Sección 'RESULTADOS OPERATIVOS' removida según solicitud -->
 
         th { background-color: #1e293b; color: white; font-size: 10px; text-transform: uppercase; position: sticky; top: 0; z-index: 10; white-space: nowrap; padding: 8px; }
         td { font-size: 11px; border-bottom: 1px solid var(--border-color); padding: 4px 8px; white-space: nowrap; color: var(--text-primary); position: relative; height: 35px; }
@@ -298,7 +198,7 @@
                 </template>
             </div>
 
-            <div class="bg-indigo-50 border-b px-4 py-2 flex justify-between items-center text-xs sticky top-0 z-20" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard' && currentTab !== 'simplex'">
+            <div class="bg-indigo-50 border-b px-4 py-2 flex justify-between items-center text-xs sticky top-0 z-20" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard'">
                 <div class="font-bold text-indigo-800 uppercase tracking-wide flex items-center gap-2">
                     <span class="text-lg">📍</span> <span x-text="getHeaderTitle()"></span>
                 </div>
@@ -307,7 +207,7 @@
                 </div>
             </div>
 
-            <div class="p-2 border-b bg-white flex gap-3 items-center shrink-0" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard' && currentTab !== 'simplex'">
+            <div class="p-2 border-b bg-white flex gap-3 items-center shrink-0" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard'">
                 <div class="relative">
                     <span class="absolute left-2 top-1.5 text-slate-400">🔍</span>
                     <input type="text" x-model="search" @input="clearTimeout(searchTimeout); searchTimeout = setTimeout(() => $nextTick(), 300)" placeholder="Buscar SKU, Nombre, Marca, Proveedor..." class="border rounded pl-7 pr-3 py-1.5 text-xs w-64 focus:outline-none focus:border-blue-400 shadow-sm">
@@ -423,7 +323,11 @@
                 </div>
             </div>
 
-            <div class="flex-1 overflow-auto table-container relative bg-white" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard' && currentTab !== 'simplex'">
+            <!-- Sección 'RESULTADOS OPERATIVOS' removida según solicitud -->
+
+            
+
+            <div class="flex-1 overflow-auto table-container relative bg-white" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard'">
                 <div x-show="filterOpportunityCost" class="bg-red-50 text-red-800 px-4 py-2 text-xs font-bold border-b border-red-100 flex justify-between items-center animate-in slide-in-from-top duration-300">
                     <div class="flex items-center gap-2">
                         <span class="text-lg animate-pulse">🔥</span>
@@ -465,7 +369,7 @@
                 <div x-show="kpiFilter === 'criticos'" class="bg-red-100 text-red-900 px-4 py-2 text-xs font-bold border-b border-red-200 flex justify-between items-center animate-in slide-in-from-top duration-300">
                     <div class="flex items-center gap-2">
                         <span class="text-lg animate-pulse">🔴</span>
-                        <span>FILTRO KPI DASHBOARD: Mostrando SKUs CRÍTICOS (Stock < 5 días + Demanda alta).</span>
+                        <span>FILTRO KPI DASHBOARD: Mostrando SKUs CRÍTICOS (Stock &lt; 5 días + Demanda alta).</span>
                     </div>
                     <button @click="kpiFilter = null" class="text-[10px] underline hover:text-red-950 bg-white px-2 py-1 rounded border border-red-200 hover:bg-red-50 transition">
                         Mostrar Todo
@@ -520,7 +424,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <template x-for="row in paginatedData" :key="row.id + '_' + (row.comprarU||0) + '_' + (row.diasEstrategia || 'def') + '_' + row.stockGrafana">
+                        <template x-for="row in paginatedData" :key="row.id + '_' + (row.comprarU||0) + '_' + (row.diasEstrategia || 'def') + '_' + row.stockTotal">
                             <tr class="group transition-colors hover:bg-blue-50 border-l-4" 
                                 :class="[
                                     selectedIds.includes(row.id) ? 'bg-blue-100' : '',
@@ -614,7 +518,7 @@
                                 </div>
                                 <div class="bg-red-500 bg-opacity-30 p-3 rounded-lg">⚠️</div>
                             </div>
-                            <p class="text-xs text-red-100">Stock < 5 días + Demanda alta</p>
+                            <p class="text-xs text-red-100">Stock &lt; 5 días + Demanda alta</p>
                             <p class="text-[10px] text-red-200 mt-2 opacity-80">👆 Click para ver detalle</p>
                         </div>
 
@@ -825,7 +729,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="text-slate-400 text-xs text-right ml-2">
-                                                    <div x-text="'Stock: ' + ((item.stockGrafana || item.stock || 0))"></div>
+                                                    <div x-text="'Stock: ' + ((item.stockTotal || item.stock || 0))"></div>
                                                 </div>
                                             </div>
                                             <div class="text-slate-400 text-xs flex justify-between mt-1">
@@ -881,7 +785,7 @@
                                                 <td class="p-2" x-text="item.marca || 'S/D'"></td>
                                                 <td class="p-2" x-text="item.prov || 'S/D'"></td>
                                                 <td class="p-2 text-right" x-text="(item.vtarTotal || 0).toFixed(2)"></td>
-                                                <td class="p-2 text-right" x-text="(item.stockGrafana || 0).toLocaleString()"></td>
+                                                <td class="p-2 text-right" x-text="(item.stockTotal || 0).toLocaleString()"></td>
                                                 <td class="p-2 text-center">
                                                     <button @click="removeDashboardItem(item.sku)" class="text-red-400 hover:text-red-300 font-bold text-lg">×</button>
                                                 </td>
@@ -1166,7 +1070,7 @@
                         <div class="bg-red-50 p-2 rounded border border-red-100">
                             <div class="font-bold text-red-700">Semana 1 (Urgente)</div>
                             <div class="text-xs font-black" x-text="formatMoney(metrics.cashFlow?.w1 || 0)"></div>
-                            <div class="text-slate-400">Stock < 7 días</div>
+                            <div class="text-slate-400">Stock &lt; 7 días</div>
                         </div>
                         <div class="bg-orange-50 p-2 rounded border border-orange-100">
                             <div class="font-bold text-orange-700">Semana 2</div>
@@ -1248,7 +1152,7 @@
                             </table>
                         </div>
                         <div class="mt-3 text-[9px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-100 grid grid-cols-4 gap-2 text-center">
-                            <div><span class="inline-block w-3 h-3 rounded bg-red-500 mr-1"></span><strong class="text-red-600">< 15d</strong> Crítico</div>
+                            <div><span class="inline-block w-3 h-3 rounded bg-red-500 mr-1"></span><strong class="text-red-600">&lt; 15d</strong> Crítico</div>
                             <div><span class="inline-block w-3 h-3 rounded bg-yellow-500 mr-1"></span><strong class="text-yellow-600">15-30d</strong> Alerta</div>
                             <div><span class="inline-block w-3 h-3 rounded bg-green-500 mr-1"></span><strong class="text-green-600">30-45d</strong> Saludable</div>
                             <div><span class="inline-block w-3 h-3 rounded bg-purple-500 mr-1"></span><strong class="text-purple-600">> 45d</strong> Sobrestock</div>
@@ -1318,7 +1222,7 @@
                             </div>
                         </div>
                         <div class="mt-4 text-[9px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-100 grid grid-cols-3 gap-2 text-center">
-                            <div><span class="inline-block w-3 h-3 rounded bg-red-500 mr-1"></span><strong>< 50</strong> Crítico</div>
+                            <div><span class="inline-block w-3 h-3 rounded bg-red-500 mr-1"></span><strong>&lt; 50</strong> Crítico</div>
                             <div><span class="inline-block w-3 h-3 rounded bg-yellow-500 mr-1"></span><strong>50-74</strong> Moderado</div>
                             <div><span class="inline-block w-3 h-3 rounded bg-green-500 mr-1"></span><strong>≥ 75</strong> Saludable</div>
                         </div>
@@ -1363,247 +1267,7 @@
             </div>
         </div>
 
-        <!-- 📊 TAB SIMPLEX - Ventas por Mes (2025/2026) -->
-        <div class="flex-1 overflow-y-auto bg-gradient-to-b from-emerald-50 to-white p-4" x-show="currentTab === 'simplex'">
-            <div class="max-w-7xl mx-auto">
-                <!-- KPIs Compactos arriba -->
-                <div class="grid grid-cols-4 gap-2 mb-3">
-                    <div class="bg-white rounded-lg shadow-sm p-2 border-l-4 border-emerald-500 flex items-center justify-between">
-                        <div class="text-xs text-slate-500 font-bold">SKUs</div>
-                        <div class="text-lg font-bold text-emerald-700" x-text="(simplexData2025.length + simplexData2026.length) || 0"></div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow-sm p-2 border-l-4 border-blue-500 flex items-center justify-between">
-                        <div class="text-xs text-slate-500 font-bold">Unidades</div>
-                        <div class="text-lg font-bold text-blue-700" x-text="[...simplexData2025, ...simplexData2026].reduce((a,d) => a + d.qTotal, 0).toLocaleString()"></div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow-sm p-2 border-l-4 border-purple-500 flex items-center justify-between">
-                        <div class="text-xs text-slate-500 font-bold">Venta</div>
-                        <div class="text-lg font-bold text-purple-700" x-text="formatMoney([...simplexData2025, ...simplexData2026].reduce((a,d) => a + d.ventaTotal, 0))"></div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow-sm p-2 border-l-4 border-orange-500 flex items-center justify-between">
-                        <div class="text-xs text-slate-500 font-bold">Marcas</div>
-                        <div class="text-lg font-bold text-orange-700" x-text="[...new Set([...simplexData2025, ...simplexData2026].map(d => d.marca))].length"></div>
-                    </div>
-                </div>
-
-                <!-- Barra de controles compacta -->
-                <div class="bg-white rounded-lg shadow-sm border border-emerald-200 p-3 mb-3">
-                    <div class="flex flex-wrap items-center gap-3">
-                        <!-- Buscar por -->
-                        <div class="flex items-center gap-1">
-                            <span class="text-xs font-bold text-slate-600">Buscar:</span>
-                            <label class="cursor-pointer px-2 py-1 rounded-full text-xs transition-colors"
-                                :class="simplexSearchType === 'sku' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="radio" x-model="simplexSearchType" value="sku" class="hidden"> SKU
-                            </label>
-                            <label class="cursor-pointer px-2 py-1 rounded-full text-xs transition-colors"
-                                :class="simplexSearchType === 'marca' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="radio" x-model="simplexSearchType" value="marca" class="hidden"> Marca
-                            </label>
-                            <label class="cursor-pointer px-2 py-1 rounded-full text-xs transition-colors"
-                                :class="simplexSearchType === 'proveedor' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="radio" x-model="simplexSearchType" value="proveedor" class="hidden"> Proveedor
-                            </label>
-                        </div>
-
-                        <div class="h-6 w-px bg-slate-300"></div>
-
-                        <!-- Años -->
-                        <div class="flex items-center gap-1">
-                            <span class="text-xs font-bold text-slate-600">Año:</span>
-                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors flex items-center gap-1"
-                                :class="simplexYears.y2025 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="checkbox" x-model="simplexYears.y2025" @change="updateSimplexActiveData()" class="hidden"> 2025
-                            </label>
-                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors flex items-center gap-1"
-                                :class="simplexYears.y2026 ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="checkbox" x-model="simplexYears.y2026" @change="updateSimplexActiveData()" class="hidden"> 2026
-                            </label>
-                        </div>
-
-                        <div class="h-6 w-px bg-slate-300"></div>
-
-                        <!-- Métrica -->
-                        <div class="flex items-center gap-1">
-                            <span class="text-xs font-bold text-slate-600">Mostrar:</span>
-                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors"
-                                :class="simplexMetric === 'unidades' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="radio" x-model="simplexMetric" value="unidades" class="hidden"> Unidades
-                            </label>
-                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors"
-                                :class="simplexMetric === 'importe' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="radio" x-model="simplexMetric" value="importe" class="hidden"> Importe
-                            </label>
-                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors"
-                                :class="simplexMetric === 'ambos' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="radio" x-model="simplexMetric" value="ambos" class="hidden"> Ambos
-                            </label>
-                        </div>
-
-                        <div class="h-6 w-px bg-slate-300"></div>
-
-                        <!-- Vista -->
-                        <div class="flex items-center gap-1">
-                            <span class="text-xs font-bold text-slate-600">Vista:</span>
-                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors"
-                                :class="simplexViewMode === 'horizontal' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="radio" x-model="simplexViewMode" value="horizontal" class="hidden"> ↔️ Tabla
-                            </label>
-                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors"
-                                :class="simplexViewMode === 'vertical' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="radio" x-model="simplexViewMode" value="vertical" class="hidden"> ↕️ Cards
-                            </label>
-                        </div>
-
-                        <!-- Buscador -->
-                        <div class="flex-1 flex gap-2">
-                            <div class="relative flex-1">
-                                <span class="absolute left-2 top-1.5 text-emerald-400 text-sm">🔍</span>
-                                <input type="text" 
-                                    x-model="simplexSearchText"
-                                    @input="filterSimplexData(); updateSimplexChart()"
-                                    @keydown.enter="filterSimplexData(); updateSimplexChart()"
-                                    :placeholder="simplexSearchType === 'sku' ? 'Buscar SKU...' : simplexSearchType === 'marca' ? 'Buscar Marca...' : 'Buscar Proveedor...'"
-                                    class="w-full pl-7 pr-3 py-1.5 rounded border border-slate-300 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
-                            </div>
-                            <button @click="filterSimplexData(); updateSimplexChart()" 
-                                class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded font-bold text-xs">
-                                Buscar
-                            </button>
-                            <button @click="simplexSearchText=''; simplexFilteredData=[]; updateSimplexChart()" 
-                                class="bg-slate-200 hover:bg-slate-300 text-slate-600 px-2 py-1.5 rounded text-xs">
-                                ✕
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Gráfico de evolución (arriba de resultados) -->
-                <div x-show="simplexFilteredData.length > 0" class="bg-white rounded-lg shadow-sm border border-slate-200 p-3 mb-3">
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="text-sm font-bold text-slate-700">📈 Evolución Mensual</h3>
-                        <div class="text-xs text-slate-500">
-                            <span x-show="simplexYears.y2025 && simplexYears.y2026">Comparando 2025 vs 2026</span>
-                            <span x-show="simplexYears.y2025 && !simplexYears.y2026">Año 2025</span>
-                            <span x-show="!simplexYears.y2025 && simplexYears.y2026">Año 2026</span>
-                        </div>
-                    </div>
-                    <div class="h-48">
-                        <canvas id="simplexEvolutionChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Resultados -->
-                <div x-show="simplexFilteredData.length > 0" class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="bg-slate-100 px-3 py-2 border-b flex justify-between items-center">
-                        <div class="text-sm font-bold text-slate-700">
-                            📊 <span class="text-emerald-600" x-text="simplexFilteredData.length"></span> registros
-                        </div>
-                        <div class="text-xs text-slate-500 flex items-center gap-2">
-                            <span x-show="simplexYears.y2025 && simplexYears.y2026">2025 + 2026</span>
-                            <span x-show="simplexYears.y2025 && !simplexYears.y2026">2025</span>
-                            <span x-show="!simplexYears.y2025 && simplexYears.y2026">2026</span>
-                            <span>|</span>
-                            <span x-text="simplexMetric === 'unidades' ? 'Unidades' : simplexMetric === 'importe' ? 'Importe' : 'Ambos'"></span>
-                        </div>
-                    </div>
-
-                    <!-- VISTA HORIZONTAL (meses en columnas) -->
-                    <div x-show="simplexViewMode === 'horizontal'" class="overflow-x-auto max-h-[400px]">
-                        <table class="w-full text-xs">
-                            <thead class="bg-emerald-100 sticky top-0 z-10">
-                                <tr>
-                                    <template x-for="col in getSimplexColumns()" :key="col.key">
-                                        <th class="p-1.5 text-left font-bold text-emerald-800 border-b border-emerald-200 whitespace-nowrap"
-                                            :class="[...simplexMeses2025, ...simplexMeses2026].includes(col.key) ? 'bg-emerald-200 text-center min-w-[80px]' : ''">
-                                            <span x-text="col.label"></span>
-                                        </th>
-                                    </template>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <template x-for="(row, idx) in simplexFilteredData" :key="idx">
-                                    <tr class="hover:bg-emerald-50 transition-colors"
-                                        :class="row.year === 2026 ? 'bg-indigo-50/30' : ''">
-                                        <template x-for="col in getSimplexColumns()" :key="col.key">
-                                            <td class="p-1.5 border-b border-slate-100"
-                                                :class="{
-                                                    'font-bold text-slate-800': col.key === 'sku' || col.key === 'marca' || col.key === 'prov',
-                                                    'text-center bg-slate-50': [...simplexMeses2025, ...simplexMeses2026].includes(col.key),
-                                                    'text-right font-mono': col.key === 'qTotal' || col.key === 'ventaTotal',
-                                                    'text-center font-bold': col.key === 'year'
-                                                }">
-                                                <span x-text="getSimplexCellValue(row, col)"></span>
-                                            </td>
-                                        </template>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- VISTA VERTICAL (meses en filas) -->
-                    <div x-show="simplexViewMode === 'vertical'" class="overflow-y-auto max-h-[600px] p-4">
-                        <template x-for="(row, idx) in simplexFilteredData" :key="idx">
-                            <div class="mb-4 bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
-                                <!-- Header del registro -->
-                                <div class="text-white px-4 py-2 flex justify-between items-center"
-                                    :class="row.year === 2026 ? 'bg-indigo-600' : 'bg-emerald-600'">
-                                    <div class="flex items-center gap-2">
-                                        <span class="bg-white/20 px-2 py-0.5 rounded text-xs font-bold" x-text="row.year || '2025'"></span>
-                                        <span class="font-bold" x-text="row.sku || row.marca || row.prov"></span>
-                                        <span x-show="row.desc" class="text-white/70 text-sm" x-text="'- ' + row.desc"></span>
-                                    </div>
-                                    <div class="text-right text-sm">
-                                        <span class="font-bold" x-text="(row.qTotal || 0).toLocaleString() + ' u'"></span>
-                                        <span class="text-white/70 ml-2" x-text="formatMoney(row.ventaTotal || 0)"></span>
-                                    </div>
-                                </div>
-                                
-                                <!-- Tabla de meses vertical compacta -->
-                                <div class="p-2">
-                                    <table class="w-full text-xs">
-                                        <thead class="bg-slate-100">
-                                            <tr>
-                                                <th class="p-1.5 text-left font-bold text-slate-600">MES</th>
-                                                <th x-show="simplexMetric !== 'importe'" class="p-1.5 text-right font-bold text-slate-600">UNIDADES</th>
-                                                <th x-show="simplexMetric !== 'unidades'" class="p-1.5 text-right font-bold text-slate-600">VENTA ($)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y">
-                                            <template x-for="mes in (row.year === 2026 ? simplexMeses2026 : simplexMeses2025)" :key="mes">
-                                                <tr class="hover:bg-emerald-50" :class="(row[mes]?.q || 0) > 0 ? '' : 'opacity-40'">
-                                                    <td class="p-1.5 font-bold text-slate-700 uppercase" x-text="mes"></td>
-                                                    <td x-show="simplexMetric !== 'importe'" class="p-1.5 text-right font-mono" 
-                                                        :class="(row[mes]?.q || 0) > 0 ? 'text-emerald-700 font-bold' : 'text-slate-400'"
-                                                        x-text="(row[mes]?.q || 0).toLocaleString()"></td>
-                                                    <td x-show="simplexMetric !== 'unidades'" class="p-1.5 text-right font-mono"
-                                                        :class="(row[mes]?.venta || 0) > 0 ? 'text-blue-700 font-bold' : 'text-slate-400'"
-                                                        x-text="formatMoney(row[mes]?.venta || 0)"></td>
-                                                </tr>
-                                            </template>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-
-                <!-- Sin resultados -->
-                <div x-show="simplexSearchText.length >= 2 && simplexFilteredData.length === 0" class="bg-yellow-50 rounded-lg shadow-sm p-6 text-center border border-yellow-200">
-                    <div class="text-3xl mb-2">🔍</div>
-                    <h3 class="text-sm font-bold text-yellow-700 mb-1">No se encontraron resultados</h3>
-                    <p class="text-yellow-600 text-xs">No hay datos para "<span x-text="simplexSearchText" class="font-bold"></span>"</p>
-                </div>
-
-                <!-- Estado inicial (sin búsqueda) -->
-                <div x-show="simplexSearchText.length < 2 && simplexFilteredData.length === 0" class="bg-slate-50 rounded-lg p-6 text-center border border-dashed border-slate-300">
-                    <div class="text-3xl mb-2">🔍</div>
-                    <p class="text-slate-500 text-sm">Ingresa al menos 2 caracteres para buscar</p>
-                </div>
-            </div>
-        </div>
+        <!-- Sección 'SIMPLEX' removida según solicitud -->
     </main>
 
     <div x-show="showSeasonalityModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" x-cloak>
@@ -1973,47 +1637,20 @@
                     store.add({ date: today, data: data });
                 } catch(e) { }
             },
-            async saveDebtHistory(totalDebt) {
-                try {
-                    const db = await this.getDB();
-                    const tx = db.transaction(this.debtStore, 'readwrite');
-                    const store = tx.objectStore(this.debtStore);
-                    const today = new Date().toISOString().slice(0,10);
-                    store.put({ date: today, val: totalDebt });
-                } catch(e) { }
-            },
-            async getHistory() {
-                try {
-                    const db = await this.getDB();
-                    return new Promise(r => {
-                        const tx = db.transaction(this.histStore, 'readonly');
-                        const req = tx.objectStore(this.histStore).getAll();
-                        req.onsuccess = () => r(req.result);
-                        req.onerror = () => r([]);
-                    });
-                } catch(e) { return []; }
-            },
-            async getDebtHistory() {
-                try {
-                    const db = await this.getDB();
-                    return new Promise(r => {
-                        const tx = db.transaction(this.debtStore, 'readonly');
-                        const req = tx.objectStore(this.debtStore).getAll();
-                        req.onsuccess = () => r(req.result);
-                        req.onerror = () => r([]);
-                    });
-                } catch(e) { return []; }
-            },
-            async clear(){return new Promise(r=>{const q=indexedDB.deleteDatabase(this.name);q.onsuccess=r})}
-        };
+                            DB.saveDebtHistory(totalDebt);
 
-        function calculateLinearRegression(y) {
-            const n = y.length;
-            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-            for (let i = 0; i < n; i++) {
-                sumX += i;
-                sumY += y[i];
-                sumXY += i * y[i];
+                            // Calcular importe de inmovilizado por proveedor (stock >45d)
+                            const provInmo = {};
+                            this.masterData.forEach(i => {
+                                const stockQty = (i.stockTotal || i.stockGrafana || 0);
+                                if (stockQty > 0 && (i.diasStock || 0) > 45) {
+                                    const p = i.prov || 'S/D';
+                                    const val = stockQty * (i.costo || 0);
+                                    provInmo[p] = (provInmo[p] || 0) + val;
+                                }
+                            });
+                            // No se usa `results` en métricas actuales cuando SIMPLEX está removido
+                            results = [];
                 sumXX += i * i;
             }
             const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
@@ -2134,20 +1771,7 @@
 
                 lookups: { mapML: {}, mapCargos: {}, mapEnvios: {}, mapCanasta: {}, mapMLA: {}, mapSTA19: {} },
 
-                // 📊 SIMPLEX - Ventas por mes (2025 y 2026)
-                simplexData2025: [],
-                simplexData2026: [],
-                simplexData: [], // Datos activos según selección de año
-                simplexFilteredData: [],
-                simplexSearchType: 'sku', // 'sku' | 'marca' | 'proveedor'
-                simplexSearchText: '',
-                simplexViewMode: 'horizontal', // 'horizontal' | 'vertical'
-                simplexYears: { y2025: true, y2026: false }, // Años seleccionados
-                simplexMetric: 'ambos', // 'unidades' | 'importe' | 'ambos'
-                simplexMeses2025: ['ene-25','feb-25','mar-25','abr-25','may-25','jun-25','jul-25','ago-25','sept-25','oct-25','nov-25','dic-25'],
-                simplexMeses2026: ['ene-26','feb-26','mar-26','abr-26','may-26','jun-26','jul-26','ago-26','sept-26','oct-26','nov-26','dic-26'],
-                simplexMeses: ['ene-25','feb-25','mar-25','abr-25','may-25','jun-25','jul-25','ago-25','sept-25','oct-25','nov-25','dic-25'], // Activos
-                simplexChartInstance: null,
+                // SIMPLEX logic removed: UI-only feature cleaned. Data will not be loaded into `rawData.simplex`.
 
                 kpis: { compra:0, envios:0, valorEnvios:0, lotesVencidos:0, skusCompra:0, cantImpulsar:0, enCamino: 0, inmovilizado: 0 },
                 
@@ -2175,8 +1799,7 @@
                     { id: 'vencimientos', label: '📅 Vencimientos' },
                     { id: 'combos', label: '🎁 COMBOS' },
                     { id: 'dashboard', label: '⚡ Dashboard KPI' },
-                    { id: 'metricas', label: '📊 Métricas' },
-                    { id: 'simplex', label: '📊 SIMPLEX' }
+                    { id: 'metricas', label: '📊 Métricas' }
                 ],
                 chartInstances: {},
 
@@ -2567,7 +2190,7 @@
                         if(main && main.length) {
                             const meta = await DB.load('meta');
                             this.fileName = meta?.fileName; this.lastUpdate = meta?.date;
-                            for(let k of ['grafana','pbi','sml','pml','cargos','enviados','vto','canasta','mla','sta19','simplex']) this.rawData[k] = await DB.load(k);
+                            for(let k of ['grafana','pbi','sml','pml','cargos','enviados','vto','canasta','mla','sta19']) this.rawData[k] = await DB.load(k);
                             this.strategyOverrides = await DB.load('strategyOverrides') || {};
                             this.historyData = await DB.getHistory();
                             this.debtHistory = await DB.getDebtHistory();
@@ -2625,7 +2248,7 @@
                 },
 
                 // 📥 Cargar Excel directamente desde carpeta local
-                async loadLocalExcel() {
+                async loadLocalExcel(forceReload = false) {
                     // Prioridad: .xlsb primero (más actualizado), luego .xlsx
                     const fileNames = ['ENVIOS LUCIANO.xlsb', 'ENVIOS LUCIANO.xlsx'];
                     this.isLoading = true;
@@ -2637,8 +2260,9 @@
                     // Intentar cargar .xlsb primero, luego .xlsx
                     for (const name of fileNames) {
                         try {
-                            console.log(`[DEBUG] Intentando cargar: ${name}`);
-                            const resp = await fetch(name);
+                            const url = name + (forceReload ? ('?t=' + Date.now()) : '');
+                            console.log(`[DEBUG] Intentando cargar: ${url}`);
+                            const resp = await fetch(url, { cache: 'no-store' });
                             console.log(`[DEBUG] Respuesta para ${name}: status=${resp.status}, ok=${resp.ok}`);
                             if (resp.ok) {
                                 response = resp;
@@ -2680,8 +2304,7 @@
                         this.rawData.canasta = getSheet(['canasta']);
                         this.rawData.mla = getSheet(['mla']);
                         this.rawData.sta19 = getSheet(['sta19', 'sta 19']);
-                        this.rawData.simplex = getSheet(['simplex2025', 'simplex']);
-                        this.rawData.simplex2026 = getSheet(['simplex2026']);
+                        // SIMPLEX sheet parsing removed (not used)
                         
                         if(this.rawData.grafana.length === 0) {
                             throw new Error("❌ No se encontró la hoja 'Grafana' o está vacía.");
@@ -2696,12 +2319,9 @@
                         // Guardar después del procesamiento en segundo plano
                         setTimeout(async () => {
                             try {
-                                for(let k of ['grafana','pbi','sml','pml','cargos','enviados','vto','canasta','mla','sta19','simplex','simplex2026']) {
+                                for(let k of ['grafana','pbi','sml','pml','cargos','enviados','vto','canasta','mla','sta19']) {
                                     if(this.rawData[k] && this.rawData[k].length > 0) {
-                                        // Clonar manualmente para evitar problemas
-                                        const cleanData = this.rawData[k].map(row => 
-                                            Array.isArray(row) ? row.map(cell => cell === undefined ? null : cell) : row
-                                        );
+                                        const cleanData = this.rawData[k].map(row => Array.isArray(row) ? row.map(cell => cell === undefined ? null : cell) : row);
                                         await DB.save(k, cleanData);
                                     }
                                 }
@@ -2721,6 +2341,10 @@
                 handleFile(e) {
                     const file = e.target.files[0]; 
                     if (!file) return;
+                    // Marcar no listo mientras procesamos nueva carga
+                    this.dataReady = false;
+                    // Limpiar rawData previo para evitar mezclas entre cargas
+                    this.rawData = {};
                     
                     // Validación de archivo (soporta .xlsx, .xls y .xlsb)
                     if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls') && !file.name.endsWith('.xlsb')) {
@@ -2737,6 +2361,8 @@
                             const wb = XLSX.read(evt.target.result, { type: 'array' });
                             console.log('[INFO] Hojas encontradas:', wb.SheetNames.join(', '));
                             const getSheet = (keys) => { const name = wb.SheetNames.find(n => keys.some(k => n.toLowerCase().includes(k.toLowerCase()))); return name ? XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1 }) : []; };
+
+                            // Intentar mapear hojas esperadas
                             this.rawData.grafana = getSheet(['grafana', 'main']);
                             this.rawData.pbi = getSheet(['pbi', 'powerbi']);
                             this.rawData.sml = getSheet(['stock ml', 'stock_ml']);
@@ -2747,13 +2373,72 @@
                             this.rawData.canasta = getSheet(['canasta']);
                             this.rawData.mla = getSheet(['mla']);
                             this.rawData.sta19 = getSheet(['sta19', 'sta 19']);
-                            this.rawData.simplex = getSheet(['simplex2025', 'simplex']);
-                            this.rawData.simplex2026 = getSheet(['simplex2026']);
+                            // SIMPLEX parsing skipped on file upload
 
-                            if(this.rawData.grafana.length === 0) {
+                            // Fallback: si no encontramos Grafana, usar la primera hoja no vacía
+                            if(!this.rawData.grafana || this.rawData.grafana.length === 0) {
+                                console.warn('[WARN] No se detectó hoja Grafana automáticamente. Intentando fallback a la primera hoja con datos.');
+                                const firstNonEmpty = wb.SheetNames.find(n => {
+                                    const arr = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1 }) || [];
+                                    return arr.length > 1;
+                                });
+                                if(firstNonEmpty) {
+                                    console.warn('[WARN] Usando hoja fallback:', firstNonEmpty);
+                                    this.rawData.grafana = XLSX.utils.sheet_to_json(wb.Sheets[firstNonEmpty], { header: 1 });
+                                }
+                            }
+                            if(!this.rawData.grafana || this.rawData.grafana.length === 0) {
                                 throw new Error("❌ No se encontró la hoja 'Grafana' o está vacía.\n\nVerifica que tu Excel tenga una hoja con ese nombre.");
                             }
                             
+                            // === Diagnóstico de parseo: generar CSV con raw vs parsed (primeras 500 filas)
+                            try {
+                                const parseNumLocal = (v) => { if(typeof v === 'number') return v; if(!v && v !== 0) return 0; let s = String(v||'').replace(/[$\s]/g,''); if(s.includes(',') && s.includes('.')) s = s.replace(/\./g,'').replace(',','.'); else if(s.includes(',')) s = s.replace(',','.'); const n = parseFloat(s); return Number.isFinite(n) ? n : 0; };
+                                const hGdiag = this.rawData.grafana[0] || [];
+                                const iSku_d = hGdiag.findIndex(c => String(c||'').toUpperCase().includes('SKU'));
+                                const iStock_d = hGdiag.findIndex(c => String(c||'').toUpperCase().includes('STOCK'));
+                                const iVtar_d = hGdiag.findIndex(c => String(c||'').toUpperCase().includes('VTAR'));
+                                const iCosto_d = hGdiag.findIndex(c => {
+                                    const H = String(c||'').toUpperCase();
+                                    return H.includes('COST') || H.includes('REPOSICION') || H.includes('C_REPO') || H.includes('C REPO') || H.includes('C_REPOSICION') || H.includes('C_ REPO');
+                                });
+                                const iVpd_d = hGdiag.findIndex(c => String(c||'').toUpperCase().includes('VPD'));
+                                const iDstk_d = hGdiag.findIndex(c => String(c||'').toUpperCase().includes('DSTK') || String(c||'').toUpperCase().includes('D STK'));
+                                const rowsDiag = this.rawData.grafana.slice(1, 501);
+                                if(rowsDiag.length) {
+                                    const csvRows = [];
+                                    csvRows.push(['SKU','raw_stock','parsed_stock','raw_vtar','parsed_vtar','raw_costo','parsed_costo','raw_vpd','parsed_vpd','raw_dstk','parsed_dstk'].join(','));
+                                    rowsDiag.forEach(r => {
+                                        const sku = (iSku_d > -1 ? String(r[iSku_d] || '') : '').replace(/\r|\n|,/g,' ');
+                                        const rawStock = iStock_d > -1 ? String(r[iStock_d] || '') : '';
+                                        const rawVtar = iVtar_d > -1 ? String(r[iVtar_d] || '') : '';
+                                        const rawCosto = iCosto_d > -1 ? String(r[iCosto_d] || '') : '';
+                                        const rawVpd = iVpd_d > -1 ? String(r[iVpd_d] || '') : '';
+                                        const rawDstk = iDstk_d > -1 ? String(r[iDstk_d] || '') : '';
+                                        const parsedStock = parseNumLocal(rawStock);
+                                        const parsedVtar = parseNumLocal(rawVtar);
+                                        const parsedCosto = parseNumLocal(rawCosto);
+                                        const parsedVpd = parseNumLocal(rawVpd);
+                                        const parsedDstk = parseNumLocal(rawDstk);
+                                        const safe = v => '"' + String(v).replace(/"/g,'""') + '"';
+                                        csvRows.push([safe(sku), safe(rawStock), parsedStock, safe(rawVtar), parsedVtar, safe(rawCosto), parsedCosto, safe(rawVpd), parsedVpd, safe(rawDstk), parsedDstk].join(','));
+                                    });
+                                    try {
+                                        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `diagnostico_parseo_${Date.now()}.csv`;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        a.remove();
+                                        URL.revokeObjectURL(url);
+                                        console.log('[INFO] Diagnóstico CSV descargado (primeras ' + rowsDiag.length + ' filas)');
+                                        alert('🔍 Diagnóstico descargado: revisa el CSV generado para raw vs parsed (primeras ' + rowsDiag.length + ' filas).');
+                                    } catch(e) { console.warn('[WARN] No se pudo generar CSV de diagnóstico:', e); }
+                                }
+                            } catch(e) { console.warn('[WARN] Generación de diagnóstico falló:', e); }
+
                             // Validar columnas mínimas requeridas
                             const hG = this.rawData.grafana[0];
                             const requiredCols = ['SKU', 'VTAR', 'Stock'];
@@ -2777,21 +2462,48 @@
 
                             this.loadingMsg = 'CALCULANDO MÉTRICAS...';
                             this.processAll();
-                        } catch (err) { console.error(err); alert(err.message); this.isLoading = false; }
+
+                            // Esperar a que processAll marque dataReady y notificar al usuario
+                            const startNotify = Date.now();
+                            const iv = setInterval(() => {
+                                if (this.dataReady) {
+                                    clearInterval(iv);
+                                    this.isLoading = false;
+                                    console.log('[INFO] Carga finalizada. SKUs procesados:', this.masterData.length);
+                                    alert('✅ Archivo procesado: ' + (this.masterData.length || 0) + ' SKUs.');
+                                    try { if (e && e.target) e.target.value = ''; } catch(_) {}
+                                } else if (Date.now() - startNotify > 30000) {
+                                    clearInterval(iv);
+                                    this.isLoading = false;
+                                    console.warn('[WARN] Timeout esperando procesamiento. Revisa la consola.');
+                                    alert('⚠️ Procesamiento tardó demasiado. Revisa la consola (F12) para más detalles.');
+                                }
+                            }, 300);
+                        } catch (err) {
+                            console.error('[ERROR] handleFile:', err);
+                            this.isLoading = false;
+                            alert('❌ Error procesando archivo: ' + (err && err.message ? err.message : String(err)));
+                        }
+                    };
+                    reader.onerror = (ev) => {
+                        console.error('[ERROR] FileReader error', ev);
+                        this.isLoading = false;
+                        alert('❌ Error leyendo el archivo. Revisa la consola (F12)');
                     };
                     reader.readAsArrayBuffer(file);
                 },
 
                 generateSnapshot() {
                     try {
-                        const hG = this.rawData.grafana[0];
-                        const iSku = hG.findIndex(c => String(c).toUpperCase().includes('SKU'));
-                        const iVtar = hG.findIndex(c => String(c).toUpperCase().includes('VTAR'));
+                        const parseNumLocal = (v) => { if(typeof v === 'number') return v; if(!v && v !== 0) return 0; let s = String(v||'').replace(/[$\s]/g,''); if(s.includes(',') && s.includes('.')) s = s.replace(/\./g,'').replace(',','.'); else if(s.includes(',')) s = s.replace(',','.'); const n = parseFloat(s); return Number.isFinite(n) ? n : 0; };
+                        const hG = this.rawData.grafana[0] || [];
+                        const iSku = hG.findIndex(c => String(c||'').toUpperCase().includes('SKU'));
+                        const iVtar = hG.findIndex(c => String(c||'').toUpperCase().includes('VTAR'));
                         const snap = {};
                         this.rawData.grafana.slice(1).forEach(r => {
                             const s = String(r[iSku]||'').trim().toUpperCase();
                             if(s && s !== 'TOTAL') {
-                                const v = parseFloat(r[iVtar]) || 0;
+                                const v = parseNumLocal(r[iVtar]);
                                 if(!snap[s]) snap[s] = {v:0};
                                 snap[s].v += v;
                             }
@@ -3076,7 +2788,7 @@
                                 <div class="text-[10px] text-slate-500 truncate">${skuMatch.desc}</div>
                             </div>
                             <div class="grid grid-cols-2 gap-2 text-[10px] mb-2">
-                                <div class="bg-slate-100 p-1 rounded">Stock Total: <b>${skuMatch.stockGrafana}</b></div>
+                                <div class="bg-slate-100 p-1 rounded">Stock Total: <b>${skuMatch.stockTotal}</b></div>
                                 <div class="bg-slate-100 p-1 rounded">Días: <b class="${skuMatch.diasStock<15?'text-red-600':'text-green-600'}">${skuMatch.diasStock.toFixed(1)}</b></div>
                                 <div class="bg-slate-100 p-1 rounded">Dep 1: <b>${skuMatch.pbi?.dep1||0}</b></div>
                                 <div class="bg-slate-100 p-1 rounded">Dep 80: <b>${skuMatch.pbi?.dep80||0}</b></div>
@@ -3089,7 +2801,7 @@
 
                     const brandItems = this.masterData.filter(i => (i.marca||'').toUpperCase().includes(q) || (i.prov||'').toUpperCase().includes(q));
                     if(brandItems.length > 0) {
-                        const totalStock = brandItems.reduce((a,b)=>a+b.stockGrafana,0);
+                        const totalStock = brandItems.reduce((a,b)=>a+(b.stockTotal || 0),0);
                         const totalVal = brandItems.reduce((a,b)=>a+b.stockValorizado,0);
                         const quiebres = brandItems.filter(i=>i.diasStock<=10).length;
                         return { type: 'bot', html: `
@@ -3266,11 +2978,18 @@
                                 console.log('[DEBUG] STA19 columna SKU idx:', iS, '| EAN idx:', iEAN);
                                 
                                 if(iS > -1 && iEAN > -1) {
+                                    const iPrecio900 = idx(h, ['PRECIO_LISTA_900', 'PRECIO 900', 'PRECIO_900', 'PRECIO900', 'MÁX. DE PRECIO_LISTA_900', 'MAX. DE PRECIO_LISTA_900']);
+                                    const iPrecio14 = idx(h, ['PRECIO_LISTA_14', 'PRECIO 14', 'PRECIO_14', 'PRECIO14', 'MÁX. DE PRECIO_LISTA_14']);
+                                    const iDescSTA = idx(h, ['DESCRIPCION', 'DESCRIPCIÓN', 'DESC']);
+
                                     this.rawData.sta19.slice(1).forEach(r => {
                                         const s = clean(r[iS]);
                                         if(s) {
                                             this.lookups.mapSTA19[s] = {
-                                                ean: String(r[iEAN] || '').trim()
+                                                ean: String(r[iEAN] || '').trim(),
+                                                precio900: (iPrecio900 > -1 ? num(r[iPrecio900]) : 0),
+                                                precio14: (iPrecio14 > -1 ? num(r[iPrecio14]) : 0),
+                                                desc: (iDescSTA > -1 ? String(r[iDescSTA] || '') : '')
                                             };
                                         }
                                     });
@@ -3285,8 +3004,11 @@
                             const data = {}; const hG = this.rawData.grafana[0];
                             const iSku = idx(hG, ['SKU']), iDep = idx(hG, ['Deposito']), iVtar = idx(hG, ['VTAR']), iVpd = idx(hG, ['VPD_Cpra']);
                             const iDesc = idx(hG, ['Descripcion']), iMarca = idx(hG, ['Marca']), iProv = idx(hG, ['Proveedor', 'Prov']), iAnalista = idx(hG, ['Analista']);
-                            const iCosto = idx(hG, ['Costo', 'Reposición', 'C_Repo', 'Máx. de Precio_Lista_900']), iLt = idx(hG, ['Lead']), iDev = idx(hG, ['Desvío']), iStock = idx(hG, ['Stock']), iUxb = idx(hG, ['UXB']);
-                            // Preprocesar mapa de costos STA19 si existe
+                            const iCosto = idx(hG, ['Costo', 'Reposición', 'C_Repo', 'C_REPO', 'C REPO', 'C_REPOSICION']), iLt = idx(hG, ['Lead']), iDev = idx(hG, ['Desvío']), iStock = idx(hG, ['Stock']), iUxb = idx(hG, ['UXB']);
+                            // Columna 'Total' (suma por SKU) usada para valorizados en la fuente de datos
+                            const iTotal = idx(hG, ['Total', 'TOTAL', 'TOTAL GENERAL', 'TOTAL_GENERAL', 'Total General']);
+                            const iDstk = idx(hG, ['DSTK', 'D_STK', 'D STK']);
+                            // Preprocesar mapa de costos STA19 si existe (mantener compatibilidad)
                             let sta19CostMap = {};
                             if (this.rawData.sta19 && this.rawData.sta19.length) {
                                 const hSTA = this.rawData.sta19[0];
@@ -3311,6 +3033,21 @@
                             // 🚩 FLAG BLOQUEADOS (columna DN en Grafana)
                             const iFlagBloq = idx(hG, ['FLAG BLOQUEADOS', 'BLOQUEADOS', 'BLOQUEADO', 'FLAG_BLOQ']);
                             console.log('[DEBUG] Columna FLAG BLOQUEADOS encontrada en índice:', iFlagBloq);
+                            // Determinar el valor más frecuente de DSTK para usar como referencia (fallback 56)
+                            try {
+                                let modeDstk = 56;
+                                if(iDstk > -1) {
+                                    const counts = {};
+                                    this.rawData.grafana.slice(1).forEach(rr => {
+                                        const v = num(rr[iDstk]);
+                                        if(v && Number.isFinite(v)) counts[v] = (counts[v] || 0) + 1;
+                                    });
+                                    const entries = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+                                    if(entries.length) modeDstk = parseInt(entries[0][0], 10) || 56;
+                                }
+                                this.refDays = modeDstk;
+                                console.log('[INFO] Referencia DSTK (refDays) establecida en', this.refDays);
+                            } catch(e) { this.refDays = 56; }
                             
                             // 🛒 Índices para columnas Q MES (Market)
                             const meses = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
@@ -3324,6 +3061,8 @@
                             this.rawData.grafana.slice(1).forEach(r => {
                                 const sku = clean(r[iSku]); if(!sku || sku === 'TOTAL') return;
                                 const dep = clean(r[iDep]), v = num(r[iVtar]), st = num(r[iStock]), vta59 = num(r[iVta59]);
+                                const totalCol = (iTotal > -1) ? num(r[iTotal]) : 0;
+                                const comprasCol = (iCamino > -1) ? num(r[iCamino]) : 0;
 
                                 // 🚩 Detectar FLAG BLOQUEADOS para este SKU
                                 const flagBloqVal = iFlagBloq > -1 ? String(r[iFlagBloq] || '').toUpperCase().trim() : '';
@@ -3338,11 +3077,17 @@
                                         lt: num(r[iLt])||30,
                                         dev: 0,
                                         vpdCpra: num(r[iVpd]),
+                                        // Para promedio ponderado: suma(vpd * vtar_row) y suma(vtar_row)
+                                        vpdWeightedSum: (iVpd > -1 ? (num(r[iVpd]) * v) : 0),
+                                        vpdWeightTotal: (iVpd > -1 ? v : 0),
+                                        // Mantener suma simple como fallback
+                                        vpdSum: (iVpd > -1 ? num(r[iVpd]) : 0),
+                                        vpdCount: (iVpd > -1 && r[iVpd] !== null && r[iVpd] !== '' ? 1 : 0),
                                         uxb: num(r[iUxb])||1,
                                         perfil: (iPerfil > -1 ? r[iPerfil] : '') || 'Sin Clasificar',
                                         subPerfil: (iSubPerfil > -1 ? r[iSubPerfil] : '') || 'Sin Clasificar',
                                         vtarTotal: 0, vtar80: 0, vtar1: 0, vtarSuc: 0,
-                                        stockGrafana: 0, comprasEnCamino: 0, vta59Total: 0,
+                                        stockGrafana: 0, stockTotal: 0, comprasEnCamino: 0, vta59Total: 0,
                                         vta30d: 0, vta30d_80: 0,
                                         histDaily: [], histDaily80: [], vtarBreakdown: {}, seasonalMult: 1,
                                         // 🛒 Datos Q MES para Market (acumuladores para promedio)
@@ -3354,6 +3099,18 @@
                                     // Debug: mostrar primeros SKUs bloqueados
                                     if(esBloqueado) {
                                         console.log('[DEBUG] 🚩 SKU BLOQUEADO encontrado:', sku, '| Valor columna:', flagBloqVal);
+                                    }
+                                }
+                                else {
+                                    // acumular VPD para promedio por SKU
+                                    if(iVpd > -1 && r[iVpd] !== null && r[iVpd] !== '') {
+                                        const vpdVal = num(r[iVpd]);
+                                        // acumular para promedio ponderado por VTAR (peso = v)
+                                        data[sku].vpdWeightedSum = (data[sku].vpdWeightedSum || 0) + (vpdVal * v);
+                                        data[sku].vpdWeightTotal = (data[sku].vpdWeightTotal || 0) + v;
+                                        // también mantener suma simple como fallback
+                                        data[sku].vpdSum = (data[sku].vpdSum || 0) + vpdVal;
+                                        data[sku].vpdCount = (data[sku].vpdCount || 0) + 1;
                                     }
                                 }
 
@@ -3400,8 +3157,13 @@
                                     data[sku].vta30d_80 = slice30_80.reduce((a,b) => a + b, 0);
                                 }
 
-                                data[sku].vtarTotal += v; data[sku].stockGrafana += st; data[sku].vta59Total += vta59;
-                                if(iCamino > -1) data[sku].comprasEnCamino += num(r[iCamino]);
+                                data[sku].vtarTotal += v;
+                                data[sku].stockGrafana += st;
+                                data[sku].comprasEnCamino += comprasCol;
+                                // STOCK TOTAL = Stock (Grafana) + Compras
+                                data[sku].stockTotal += (st + comprasCol);
+                                data[sku].vta59Total += vta59;
+                                if (totalCol && totalCol > 0) data[sku].total = totalCol;
                                 if(dep.includes('80') || dep.includes('FULL')) data[sku].vtar80 += v; else if(dep.includes('1') || dep.includes('CENTRAL')) data[sku].vtar1 += v; else data[sku].vtarSuc += v;
                                 
                                 // 🛒 Acumular Q MES (para promediar después)
@@ -3414,7 +3176,7 @@
                                 });
                                 data[sku]._qMesCount++;
                                 
-                                flatRows.push({ id: Math.random().toString(36).substr(2,9), sku: sku, desc: r[iDesc]||data[sku]?.desc||'-', marca: r[iMarca]||'-', prov: r[iProv]||'-', dep, vtar: v, stock: st, vta59, diasStockDep: v > 0 ? st/v : (st>0 ? 999 : 0), costo: num(r[iCosto]), analista: r[iAnalista]||'-' });
+                                flatRows.push({ id: Math.random().toString(36).substr(2,9), sku: sku, desc: r[iDesc]||data[sku]?.desc||'-', marca: r[iMarca]||'-', prov: r[iProv]||'-', dep, vtar: v, stock: (st + comprasCol), compras: comprasCol, totalCol: totalCol, vta59, diasStockDep: v > 0 ? ((st + comprasCol)/v) : ((st+comprasCol)>0 ? 999 : 0), costo: num(r[iCosto]), analista: r[iAnalista]||'-', stockSource: 'Grafana+Compras' });
                             }); 
 
                             if(this.rawData.pbi && this.rawData.pbi.length) {
@@ -3565,7 +3327,7 @@
                                 });
 
                                 Object.keys(batchesBySku).forEach(sku => {
-                                    let currentStock = data[sku]?.stockGrafana || 0;
+                                    let currentStock = data[sku]?.stockTotal || data[sku]?.stockGrafana || 0;
                                     const batches = batchesBySku[sku].sort((a,b) => b.dateVal - a.dateVal);
                                     
                                     const ventaDiaria = data[sku]?.vtarTotal || 0;
@@ -3662,6 +3424,21 @@
                                 delete item._qMesCount;
                             });
 
+                            // Antes de procesar, convertir acumuladores de VPD a vpdCpra por SKU.
+                            // Preferimos promedio ponderado por VTAR si hay datos de peso, sino usamos promedio simple.
+                            Object.values(data).forEach(it => {
+                                if((it.vpdWeightTotal || 0) > 0) {
+                                    it.vpdCpra = (it.vpdWeightedSum || 0) / it.vpdWeightTotal;
+                                    it.vpdPromMethod = 'ponderado_vtar';
+                                } else if((it.vpdCount || 0) > 0) {
+                                    it.vpdCpra = (it.vpdSum || 0) / it.vpdCount;
+                                    it.vpdPromMethod = 'simple';
+                                } else {
+                                    it.vpdCpra = 0;
+                                    it.vpdPromMethod = 'none';
+                                }
+                            });
+
                             const processed = Object.values(data).map(item => {
                                 if (item.histDaily && item.histDaily.length > 5) {
                                     const chrono = [...item.histDaily].reverse();
@@ -3694,7 +3471,7 @@
                                 return p;
                             });
 
-                            // Unificar lógica: usar solo una declaración de provMap y sumar correctamente
+                            // Unificar lógica: usar provMapStock y sumar correctamente incluyendo stockTotal si existe
                             let provMapStock = {};
                             processed.forEach(item => {
                                 const pName = item.prov || 'S/D';
@@ -3709,13 +3486,13 @@
                                         inversion: 0
                                     };
                                 }
-                                // Cálculo correcto usando costo
-                                provMapStock[pName].totalStockVal += (item.stockGrafana || 0) * (item.costo || 0);
-                                provMapStock[pName].totalStockQty += item.stockGrafana || 0;
+                                const stockQty = (item.stockTotal || item.stockGrafana || 0);
+                                provMapStock[pName].totalStockVal += stockQty * (item.costo || 0);
+                                provMapStock[pName].totalStockQty += stockQty;
                                 provMapStock[pName].totalVtar += item.vtarTotal || 0;
-                                // Sobrestock: solo unidades que exceden 45 días
-                                if ((item.diasStock || 0) > 45) provMapStock[pName].inmoVal += ((item.stockGrafana || 0) * (item.costo || 0));
+                                if ((item.diasStock || 0) > 45) provMapStock[pName].inmoVal += stockQty * (item.costo || 0);
                                 provMapStock[pName].inversion += item.inversion || 0;
+                            });
                             });
                             this.proveedoresData = Object.values(provMapStock).map(p => ({
                                 ...p,
@@ -3840,7 +3617,7 @@
                                 else if(p.diasStock <= 30) status='s';
                                 else if(p.diasStock <= 45) status='a';
                                 else status='o';
-                                matrix[p.abc][status] += (p.stockGrafana * p.costo);
+                                matrix[p.abc][status] += ((p.stockTotal || 0) * p.costo);
                             });
                             this.metrics.matrix = matrix;
                             this.matrixCounts = mCounts;
@@ -3848,6 +3625,57 @@
 
                             this.masterData = processed;
                             this.flatData = flatRows;
+
+                            // Enriquecer masterData con precios desde STA19 y costo de reposición (Grafana)
+                            try {
+                                let totalStockVal = 0, totalPotentialGross = 0, sumMarginPct = 0, cntMargin = 0;
+                                let totalCumplimiento = 0, cntCumplimiento = 0;
+                                this.masterData.forEach(p => {
+                                    const s = p.sku;
+                                    const fromSta = this.lookups.mapSTA19[s] || {};
+                                    // Precio de venta: preferir STA19.precio14, si no usar precio900
+                                    const precio = (fromSta.precio14 && fromSta.precio14 > 0) ? fromSta.precio14 : (fromSta.precio900 || 0);
+                                    // Costo de reposición: preferir C_Repo desde Grafana; si está vacío usar STA19.precio900
+                                    const costoRepo = (p.costo && p.costo > 0) ? p.costo : (fromSta.precio900 || 0);
+                                    p.costoRepo = costoRepo;
+                                    p.precio = precio || 0;
+                                    p.margenBruto = Math.round(((p.precio - p.costoRepo) + Number.EPSILON) * 100) / 100;
+                                    p.margenPct = p.precio > 0 ? Math.round(((p.precio - p.costoRepo) / p.precio) * 10000) / 100 : 0;
+
+                                    // Cumplimiento VTAR / VPD_Cpra (índice unidades)
+                                    const vpd = p.vpdCpra || 0;
+                                    p.cumplimientoIndex = vpd > 0 ? Math.round((p.vtarTotal / vpd) * 100) / 100 : 0;
+
+                                    // STOCK TOTAL: siempre usar stock físico + compras en camino (ignorar columna 'Total')
+                                    const stockTotal = (p.stockTotal !== undefined ? p.stockTotal : ((p.stockGrafana || 0) + (p.comprasEnCamino || 0)));
+                                    p.stockTotal = stockTotal;
+
+                                    // DIAS STOCK basado en VTAR: (STOCK + Compras)/VTAR
+                                    p.diasStock = (p.vtarTotal && p.vtarTotal > 0) ? (stockTotal / p.vtarTotal) : (stockTotal === 0 ? 0 : 999);
+
+                                    // VTAR VALORIZADO = Total * C_Repo
+                                    const costoRepoVal = p.costoRepo || 0;
+                                    p.vtarVal = stockTotal * costoRepoVal;
+
+                                    // VPD VALORIZADA = VPD_Cpra * DSTK * C_Repo
+                                    const dstk = p.diasStock;
+                                    p.vpdVal = (p.vpdCpra || 0) * dstk * costoRepoVal;
+
+                                    // CUMPLIMIENTO VALORIZADO = VTAR_VAL - VPD_VAL (moneda)
+                                    p.cumplimientoValor = p.vtarVal - p.vpdVal;
+
+                                    const stock = stockTotal || 0;
+                                    totalStockVal += stock * (p.costoRepo || 0);
+                                    totalPotentialGross += stock * (p.margenBruto || 0);
+                                    if(p.precio > 0) { sumMarginPct += p.margenPct; cntMargin++; }
+                                    // Agregar cumplimiento a agregados
+                                    if(p.cumplimientoIndex) { totalCumplimiento = (totalCumplimiento || 0) + p.cumplimientoIndex; cntCumplimiento = (cntCumplimiento || 0) + 1; }
+                                });
+
+                                    // RESULTADOS OPERATIVOS KPIs removed - not used by app
+                                    this.resultadosKPIs = null;
+                                console.log('[INFO] MasterData enriquecida con precios STA19 y margen. KPIs calculados.');
+                            } catch (e) { console.warn('[WARN] Enriquecimiento masterData falló', e); }
 
                             // 🎯 MÉTRICA: Sub_Perfil + Cobertura en Dep80 (30 días)
                             const subPerfilStats = {};
@@ -3894,8 +3722,8 @@
                                 : 0;
                             
                             this.masterData.forEach(item => {
-                                if(item.stockGrafana > 0) {
-                                    const cobertura = item.vtarTotal > 0 ? (item.vtar80 / item.vtarTotal) * 30 : 0;
+                                if((item.stockTotal || item.stockGrafana || 0) > 0) {
+                                    const cobertura = item.vtarTotal > 0 ? ((item.stockTotal || item.stockGrafana || 0) / item.vtarTotal) * 30 : 0;
                                     const isHighRotation = item.vtarTotal >= vtarMediana;
                                     const isGoodCoverage = cobertura >= 30;
                                     
@@ -3965,8 +3793,8 @@
                             // 🎯 OPCIÓN 3: ANÁLISIS LEAD TIME vs COBERTURA
                             const ltAnalysis = { CRITICAL: [], AT_RISK: [], OK: [] };
                             this.masterData.forEach(item => {
-                                if(item.stockGrafana > 0) {
-                                    const cobertura = item.vtarTotal > 0 ? (item.stockGrafana / item.vtarTotal) : 0;
+                                if((item.stockTotal || item.stockGrafana || 0) > 0) {
+                                    const cobertura = item.vtarTotal > 0 ? ((item.stockTotal || item.stockGrafana || 0) / item.vtarTotal) : 0;
                                     const lt = item.lt || 0;
                                     const gap = lt - cobertura;
                                     
@@ -3996,9 +3824,9 @@
 
                             // 🎯 HEALTH SCORE - CORREGIDO
                             // 1. COBERTURA (40%): % de SKUs con stock entre 15-45 días (rango saludable)
-                            const skusConStock = this.masterData.filter(m => m.stockGrafana > 0);
+                            const skusConStock = this.masterData.filter(m => (m.stockTotal || m.stockGrafana || 0) > 0);
                             const skusSaludables = skusConStock.filter(m => {
-                                const diasStock = m.vtarTotal > 0 ? m.stockGrafana / m.vtarTotal : 0;
+                                const diasStock = m.vtarTotal > 0 ? ((m.stockTotal || m.stockGrafana || 0) / m.vtarTotal) : 0;
                                 return diasStock >= 15 && diasStock <= 45;
                             }).length;
                             const coberturaScore = skusConStock.length > 0 
@@ -4014,7 +3842,7 @@
                             // 3. EFICIENCIA CAPITAL (20%): % del capital en productos que rotan (no inmovilizados)
                             const capitalTotal = this.masterData.reduce((a,m) => a + (m.stockValorizado || 0), 0);
                             const capitalSaludable = this.masterData.filter(m => {
-                                const diasStock = m.vtarTotal > 0 ? m.stockGrafana / m.vtarTotal : 999;
+                                const diasStock = m.vtarTotal > 0 ? ((m.stockTotal || m.stockGrafana || 0) / m.vtarTotal) : 999;
                                 return diasStock <= 45; // No inmovilizado
                             }).reduce((a,m) => a + (m.stockValorizado || 0), 0);
                             const capitalScore = capitalTotal > 0 ? (capitalSaludable / capitalTotal) * 100 : 50;
@@ -4070,7 +3898,7 @@
                             
                             this.masterData.forEach(item => {
                                 let alerta = null;
-                                const cobertura = (item.stockGrafana || 0) / (item.vtarTotal || 1);
+                                const cobertura = ((item.stockTotal || item.stockGrafana || 0) / (item.vtarTotal || 1));
                                 const gap = (item.lt || 0) - cobertura;
                                 
                                 try {
@@ -4104,14 +3932,14 @@
                                             desc: item.desc,
                                             detalle: `Stock ${item.diasStock.toFixed(1)}d, VTAR ${item.vtarTotal.toFixed(1)}, necesita ${Math.ceil(item.vtarTotal * 30)} unid.`
                                         });
-                                    } else if((item.lt || 0) - (item.stockGrafana / (item.vtarTotal || 1)) > 5) {
+                                    } else if((item.lt || 0) - ((item.stockTotal || item.stockGrafana || 0) / (item.vtarTotal || 1)) > 5) {
                                         sugerencias.push({
                                             prioridad: 1,
                                             icono: '⏱️',
                                             titulo: 'RIESGO LEAD TIME',
                                             sku: item.sku,
                                             desc: item.desc,
-                                            detalle: `LT ${item.lt}d > Cobertura ${(item.stockGrafana / (item.vtarTotal || 1)).toFixed(1)}d`
+                                            detalle: `LT ${item.lt}d > Cobertura ${((item.stockTotal || item.stockGrafana || 0) / (item.vtarTotal || 1)).toFixed(1)}d`
                                         });
                                     } else if(item.diasStock > 45 && item.vtarTotal < medianVtar) {
                                         sugerencias.push({
@@ -4120,7 +3948,7 @@
                                             titulo: 'LIQUIDAR STOCK',
                                             sku: item.sku,
                                             desc: item.desc,
-                                            detalle: `${item.stockGrafana} unidades en ${item.diasStock.toFixed(1)} días`
+                                            detalle: `${(item.stockTotal || item.stockGrafana || 0)} unidades en ${item.diasStock.toFixed(1)} días`
                                         });
                                     } else if(item.diasStock < 20 && item.diasStock > 0) {
                                         const proximo30 = item.vtarTotal * 30;
@@ -4144,11 +3972,11 @@
 
                             // 📊 OPCIÓN 2: DASHBOARD KPI EJECUTIVO
                             // Calcular métricas adicionales
-                            const skusConStockKpi = this.masterData.filter(m => m.stockGrafana > 0).length;
+                            const skusConStockKpi = this.masterData.filter(m => (m.stockTotal || m.stockGrafana || 0) > 0).length;
                             const skusTotales = this.masterData.length;
                             const fillRate = skusTotales > 0 ? (skusConStockKpi / skusTotales) * 100 : 0;
                             
-                            const stockTotal = this.masterData.reduce((a,m) => a + (m.stockGrafana || 0), 0);
+                            const stockTotal = this.masterData.reduce((a,m) => a + ((m.stockTotal || m.stockGrafana || 0)), 0);
                             const venta30dTotal = this.masterData.reduce((a,m) => a + (m.vta30d || 0), 0);
                             const rotacionInv = stockTotal > 0 ? venta30dTotal / stockTotal : 0;
                             
@@ -4171,9 +3999,9 @@
                                 criticos: this.masterData.filter(m => m.diasStock < 5 && m.vtarTotal > medianVtar).length,
                                 dineroViejo: this.masterData
                                     .filter(m => m.diasStock > 45)
-                                    .reduce((a,m) => a + ((m.stockGrafana || 0) * (m.costo || 0)), 0),
+                                    .reduce((a,m) => a + (((m.stockTotal || m.stockGrafana || 0) * (m.costo || 0))), 0),
                                 stockTotal: Math.ceil(this.masterData.reduce((a,m) => a + (m.stockValorizado || 0), 0)),
-                                skusActivos: this.masterData.filter(m => m.stockGrafana > 0 || m.vta30d > 0).length,
+                                skusActivos: this.masterData.filter(m => (m.stockTotal || m.stockGrafana || 0) > 0 || m.vta30d > 0).length,
                                 fillRate,
                                 rotacionInv,
                                 forecastRatio,
@@ -4204,6 +4032,7 @@
                             this.metrics.totalDeudaAnalistas = totalDebt;
                             DB.saveDebtHistory(totalDebt);
 
+<<<<<<< HEAD
                             const provMap = {};
                             this.simplexData.filter(d => (d.prov || '').toUpperCase().includes(query)).forEach(d => {
                                 const key = d.prov + '_' + d.year;
@@ -4216,6 +4045,14 @@
                                         inversion: 0,    // Total inversión a realizar
                                         ...initMeses()
                                     };
+=======
+                            const provInmo = {};
+                            this.masterData.forEach(i => {
+                                if(i.diasStock > 45) {
+                                    const p = i.prov || 'S/D';
+                                    const val = ((i.stockTotal || i.stockGrafana || 0) * i.costo);
+                                    provInmo[p] = (provInmo[p] || 0) + val;
+>>>>>>> d65c640 (Remove SIMPLEX and RESULTADOS OPERATIVOS; add safety rule to docs)
                                 }
                                 provMap[key].qTotal += d.qTotal || 0;
                                 provMap[key].ventaTotal += d.ventaTotal || 0;
@@ -4236,7 +4073,7 @@
                             this.masterData.forEach(i => {
                                 if(i.inversion>0) { const p=i.prov||'S/D'; provBuy[p]=(provBuy[p]||0)+i.inversion; }
                                 const b = i.marca || 'S/D';
-                                const val = i.stockGrafana * i.costo;
+                                const val = ((i.stockTotal || i.stockGrafana || 0) * i.costo);
                                 brandMap[b] = (brandMap[b] || 0) + val;
                             });
                             this.metrics.proveedores = Object.entries(provBuy).map(([name,val])=>({name,val})).sort((a,b)=>b.val-a.val).slice(0,20);
@@ -4253,7 +4090,7 @@
 
                             let h={q:0, pq:0, s:0, a:0, o:0};
                             this.masterData.forEach(i => {
-                                if(i.stockGrafana > 0) {
+                                if((i.stockTotal || i.stockGrafana || 0) > 0) {
                                     const d = i.diasStock;
                                     if(d <= 10) h.q++;
                                     else if(d <= 17) h.pq++;
@@ -4265,18 +4102,18 @@
                             this.metrics.health = h;
 
                             this.metrics.huesos = this.masterData
-                                .filter(i => i.vtarTotal <= 0.1 && i.stockGrafana > 0 && i.stockValorizado > 0)
+                                .filter(i => i.vtarTotal <= 0.1 && (i.stockTotal || i.stockGrafana || 0) > 0 && i.stockValorizado > 0)
                                 .sort((a,b) => b.stockValorizado - a.stockValorizado)
                                 .slice(0, 5);
 
                             this.metrics.topRisks = this.masterData
-                                .filter(i => i.stockGrafana > 0 && i.diasStock < i.lt)
+                                .filter(i => (i.stockTotal || i.stockGrafana || 0) > 0 && i.diasStock < i.lt)
                                 .sort((a,b) => a.diasStock - b.diasStock)
                                 .slice(0, 5)
                                 .map(i => ({
                                     sku: i.sku,
                                     desc: i.desc,
-                                    stock: i.stockGrafana,
+                                    stock: (i.stockTotal || i.stockGrafana || 0),
                                     vtar: i.vtarTotal.toFixed(1),
                                     days: i.diasStock
                                 }));
@@ -4326,8 +4163,7 @@
                             // 🛒 MÉTRICAS DE SHARE DE MERCADO - Calcular dinámicamente según mes seleccionado
                             this.updateShareMetrics();
 
-                            // 📊 SIMPLEX2025 - Procesar datos de ventas por mes
-                            this.processSimplexData();
+                            // SIMPLEX processing removed
 
                             this.updateKPIs();
                             this.calculateColumnMaxes();
@@ -4439,7 +4275,7 @@
                     }
                     // -------------------------------------------------
 
-                    let diasStock = item.vtarTotal > 0 ? item.stockGrafana / item.vtarTotal : (item.stockGrafana===0?0:999);
+                    let diasStock = item.vtarTotal > 0 ? ((item.stockTotal || item.stockGrafana || 0) / item.vtarTotal) : ((item.stockTotal || item.stockGrafana || 0)===0?0:999);
                     let diasStock80 = item.vtar80 > 0 ? pbi.dep80 / item.vtar80 : (pbi.dep80===0?0:999);
 
                     let runOutDate = '∞';
@@ -4448,7 +4284,7 @@
                         const d = new Date(); d.setDate(d.getDate() + Math.floor(diasStock));
                         runOutDate = d.toLocaleDateString('es-AR');
                         if (diasStock <= 3) runOutCritical = true;
-                    } else if (item.stockGrafana <= 0) {
+                    } else if ((item.stockTotal || item.stockGrafana || 0) <= 0) {
                          runOutDate = new Date().toLocaleDateString('es-AR'); runOutCritical = true;
                     }
 
@@ -4484,7 +4320,7 @@
                         inversion: comprarU * item.costo, 
                         
                         deuda: deudaVal, unidadesCargo: unitVal, enviadoHist: envHist,
-                        ss, stockMin, stockMax, stockValorizado: item.stockGrafana * item.costo,
+                        ss, stockMin, stockMax, stockValorizado: ((item.stockTotal || item.stockGrafana || 0) * item.costo),
                         criticalGap: (diasStock < lt) && (item.vtarTotal > 0),
                         estadoSalud: healthStatus, vtarIa: item.vtarIa, isAnomaly: item.isAnomaly,
                         runOutDate, runOutCritical, statusML, qualityML, antiguedadStock,
@@ -4500,8 +4336,8 @@
                         costoExcedente: diasStock > 45 && item.vtarTotal > 0 
                             ? Math.round((diasStock - 45) * item.vtarTotal) * item.costo 
                             : 0,
-                        pctExcedente: diasStock > 45 && item.vtarTotal > 0 && item.stockGrafana > 0
-                            ? Math.round(((diasStock - 45) * item.vtarTotal) / item.stockGrafana * 100 * 10) / 10
+                        pctExcedente: diasStock > 45 && item.vtarTotal > 0 && (item.stockTotal || item.stockGrafana || 0) > 0
+                            ? Math.round(((diasStock - 45) * item.vtarTotal) / (item.stockTotal || item.stockGrafana || 0) * 100 * 10) / 10
                             : 0
                     };
                 },
@@ -4604,6 +4440,7 @@
                             }));
                         }
                     }
+                    // 'resultados_operativos' tab removed; no special case for it
                     if (this.filterOpportunityCost) {
                         d = d.filter(i => i.ventaPerdida > 0);
                     }
@@ -4620,6 +4457,17 @@
                         });
                     if (this.filterArbitrage) {
                         d = d.filter(i => i.isArbitrage);
+                    }
+
+                    // Aplicar búsqueda dinámica global si existe
+                    const search = (this.dynamicSearch || '').toString().trim().toUpperCase();
+                    if (search) {
+                        const tokens = search.split(/\s+/).filter(s => s.length > 0);
+                        d = d.filter(row => {
+                            const hay = (str) => (str || '').toString().toUpperCase();
+                            const haystack = [hay(row.sku), hay(row.desc), hay(row.marca), hay(row.prov)].join(' ');
+                            return tokens.every(t => haystack.indexOf(t) !== -1);
+                        });
                     }
                     }
 
@@ -4668,7 +4516,7 @@
                     // 📦 Filtro KPI Stock Sin Venta (por días desde última venta)
                     if (this.kpiFilter === 'stockSinVenta' && this.stockSinVentaFilters.length > 0) {
                         d = d.filter(i => {
-                            if (!(i.stockGrafana > 0 && i.vtarTotal === 0 && this.getDiasSinVenta(i) > 0)) return false;
+                            if (!((i.stockTotal || i.stockGrafana || 0) > 0 && i.vtarTotal === 0 && this.getDiasSinVenta(i) > 0)) return false;
                             const dias = this.getDiasSinVenta(i);
                             return this.stockSinVentaFilters.some(f => {
                                 if(f === '20-30') return dias >= 20 && dias <= 30;
@@ -4735,13 +4583,23 @@
                     setTimeout(() => this.calculatePageMaxes(pData), 0);
                     return pData;
                 },
+                // Grouping/filter state for compliance analysis
+                groupBy: 'analista',
+                dynamicSearch: '',
+                selectedAnalistas: [],
+                selectedMarcas: [],
+                selectedProveedores: [],
+                groupResults: [],
+                // Método para calcular promedio de VPD en agrupados: 'auto'|'ponderado'|'simple'
+                groupVpdMethod: 'auto',
+                
                 get totalPages() { return Math.ceil(this.filteredData.length/this.pageSize)||1; },
                 nextPage() { if(this.currentPage < this.totalPages) this.currentPage++; },
                 prevPage() { if(this.currentPage > 1) this.currentPage--; },
 
                 calculateColumnMaxes() { this.columnMaxValues = {}; },
                 calculatePageMaxes(pageData) {
-                    const colsToCheck = ['stockGrafana', 'pbi.dep80', 'pbi.dep1', 'qEnviar', 'enviadoHist', 'comprarU', 'inversion', 'deuda', 'vtarTotal', 'vtar80', 'vtarIa'];
+                    const colsToCheck = ['stockTotal', 'pbi.dep80', 'pbi.dep1', 'qEnviar', 'enviadoHist', 'comprarU', 'inversion', 'deuda', 'vtarTotal', 'vtar80', 'vtarIa'];
                     const maxes = {};
                     colsToCheck.forEach(k => {
                         maxes[k] = 0;
@@ -4760,7 +4618,7 @@
                     }
                     
                     const key = col.key;
-                    if(!['pbi.dep80', 'pbi.dep1', 'qEnviar', 'comprarU', 'inversion', 'stockGrafana', 'vtarIa'].includes(key)) return '';
+                    if(!['pbi.dep80', 'pbi.dep1', 'qEnviar', 'comprarU', 'inversion', 'stockTotal', 'vtarIa'].includes(key)) return '';
                     const val = key.split('.').reduce((o,i)=>(o?o[i]:0), row);
                     const max = this.columnMaxValues[key] || 1;
                     const pct = Math.min(100, Math.max(0, (val / max) * 100));
@@ -4866,26 +4724,27 @@
                         XLSX.utils.book_append_sheet(wb, wsSug, 'Sugerencias');
                     }
 
-                    // Agregar hoja de KPIs
-                    const kpiData = [{
-                        'MÉTRICA': 'SKUs Críticos',
-                        'VALOR': this.kpiDashboard?.criticos || 0
-                    }, {
-                        'MÉTRICA': 'Dinero Congelado',
-                        'VALOR': `$${Math.round(this.kpiDashboard?.dineroCong || 0).toLocaleString()}`
-                    }, {
-                        'MÉTRICA': 'Riesgo Lead Time',
-                        'VALOR': this.kpiDashboard?.riesgoLT || 0
-                    }, {
-                        'MÉTRICA': 'Compra Próxima 30d',
-                        'VALOR': (this.kpiDashboard?.compraProxima || 0).toLocaleString()
-                    }, {
-                        'MÉTRICA': 'Stock Total Valorizado',
-                        'VALOR': `$${Math.round(this.kpiDashboard?.stockTotal || 0).toLocaleString()}`
-                    }, {
-                        'MÉTRICA': 'Health Score',
-                        'VALOR': `${Math.round(this.metrics?.healthScore?.overall || 0)}%`
-                    }];
+                    // Agregar hoja de KPIs (contextual por solapa)
+                    // RESULTADOS OPERATIVOS removed: always use default KPI dashboard metrics
+                    let kpiData = [{
+                            'MÉTRICA': 'SKUs Críticos',
+                            'VALOR': this.kpiDashboard?.criticos || 0
+                        }, {
+                            'MÉTRICA': 'Dinero Congelado',
+                            'VALOR': `$${Math.round(this.kpiDashboard?.dineroCong || 0).toLocaleString()}`
+                        }, {
+                            'MÉTRICA': 'Riesgo Lead Time',
+                            'VALOR': this.kpiDashboard?.riesgoLT || 0
+                        }, {
+                            'MÉTRICA': 'Compra Próxima 30d',
+                            'VALOR': (this.kpiDashboard?.compraProxima || 0).toLocaleString()
+                        }, {
+                            'MÉTRICA': 'Stock Total Valorizado',
+                            'VALOR': `$${Math.round(this.kpiDashboard?.stockTotal || 0).toLocaleString()}`
+                        }, {
+                            'MÉTRICA': 'Health Score',
+                            'VALOR': `${Math.round(this.metrics?.healthScore?.overall || 0)}%`
+                        }];
                     
                     const wsKpi = XLSX.utils.json_to_sheet(kpiData);
                     wsKpi['!cols'] = [{ wch: 25 }, { wch: 20 }];
@@ -4895,6 +4754,166 @@
                     const timestamp = (this.lastUpdate || new Date().toLocaleString('es-AR')).replace(/[\/, :]/g, '_');
                     XLSX.writeFile(wb, `Dashboard_${sheetName}_${timestamp}.xlsx`);
                     console.log('[INFO] Excel exportado:', sheetName);
+                },
+
+                exportLowCumplimiento() {
+                    if (!this.dataReady) return;
+                    const rows = (this.masterData || []).filter(r => (r.cumplimientoIndex || 0) < 1).map(r => ({
+                        'SKU': r.sku,
+                        'DESCRIPCION': r.desc || r.descripcion || '',
+                        'MARCA': r.marca || '',
+                        'PROVEEDOR': r.prov || r.proveedor || '',
+                            'VTAR': r.vtarTotal || 0,
+                        'VTAR_VAL': r.vtarVal || (((r.total !== undefined && r.total !== null ? r.total : (r.stockTotal || r.stockGrafana || 0))) * (r.costoRepo || r.costo || 0)),
+                        'VPD_Cpra': r.vpdCpra || 0,
+                        'VPD_VAL': r.vpdVal || ((r.vpdCpra || 0) * (r.diasStock !== undefined && r.diasStock !== null ? r.diasStock : (r.vtarTotal > 0 ? ((r.stockTotal || r.stockGrafana || 0) / r.vtarTotal) : ((r.stockTotal || r.stockGrafana || 0) === 0 ? 0 : 999))) * (r.costoRepo || r.costo || 0)),
+                        'VPD_PROM_METHOD': r.vpdPromMethod || '',
+                        'C_Repo': r.costoRepo || r.costo || 0,
+                        'CUMP_INDEX': r.cumplimientoIndex || 0,
+                        'CUMP_VAL': r.cumplimientoValor || 0,
+                        'PRECIO': r.precio || 0,
+                        'MARGEN_BRUTO': r.margenBruto || 0,
+                        'MARGEN_PCT': r.margenPct || 0
+                    }));
+
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.json_to_sheet(rows);
+                    ws['!cols'] = Object.keys(rows[0] || {}).map(k => ({ wch: Math.min(25, Math.max(10, k.length + 2)) }));
+                    XLSX.utils.book_append_sheet(wb, ws, 'LowCumplimiento');
+                    const ts = (new Date()).toISOString().replace(/[:.]/g, '_');
+                    XLSX.writeFile(wb, `LowCumplimiento_${ts}.xlsx`);
+                    console.log('[INFO] Export LowCumplimiento:', rows.length, 'rows');
+                },
+                exportGroupResults() {
+                    if (!this.groupResults || !this.groupResults.length) return;
+                    const rows = this.groupResults.map(g => ({
+                        'GRUPO': g.key,
+                        'VTAR_VAL_SUM': g.vtar || 0,
+                        'VPD_VAL_SUM': g.vpd || 0,
+                        'VPD $': g.vpdProm || 0,
+                        'VPD_PROM_METHOD': g.vpdPromMethod || '',
+                        'CUMP_VAL': g.valor || 0,
+                        'CUMP_PCT': g.pct || 0
+                    }));
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.json_to_sheet(rows);
+                    ws['!cols'] = Object.keys(rows[0] || {}).map(k => ({ wch: Math.min(25, Math.max(10, k.length + 2)) }));
+                    XLSX.utils.book_append_sheet(wb, ws, 'GroupResults');
+                    // Agregar detalle por SKU para validación: grupo, sku, vtarSum, vpdSum, vpdCount, vpdAvg
+                    try {
+                        const skuRows = [];
+                        const gm = this.groupMap || {};
+                        Object.keys(gm).forEach(grKey => {
+                            const g = gm[grKey];
+                            Object.values(g.skus || {}).forEach(sk => {
+                                const vpdAvg = (sk.vpdCount || 0) > 0 ? (sk.vpdSum || 0) / sk.vpdCount : 0;
+                                skuRows.push({ GRUPO: grKey, SKU: sk.sku, VTAR_VAL_SUM: sk.vtarSum || 0, VPD_VAL_SUM: sk.vpdSum || 0, VPD_COUNT: sk.vpdCount || 0, VPD_AVG_PER_SKU: vpdAvg });
+                            });
+                        });
+                        if (skuRows.length > 0) {
+                            const wsSku = XLSX.utils.json_to_sheet(skuRows);
+                            wsSku['!cols'] = Object.keys(skuRows[0] || {}).map(k => ({ wch: Math.min(25, Math.max(10, k.length + 2)) }));
+                            XLSX.utils.book_append_sheet(wb, wsSku, 'Group_SKU_Detail');
+                        }
+                    } catch(e) { console.error('exportGroupResults sku detail error', e); }
+                    const ts = (new Date()).toISOString().replace(/[:.]/g, '_');
+                    XLSX.writeFile(wb, `GroupResults_${ts}.xlsx`);
+                    console.log('[INFO] Export GroupResults:', rows.length, 'rows');
+                },
+                updateGroupResults() {
+                    try {
+                        const src = this.masterData || [];
+                        // Si hay búsqueda dinámica, filtrar por SKU/desc/marca/prov (AND por tokens)
+                        const search = (this.dynamicSearch || '').toString().trim().toUpperCase();
+                        let searchTokens = [];
+                        if (search) {
+                            searchTokens = search.split(/\s+/).filter(s => s.length > 0);
+                        }
+                        const selA = this.selectedAnalistas && this.selectedAnalistas.length ? new Set(this.selectedAnalistas) : null;
+                        const selM = this.selectedMarcas && this.selectedMarcas.length ? new Set(this.selectedMarcas) : null;
+                        const selP = this.selectedProveedores && this.selectedProveedores.length ? new Set(this.selectedProveedores) : null;
+                        const ref = this.refDays || 56;
+
+                        const groups = {};
+                        src.forEach(r => {
+                            if(selA && !selA.has(r.analista)) return;
+                            if(selM && !selM.has(r.marca)) return;
+                            if(selP && !selP.has(r.prov)) return;
+
+                            if(searchTokens.length > 0) {
+                                const hay = (str) => (str || '').toString().toUpperCase();
+                                const haystack = (hay(r.sku) + ' ' + hay(r.desc) + ' ' + hay(r.marca) + ' ' + hay(r.prov)).toUpperCase();
+                                const ok = searchTokens.every(t => haystack.indexOf(t) !== -1);
+                                if(!ok) return;
+                            }
+                            const key = (this.groupBy === 'analista' ? r.analista : (this.groupBy === 'marca' ? r.marca : r.prov)) || 'S/D';
+                            // Inicializar acumuladores: vtarVal = SUM(Total * C_Repo), vpdVal = SUM(VPD_Cpra * DSTK * C_Repo)
+                            if(!groups[key]) groups[key] = { key, vtarVal: 0, rawVtar: 0, skus: {} };
+
+                            // Según solicitud: VTAR_VAL = Total * C_Repo; VPD_VAL = VPD_Cpra * DSTK * C_Repo
+                            const costoRepo = (r.costoRepo || r.costo || 0);
+                            // VTAR_VAL debe calcularse como Total * C_Repo (preferir columna 'total' del Excel)
+                            const totalCol = (r.total !== undefined && r.total !== null) ? r.total : (r.stockTotal || r.stockGrafana || 0);
+                            const rowVtarVal = (r.vtarVal !== undefined && r.vtarVal !== null) ? r.vtarVal : (totalCol * costoRepo);
+                            // DSTK: preferir r.diasStock si existe, sino calcular como stock/vtarTotal
+                            const dstk = (r.diasStock !== undefined && r.diasStock !== null)
+                                ? r.diasStock
+                                : (r.vtarTotal > 0 ? ( (r.stockTotal || r.stockGrafana || 0) / r.vtarTotal ) : ((r.stockTotal || r.stockGrafana || 0) === 0 ? 0 : 999));
+                            const rowVpdVal = (r.vpdVal !== undefined && r.vpdVal !== null) ? r.vpdVal : ((r.vpdCpra || 0) * dstk * costoRepo);
+
+                            // Acumular VTAR por grupo (suma de filas)
+                            groups[key].vtarVal = (groups[key].vtarVal || 0) + (rowVtarVal || 0);
+                            groups[key].rawVtar += (r.vtarTotal || 0);
+
+                            // Acumular por SKU dentro del grupo para promediar VPD cuando existan múltiples filas
+                            const skuKey = (r.sku || 'S/D');
+                            if(!groups[key].skus[skuKey]) groups[key].skus[skuKey] = { sku: skuKey, vtarSum: 0, vpdSum: 0, vpdCount: 0 };
+                            groups[key].skus[skuKey].vtarSum += (rowVtarVal || 0);
+                            groups[key].skus[skuKey].vpdSum += (rowVpdVal || 0);
+                            if((rowVpdVal || 0) > 0) groups[key].skus[skuKey].vpdCount += 1;
+                        });
+
+                        // guardar mapa para export/debug detallado por SKU
+                        this.groupMap = groups;
+                        const results = Object.values(groups).map(g => {
+                            const vtarVal = g.vtarVal || 0;
+                            // Para VPD de grupo: por cada SKU tomar el promedio de sus filas (si se repite), y sumar esos promedios
+                            let vpdGroupSum = 0;
+                            let skuCountWithVpd = 0;
+                            Object.values(g.skus || {}).forEach(sk => {
+                                if((sk.vpdCount || 0) > 0) {
+                                    const avgSkuVpd = (sk.vpdSum || 0) / sk.vpdCount;
+                                    vpdGroupSum += avgSkuVpd;
+                                    skuCountWithVpd += 1;
+                                }
+                            });
+                            const index = vpdGroupSum > 0 ? (vtarVal / vpdGroupSum) : 0;
+                            const valor = vtarVal - vpdGroupSum; // cumplimiento valorizado
+                            const pct = vpdGroupSum > 0 ? ((vtarVal - vpdGroupSum) / vpdGroupSum) * 100 : 0;
+                            const vpdProm = skuCountWithVpd > 0 ? (vpdGroupSum / skuCountWithVpd) : 0; // promedio por SKU (opcional)
+                            const vpdPromMethod = 'sku_avg_when_repeated';
+                            return { key: g.key, vtar: vtarVal, vpd: vpdGroupSum, vpdProm, vpdPromMethod, index, valor, pct };
+                        }).sort((a,b) => b.vtar - a.vtar);
+
+                        this.groupResults = results;
+                        // render chart
+                        this.renderGroupChart();
+                    } catch(e) { console.error('updateGroupResults error', e); }
+                },
+                renderGroupChart() {
+                    try {
+                        const ctx = document.getElementById('resultadosGroupChart');
+                        if(!ctx) return;
+                        const labels = this.groupResults.map(g => g.key);
+                        const dataVals = this.groupResults.map(g => (g.index * 100));
+                        const bgColors = this.groupResults.map(g => g.valor >= 0 ? '#16a34a' : '#ef4444');
+                        if(this.chartInstances['resultadosGroup']) this.chartInstances['resultadosGroup'].destroy();
+                        this.chartInstances['resultadosGroup'] = new Chart(ctx, {
+                            type: 'bar',
+                            data: { labels, datasets: [{ label: 'Cumplimiento (%)', data: dataVals, backgroundColor: bgColors }] },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                        });
+                    } catch(e) { console.error('renderGroupChart error', e); }
                 },
 
                 // 📊 ANÁLISIS COMPARATIVO DASHBOARD
@@ -5064,6 +5083,7 @@
                             prov: item.prov || fullItem.prov || 'S/D',
                             vtarTotal: fullItem.vtarTotal || item.vtar || item.vtarTotal || 0,
                             stockGrafana: fullItem.stockGrafana || item.stock || item.stockGrafana || 0,
+                            stockTotal: fullItem.stockTotal || ((fullItem.stockGrafana || item.stock || item.stockGrafana || 0) + (fullItem.comprasEnCamino || item.comprasEnCamino || 0)),
                             costo: fullItem.costo || item.costo || 0,
                             trendHistory: (item.trendHistory && item.trendHistory.length > 0) ? item.trendHistory : (fullItem.trendHistory || [])
                         });
@@ -5157,7 +5177,7 @@
                         const shareProm = shareData.reduce((a, m) => a + m._shareMesActual, 0) / totalShareSkus;
                         const skusLideres = this.masterData.filter(m => m._shareMesActual >= 50).length;
                         const skusDebiles = this.masterData.filter(m => m._shareMesActual > 0 && m._shareMesActual < 10).length;
-                        const valorLideres = this.masterData.filter(m => m._shareMesActual >= 50).reduce((a, m) => a + ((m.stockGrafana || 0) * (m.costo || 0)), 0);
+                        const valorLideres = this.masterData.filter(m => m._shareMesActual >= 50).reduce((a, m) => a + (((m.stockTotal || m.stockGrafana || 0) * (m.costo || 0))), 0);
                         
                         // Distribución
                         const shareDistribution = { '0-10%': 0, '10-30%': 0, '30-50%': 0, '>50%': 0 };
@@ -5282,603 +5302,7 @@
                     }
                 },
 
-                // 📊 SIMPLEX - PROCESAR DATOS DE VENTAS POR MES (detecta año por MES)
-                processSimplexData() {
-                    console.log('[SIMPLEX] Iniciando procesamiento...');
-                    
-                    const sheetKey = 'simplex';
-                    if(!this.rawData[sheetKey] || this.rawData[sheetKey].length < 2) {
-                        console.log('[SIMPLEX] ❌ Hoja no encontrada');
-                        this.simplexData2025 = [];
-                        this.simplexData2026 = [];
-                        return;
-                    }
-
-                    const clean = (s) => String(s||'').trim().toUpperCase();
-                    const num = (v) => { 
-                        if(typeof v === 'number') return v; 
-                        if(!v) return 0; 
-                        let s = String(v).replace(/[$\s]/g,'');
-                        if(s.includes('.') && s.includes(',')) {
-                            s = s.replace(/\./g, '').replace(',', '.');
-                        } else if(s.includes(',')) {
-                            s = s.replace(',', '.');
-                        }
-                        return parseFloat(s) || 0; 
-                    };
-                    const idx = (row, keys) => row.findIndex(c => keys.some(k => String(c).trim().toUpperCase().includes(k.toUpperCase())));
-
-                    const h = this.rawData[sheetKey][0];
-                    const iSku = idx(h, ['COD_ARTICU', 'SKU']);
-                    const iDesc = idx(h, ['DESCRIPCIO', 'DESCRIPCION']);
-                    const iQ = idx(h, ['Q']);
-                    const iVenta = idx(h, ['VENTA']);
-                    const iProv = idx(h, ['CA_967_PROVEEDOR', 'PROVEEDOR']);
-                    const iMarca = idx(h, ['CA_967_MARCA', 'MARCA']);
-                    const iAnalista = idx(h, ['CA_967_ANALISTA', 'ANALISTA']);
-                    const iMes = idx(h, ['MES']);
-                    const iPuntoVenta = idx(h, ['NOMBRE_VEN', 'PUNTO DE VENTA', 'PUNTO_VENTA']);
-
-                    if(iSku === -1 || iMes === -1) {
-                        console.warn('[SIMPLEX] ❌ Columnas no encontradas');
-                        return;
-                    }
-
-                    // Mapeo de nombres de mes a clave
-                    const mesNombreToKey = (mesStr, year) => {
-                        const m = String(mesStr).toLowerCase().trim();
-                        const suffix = year === 2025 ? '-25' : '-26';
-                        const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-                        for(let i = 0; i < meses.length; i++) {
-                            if(m.includes(meses[i])) {
-                                // Septiembre especial
-                                return (i === 8 ? 'sept' : meses[i]) + suffix;
-                            }
-                        }
-                        return null;
-                    };
-
-                    const dataMap2025 = {};
-                    const dataMap2026 = {};
-
-                    this.rawData[sheetKey].slice(1).forEach(r => {
-                        const sku = clean(r[iSku]);
-                        if(!sku || sku === 'TOTAL') return;
-
-                        const mesRaw = String(r[iMes] || '').trim();
-                        const year = mesRaw.includes('26') ? 2026 : 2025;
-                        const mesKey = mesNombreToKey(mesRaw, year);
-                        
-                        const dataMap = year === 2025 ? dataMap2025 : dataMap2026;
-                        const meses = year === 2025 ? this.simplexMeses2025 : this.simplexMeses2026;
-                        
-                        const q = num(r[iQ]);
-                        const venta = num(r[iVenta]);
-
-                        if(!dataMap[sku]) {
-                            dataMap[sku] = {
-                                sku, desc: r[iDesc] || '-', marca: r[iMarca] || '-',
-                                prov: r[iProv] || '-', analista: r[iAnalista] || '-',
-                                puntoVenta: r[iPuntoVenta] || '-', qTotal: 0, ventaTotal: 0, year
-                            };
-                            meses.forEach(m => dataMap[sku][m] = { q: 0, venta: 0 });
-                        }
-
-                        dataMap[sku].qTotal += q;
-                        dataMap[sku].ventaTotal += venta;
-                        
-                        if(mesKey && dataMap[sku][mesKey]) {
-                            dataMap[sku][mesKey].q += q;
-                            dataMap[sku][mesKey].venta += venta;
-                        }
-                    });
-
-                    this.simplexData2025 = Object.values(dataMap2025);
-                    this.simplexData2026 = Object.values(dataMap2026);
-                    console.log('[SIMPLEX] 2025:', this.simplexData2025.length, '| 2026:', this.simplexData2026.length);
-                    this.updateSimplexActiveData();
-                },
-
-                // Procesar una hoja específica de SIMPLEX
-                _processSimplexYear(sheetKey, year) {
-                    try {
-                        const suffix = year === 2025 ? '-25' : '-26';
-                        const meses = year === 2025 ? this.simplexMeses2025 : this.simplexMeses2026;
-                        
-                        if(!this.rawData[sheetKey] || this.rawData[sheetKey].length < 2) {
-                            console.log(`[SIMPLEX ${year}] ❌ Hoja no encontrada o vacía`);
-                            if(year === 2025) this.simplexData2025 = [];
-                            else this.simplexData2026 = [];
-                            return;
-                        }
-                        
-                        console.log(`[SIMPLEX ${year}] ✅ Procesando ${this.rawData[sheetKey].length} filas`);
-
-                        const clean = (s) => String(s||'').trim().toUpperCase();
-                        const num = (v) => { 
-                            if(typeof v === 'number') return v; 
-                            if(!v) return 0; 
-                            // Limpiar y convertir: quitar $, espacios, y manejar coma decimal
-                            let s = String(v).replace(/[$\s]/g,'');
-                            // Si tiene punto Y coma, el punto es miles (formato AR)
-                            if(s.includes('.') && s.includes(',')) {
-                                s = s.replace(/\./g, '').replace(',', '.');
-                            } else if(s.includes(',')) {
-                                // Solo coma = decimal
-                                s = s.replace(',', '.');
-                            }
-                            return parseFloat(s) || 0; 
-                        };
-                        
-                        // Normaliza el mes del Excel al formato del array (ene-25, sept-26, etc)
-                        const normalizeMes = (mesStr) => {
-                            if(!mesStr) return null;
-                            const m = String(mesStr).toLowerCase().trim();
-                            // Mapeo de abreviaciones de mes a formato estándar
-                            const mesMap = {
-                                'ene': 'ene', 'enero': 'ene',
-                                'feb': 'feb', 'febrero': 'feb',
-                                'mar': 'mar', 'marzo': 'mar',
-                                'abr': 'abr', 'abril': 'abr',
-                                'may': 'may', 'mayo': 'may',
-                                'jun': 'jun', 'junio': 'jun',
-                                'jul': 'jul', 'julio': 'jul',
-                                'ago': 'ago', 'agosto': 'ago',
-                                'sep': 'sept', 'sept': 'sept', 'septiembre': 'sept',
-                                'oct': 'oct', 'octubre': 'oct',
-                                'nov': 'nov', 'noviembre': 'nov',
-                                'dic': 'dic', 'diciembre': 'dic'
-                            };
-                            // Extraer nombre de mes y año
-                            const match = m.match(/^([a-z]+)[-\s]?(\d{2,4})$/);
-                            if(match) {
-                                const mesNombre = mesMap[match[1]] || match[1];
-                                let anio = match[2];
-                                if(anio.length === 4) anio = anio.slice(-2);
-                                return `${mesNombre}-${anio}`;
-                            }
-                            return null;
-                        };
-                        
-                        const idx = (row, keys) => row.findIndex(c => keys.some(k => String(c).trim().toUpperCase().includes(k.toUpperCase())));
-
-                        const h = this.rawData[sheetKey][0];
-
-                        // Índices de columnas
-                        const iSku = idx(h, ['COD_ARTICU', 'SKU']);
-                        const iDesc = idx(h, ['DESCRIPCIO', 'DESCRIPCION']);
-                        const iQ = idx(h, ['Q']);
-                        const iVenta = idx(h, ['VENTA']);
-                        const iProv = idx(h, ['CA_967_PROVEEDOR', 'PROVEEDOR']);
-                        const iMarca = idx(h, ['CA_967_MARCA', 'MARCA']);
-                        const iAnalista = idx(h, ['CA_967_ANALISTA', 'ANALISTA']);
-                        const iMes = idx(h, ['MES']);
-                        const iPuntoVenta = idx(h, ['NOMBRE_VEN', 'PUNTO DE VENTA', 'PUNTO_VENTA']);
-
-                        console.log(`[SIMPLEX ${year}] Índices - SKU:${iSku}, Q:${iQ}, VENTA:${iVenta}, MES:${iMes}`);
-
-                        if(iSku === -1 || iMes === -1) {
-                            console.warn(`[SIMPLEX ${year}] ❌ Columnas críticas no encontradas`);
-                            if(year === 2025) this.simplexData2025 = [];
-                            else this.simplexData2026 = [];
-                            return;
-                        }
-
-                        // Mostrar primeros valores para debug
-                        const fila1 = this.rawData[sheetKey][1];
-                        console.log(`[SIMPLEX ${year}] Fila 1 - MES: "${fila1[iMes]}" | Q: ${fila1[iQ]} | VENTA: ${fila1[iVenta]}`);
-                        console.log(`[SIMPLEX ${year}] Meses esperados:`, meses);
-
-                        // Procesar filas
-                        const dataMap = {};
-                        let mesesOk = 0, mesesFail = 0;
-                        const mesesNoEncontrados = new Set();
-                        
-                        this.rawData[sheetKey].slice(1).forEach((r, idx) => {
-                            const sku = clean(r[iSku]);
-                            if(!sku || sku === 'TOTAL') return;
-
-                            // Obtener mes: normalizar al formato del array (ej: "sep-26" → "sept-26")
-                            const mesRaw = String(r[iMes] || '').trim();
-                            const mesKey = normalizeMes(mesRaw);
-                            
-                            const q = num(r[iQ]);
-                            const venta = num(r[iVenta]);
-
-                            if(!dataMap[sku]) {
-                                dataMap[sku] = {
-                                    sku, 
-                                    desc: r[iDesc] || '-', 
-                                    marca: r[iMarca] || '-',
-                                    prov: r[iProv] || '-', 
-                                    analista: r[iAnalista] || '-',
-                                    puntoVenta: r[iPuntoVenta] || '-', 
-                                    qTotal: 0, 
-                                    ventaTotal: 0, 
-                                    year
-                                };
-                                // Inicializar todos los meses en 0
-                                meses.forEach(m => dataMap[sku][m] = { q: 0, venta: 0 });
-                            }
-
-                            dataMap[sku].qTotal += q;
-                            dataMap[sku].ventaTotal += venta;
-                            
-                            // Verificar si el mes normalizado existe en el objeto
-                            if(mesKey && dataMap[sku].hasOwnProperty(mesKey)) {
-                                dataMap[sku][mesKey].q += q;
-                                dataMap[sku][mesKey].venta += venta;
-                                mesesOk++;
-                            } else {
-                                mesesFail++;
-                                mesesNoEncontrados.add(`"${mesRaw}" → "${mesKey}"`);
-                            }
-                        });
-                        
-                        console.log(`[SIMPLEX ${year}] 📊 Meses OK=${mesesOk}, FAIL=${mesesFail}`);
-                        if(mesesFail > 0) {
-                            console.warn(`[SIMPLEX ${year}] ❌ Meses no encontrados:`, [...mesesNoEncontrados]);
-                        }
-
-                        const result = Object.values(dataMap);
-                        if(year === 2025) this.simplexData2025 = result;
-                        else this.simplexData2026 = result;
-                        
-                        // Debug: mostrar primer SKU con valores de meses
-                        if(result.length > 0) {
-                            const p = result[0];
-                            const mesConDatos = meses.find(m => p[m]?.q > 0);
-                            console.log(`[SIMPLEX ${year}] Primer SKU: ${p.sku} | qTotal: ${p.qTotal} | Mes con datos: ${mesConDatos || 'NINGUNO'} = ${p[mesConDatos]?.q || 0}u`);
-                        }
-                        
-                        console.log(`[SIMPLEX ${year}] ✅ Total SKUs: ${result.length}`);
-                    } catch(e) {
-                        console.error(`[SIMPLEX ${year}] Error:`, e);
-                        if(year === 2025) this.simplexData2025 = [];
-                        else this.simplexData2026 = [];
-                    }
-                },
-
-                // Actualizar datos activos según selección de años
-                updateSimplexActiveData() {
-                    let data = [];
-                    let meses = [];
-                    
-                    console.log('[SIMPLEX] updateSimplexActiveData - simplexData2025:', this.simplexData2025.length, '| simplexData2026:', this.simplexData2026.length);
-                    
-                    if(this.simplexYears.y2025 && this.simplexYears.y2026) {
-                        // Ambos años: combinar datos
-                        data = [...this.simplexData2025, ...this.simplexData2026];
-                        meses = [...this.simplexMeses2025, ...this.simplexMeses2026];
-                        console.log('[SIMPLEX] Combinando ambos años. Total:', data.length);
-                    } else if(this.simplexYears.y2025) {
-                        data = this.simplexData2025;
-                        meses = this.simplexMeses2025;
-                    } else if(this.simplexYears.y2026) {
-                        data = this.simplexData2026;
-                        meses = this.simplexMeses2026;
-                    }
-                    
-                    // Verificar años en los datos
-                    const años = [...new Set(data.map(d => d.year))];
-                    console.log('[SIMPLEX] Años en data combinada:', años);
-                    
-                    this.simplexData = data;
-                    this.simplexMeses = meses;
-                    this.filterSimplexData();
-                    this.updateSimplexChart();
-                },
-
-                // Actualizar gráfico de evolución SIMPLEX
-                updateSimplexChart() {
-                    // Usar nextTick para asegurar que el DOM está actualizado
-                    this.$nextTick(() => {
-                        const canvas = document.getElementById('simplexEvolutionChart');
-                        if(!canvas) {
-                            console.log('[SIMPLEX Chart] Canvas no encontrado');
-                            return;
-                        }
-                        
-                        if(this.simplexChartInstance) {
-                            this.simplexChartInstance.destroy();
-                            this.simplexChartInstance = null;
-                        }
-                        
-                        if(this.simplexFilteredData.length === 0) {
-                            console.log('[SIMPLEX Chart] Sin datos filtrados');
-                            return;
-                        }
-                        
-                        console.log('[SIMPLEX Chart] Generando gráfico con', this.simplexFilteredData.length, 'registros');
-                        console.log('[SIMPLEX Chart] Años en datos:', this.simplexFilteredData.map(d => d.year));
-                        
-                        // DEBUG: Ver estructura de datos 2026
-                        const datos2026 = this.simplexFilteredData.filter(d => d.year === 2026);
-                        if(datos2026.length > 0) {
-                            console.log('[SIMPLEX Chart] 🔍 Primer registro 2026:', datos2026[0]);
-                            console.log('[SIMPLEX Chart] 🔍 Meses 2026 en registro:', this.simplexMeses2026.map(m => `${m}: ${datos2026[0][m]?.q || 0}u`));
-                        }
-                        
-                        const mesesLabels = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-                        const datasets = [];
-                        
-                        // Consolidar datos de los resultados filtrados
-                        const totals2025 = this.simplexMeses2025.map(m => 
-                            this.simplexFilteredData.filter(d => d.year === 2025).reduce((sum, d) => sum + (d[m]?.q || 0), 0)
-                        );
-                        const totals2026 = this.simplexMeses2026.map(m => 
-                            this.simplexFilteredData.filter(d => d.year === 2026).reduce((sum, d) => sum + (d[m]?.q || 0), 0)
-                        );
-                        const ventas2025 = this.simplexMeses2025.map(m => 
-                            this.simplexFilteredData.filter(d => d.year === 2025).reduce((sum, d) => sum + (d[m]?.venta || 0), 0)
-                        );
-                        const ventas2026 = this.simplexMeses2026.map(m => 
-                            this.simplexFilteredData.filter(d => d.year === 2026).reduce((sum, d) => sum + (d[m]?.venta || 0), 0)
-                        );
-                        
-                        console.log('[SIMPLEX Chart] totals2025:', totals2025.reduce((a,b) => a+b, 0), '| totals2026:', totals2026.reduce((a,b) => a+b, 0));
-                        
-                        const showUnits = this.simplexMetric === 'unidades' || this.simplexMetric === 'ambos';
-                        const showSales = this.simplexMetric === 'importe' || this.simplexMetric === 'ambos';
-                        
-                        if(this.simplexYears.y2025) {
-                            if(showUnits) {
-                                datasets.push({
-                                    label: 'Unidades 2025',
-                                    data: totals2025,
-                                    borderColor: '#10b981',
-                                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                    fill: true,
-                                    tension: 0.3,
-                                    yAxisID: 'y'
-                                });
-                            }
-                            if(showSales) {
-                                datasets.push({
-                                    label: 'Venta $ 2025',
-                                    data: ventas2025,
-                                    borderColor: '#3b82f6',
-                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                    fill: true,
-                                    tension: 0.3,
-                                    yAxisID: 'y1',
-                                    borderDash: showUnits ? [5, 5] : []
-                                });
-                            }
-                        }
-                        
-                        if(this.simplexYears.y2026) {
-                            if(showUnits) {
-                                datasets.push({
-                                    label: 'Unidades 2026',
-                                    data: totals2026,
-                                    borderColor: '#8b5cf6',
-                                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                                    fill: true,
-                                    tension: 0.3,
-                                    yAxisID: 'y'
-                                });
-                            }
-                            if(showSales) {
-                                datasets.push({
-                                    label: 'Venta $ 2026',
-                                    data: ventas2026,
-                                    borderColor: '#f59e0b',
-                                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                                    fill: true,
-                                    tension: 0.3,
-                                    yAxisID: 'y1',
-                                    borderDash: showUnits ? [5, 5] : []
-                                });
-                            }
-                        }
-                    
-                        console.log('[SIMPLEX Chart] Datasets creados:', datasets.length, datasets.map(d => d.label));
-                    
-                        if(datasets.length === 0) {
-                            console.warn('[SIMPLEX Chart] ⚠️ No hay datasets para mostrar');
-                            return;
-                        }
-                        
-                        const ctx = canvas.getContext('2d');
-                        this.simplexChartInstance = new Chart(ctx, {
-                            type: 'line',
-                            data: { labels: mesesLabels, datasets },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            interaction: { mode: 'index', intersect: false },
-                            plugins: {
-                                legend: { position: 'top', labels: { font: { size: 10 } } },
-                                tooltip: {
-                                    callbacks: {
-                                        label: ctx => {
-                                            const val = ctx.parsed.y;
-                                            if(ctx.dataset.label.includes('Venta')) {
-                                                return ctx.dataset.label + ': ' + this.formatMoney(val);
-                                            }
-                                            return ctx.dataset.label + ': ' + val.toLocaleString() + ' u';
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                y: {
-                                    type: 'linear',
-                                    display: showUnits,
-                                    position: 'left',
-                                    title: { display: true, text: 'Unidades', font: { size: 10 } },
-                                    ticks: { font: { size: 9 } }
-                                },
-                                y1: {
-                                    type: 'linear',
-                                    display: showSales,
-                                    position: 'right',
-                                    title: { display: true, text: 'Venta $', font: { size: 10 } },
-                                    grid: { drawOnChartArea: false },
-                                    ticks: { 
-                                        font: { size: 9 },
-                                        callback: v => this.formatMoney(v)
-                                    }
-                                },
-                                x: { ticks: { font: { size: 9 } } }
-                            }
-                        }
-                        });
-                    }); // Cierre de $nextTick
-                },
-
-                // 📊 SIMPLEX - FILTRAR Y BUSCAR DATOS
-                filterSimplexData() {
-                    const query = (this.simplexSearchText || '').toUpperCase().trim();
-                    if(query.length < 2) {
-                        this.simplexFilteredData = [];
-                        return;
-                    }
-
-                    const type = this.simplexSearchType;
-                    let results = [];
-                    
-                    // Función para crear estructura inicial de meses
-                    const initMeses = () => {
-                        const obj = {};
-                        this.simplexMeses2025.forEach(m => obj[m] = { q: 0, venta: 0 });
-                        this.simplexMeses2026.forEach(m => obj[m] = { q: 0, venta: 0 });
-                        return obj;
-                    };
-
-                    if(type === 'sku') {
-                        // Búsqueda por SKU: mostrar detalle individual (preservar year)
-                        results = this.simplexData.filter(d => d.sku.includes(query));
-                    } else if(type === 'marca') {
-                        // Búsqueda por MARCA: consolidar por marca + año
-                        const marcaMap = {};
-                        this.simplexData.filter(d => (d.marca || '').toUpperCase().includes(query)).forEach(d => {
-                            const key = d.marca + '_' + d.year;
-                            if(!marcaMap[key]) {
-                                marcaMap[key] = {
-                                    marca: d.marca, prov: d.prov, analista: d.analista,
-                                    puntoVenta: '-', qTotal: 0, ventaTotal: 0, year: d.year,
-                                    ...initMeses()
-                                };
-                            }
-                            marcaMap[key].qTotal += d.qTotal;
-                            marcaMap[key].ventaTotal += d.ventaTotal;
-                            const meses = d.year === 2025 ? this.simplexMeses2025 : this.simplexMeses2026;
-                            meses.forEach(mes => {
-                                if(marcaMap[key][mes] && d[mes]) {
-                                    marcaMap[key][mes].q += d[mes].q || 0;
-                                    marcaMap[key][mes].venta += d[mes].venta || 0;
-                                }
-                            });
-                        });
-                        results = Object.values(marcaMap);
-                    } else if(type === 'proveedor') {
-                        // Búsqueda por PROVEEDOR: consolidar por proveedor + año
-                        const provMap = {};
-                        this.simplexData.filter(d => (d.prov || '').toUpperCase().includes(query)).forEach(d => {
-                            const key = d.prov + '_' + d.year;
-                            if(!provMap[key]) {
-                                provMap[key] = {
-                                    prov: d.prov, analista: d.analista,
-                                    puntoVenta: '-', qTotal: 0, ventaTotal: 0, year: d.year,
-                                    ...initMeses()
-                                };
-                            }
-                            provMap[key].qTotal += d.qTotal;
-                            provMap[key].ventaTotal += d.ventaTotal;
-                            const meses = d.year === 2025 ? this.simplexMeses2025 : this.simplexMeses2026;
-                            meses.forEach(mes => {
-                                if(provMap[key][mes] && d[mes]) {
-                                    provMap[key][mes].q += d[mes].q || 0;
-                                    provMap[key][mes].venta += d[mes].venta || 0;
-                                }
-                            });
-                        });
-                        results = Object.values(provMap);
-                    }
-
-                    this.simplexFilteredData = results;
-                    console.log('[SIMPLEX] Filtrado:', results.length, 'resultados. Años:', [...new Set(results.map(r => r.year))]);
-                    
-                    // Debug: mostrar resumen de resultados
-                    results.forEach(r => {
-                        const mes1_2025 = r['ene-25']?.q || 0;
-                        const mes1_2026 = r['ene-26']?.q || 0;
-                        console.log(`[SIMPLEX] ${r.marca || r.prov || r.sku} | año: ${r.year} | ene-25: ${mes1_2025} | ene-26: ${mes1_2026}`);
-                    });
-                },
-
-                // 📊 SIMPLEX - Obtener columnas dinámicas según tipo de búsqueda
-                getSimplexColumns() {
-                    // Columnas de meses genéricas (ENE, FEB, MAR... DIC) sin año
-                    const mesesGenericos = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
-                    const mesesCols = mesesGenericos.map(m => ({ key: m, label: m }));
-                    
-                    const showBothYears = this.simplexYears.y2025 && this.simplexYears.y2026;
-                    
-                    const baseCols = [
-                        { key: 'year', label: 'AÑO' },
-                        { key: 'qTotal', label: 'Q TOTAL' },
-                        { key: 'ventaTotal', label: 'VENTA TOTAL' },
-                        ...mesesCols
-                    ];
-                    
-                    if(this.simplexSearchType === 'sku') {
-                        return [
-                            { key: 'sku', label: 'SKU' },
-                            { key: 'desc', label: 'DESCRIPCIÓN' },
-                            { key: 'marca', label: 'MARCA' },
-                            { key: 'prov', label: 'PROVEEDOR' },
-                            ...baseCols
-                        ];
-                    } else if(this.simplexSearchType === 'marca') {
-                        return [
-                            { key: 'marca', label: 'MARCA' },
-                            { key: 'prov', label: 'PROVEEDOR' },
-                            ...baseCols
-                        ];
-                    } else { // proveedor
-                        return [
-                            { key: 'prov', label: 'PROVEEDOR' },
-                            ...baseCols
-                        ];
-                    }
-                },
-
-                // 📊 SIMPLEX - Obtener valor de celda (maneja meses con Q y Venta según métrica)
-                getSimplexCellValue(row, col) {
-                    // Mapeo de columna genérica a mes específico del año de la fila
-                    const mesesMap = {
-                        'ENE': 'ene', 'FEB': 'feb', 'MAR': 'mar', 'ABR': 'abr',
-                        'MAY': 'may', 'JUN': 'jun', 'JUL': 'jul', 'AGO': 'ago',
-                        'SEP': 'sept', 'OCT': 'oct', 'NOV': 'nov', 'DIC': 'dic'
-                    };
-                    
-                    // Verificar si es una columna de mes genérica
-                    if(mesesMap[col.key]) {
-                        const suffix = row.year === 2025 ? '-25' : '-26';
-                        const mesKey = mesesMap[col.key] + suffix;
-                        const mesData = row[mesKey];
-                        if(mesData) {
-                            if(this.simplexMetric === 'unidades') {
-                                return (mesData.q || 0).toLocaleString() + ' u';
-                            } else if(this.simplexMetric === 'importe') {
-                                return this.formatMoney(mesData.venta || 0);
-                            } else {
-                                return `${(mesData.q || 0).toLocaleString()} u / ${this.formatMoney(mesData.venta || 0)}`;
-                            }
-                        }
-                        return this.simplexMetric === 'importe' ? '$0' : '0 u';
-                    }
-                    if(col.key === 'qTotal') {
-                        return (row[col.key] || 0).toLocaleString();
-                    }
-                    if(col.key === 'ventaTotal') {
-                        return this.formatMoney(row[col.key] || 0);
-                    }
-                    return row[col.key] || '-';
-                },
+                // SIMPLEX logic removed per request
 
                 getDashboardItemOptions() {
                     if(this.dashboardAnalysisType === 'sku') {
@@ -6119,7 +5543,7 @@
                         {key:'sku',label:'SKU'}, {key:'desc',label:'DESCRIPCION'}, {key:'marca',label:'MARCA'}, {key:'prov',label:'PROVEEDOR'},
                         {key:'abc',label:'CLASIF. ABC'},
                         {key:'estadoSalud',label:'ESTADO SALUD'},
-                        {key:'stockGrafana',label:'STOCK TOTAL'},
+                        {key:'stockTotal',label:'STOCK TOTAL'},
                         {key:'vtarTotal',label:'VTAR TOTAL'},
                         {key:'diasStock',label:'DIAS STOCK'},
                         {key:'stockValorizado',label:'CAPITAL INVERTIDO ($)'}
@@ -6135,7 +5559,7 @@
                         {key:'antiguedadStock',label:'ANTIGÜEDAD STOCK'}, 
                         {key:'comprasEnCamino',label:'EN CAMINO'},
                         {key:'vta30d',label:'VENTA 30D (Total)'},
-                        {key:'stockGrafana',label:'STOCK TOTAL'},
+                        {key:'stockTotal',label:'STOCK TOTAL'},
                         {key:'vtarTotal',label:'VTAR TOTAL (Tendencia)'},
                         {key:'vtarIa',label:'VTAR IA (Pred)'}, 
                         {key:'diasStock',label:'DIAS STOCK'},
@@ -6161,7 +5585,7 @@
                     ];
                     if(this.currentTab==='inmovilizado') return [
                         {key:'sku',label:'SKU'}, {key:'desc',label:'DESCRIPCION'}, {key:'marca',label:'MARCA'}, {key:'prov',label:'PROVEEDOR'},
-                        {key:'stockGrafana',label:'STOCK TOTAL'}, {key:'vtarTotal',label:'VTAR TOTAL'}, {key:'diasStock',label:'DIAS STOCK'},
+                        {key:'stockTotal',label:'STOCK TOTAL'}, {key:'vtarTotal',label:'VTAR TOTAL'}, {key:'diasStock',label:'DIAS STOCK'},
                         {key:'unidadesExcedentes',label:'UNIDADES EXCEDENTES'}, {key:'costoExcedente',label:'COSTO EXCEDENTE'},
                         {key:'pctExcedente',label:'% EXCEDENTE'}, {key:'stockValorizado',label:'COSTO TOTAL STOCK'}
                     ];
@@ -6198,7 +5622,7 @@
                         {key:'marca',label:'MARCA'}, 
                         {key:'prov',label:'PROVEEDOR'},
                         {key:'vtarTotal',label:'VTAR GENERAL'}, 
-                        {key:'stockGrafana',label:'STOCK TOTAL'}, 
+                        {key:'stockTotal',label:'STOCK TOTAL'}, 
                         {key:'diasStock',label:'DIAS STOCK'},
                         {key:'diasEstrategia',label:'DIAS EST.', editable:true}, 
                         {key:'comprasEnCamino',label:'EN CAMINO'}, 
@@ -6206,6 +5630,8 @@
                         {key:'inversion',label:'INVERSIÓN $'},
                         {key:'lt',label:'LEAD TIME'} 
                     ];
+                    
+                    // Columns for 'resultados_operativos' removed
                     if(this.currentTab==='cargos') return [
                         {key:'sku',label:'SKU'}, {key:'desc',label:'DESCRIPCION'}, {key:'marca',label:'MARCA'}, {key:'prov',label:'PROVEEDOR'},
                         {key:'analista',label:'ANALISTA'}, {key:'unidadesCargo',label:'UNIDADES CON CARGO'}, {key:'deuda',label:'COSTO TOTAL POR CARGOS'},
@@ -6236,7 +5662,7 @@
                         {key:'prov',label:'PROVEEDOR'},
                         {key:'pbi.dep1',label:'DEPOSITO 1'}, 
                         {key:'pbi.dep80',label:'DEPOSITO 80'}, 
-                        {key:'stockGrafana',label:'STOCK TOTAL'},
+                        {key:'stockTotal',label:'STOCK TOTAL'},
                         {key:'vtarTotal',label:'VTAR TOTAL (Tendencia)'}, 
                         {key:'diasStock',label:'DIAS STOCK'},
                         {key:'vta59Total',label:'VENTA 60 DÍAS'}
@@ -6387,7 +5813,9 @@
                    }
                    
                    let val = c.key.split('.').reduce((o,i)=>(o?o[i]:0), r);
-                   if(c.key.includes('inversion') || c.key.includes('totalStockVal') || c.key.includes('inmoVal') || c.key.includes('valorizado') || c.key.includes('deuda') || c.key==='stockValorizado' || c.key==='costoExcedente') return this.formatMoney(val);
+                   // Formatear nuevas columnas valorizadas (moneda) y mantener stockTotal como entero
+                   if(['vtarVal','vpdVal','cumplimientoValor','stockValorizado'].includes(c.key) || c.key.includes('inversion') || c.key.includes('totalStockVal') || c.key.includes('inmoVal') || c.key.includes('valorizado') || c.key.includes('deuda') || c.key==='costoExcedente') return this.formatMoney(val);
+                   if (c.key === 'stockTotal') return Math.round(val || 0).toString();
                    if((c.key.includes('fecha') || c.key.includes('Ingreso') || c.key.includes('Vto')) && typeof val==='number') return new Date((val-25569)*86400000).toLocaleDateString('es-AR');
                    if(typeof val==='number') return c.key.includes('dias') ? val.toFixed(1) : (Number.isInteger(val) ? val : val.toFixed(2));
                    return val;
@@ -6403,15 +5831,37 @@
                parseNumber(val) {
                    if (val === null || val === undefined || val === '') return 0;
                    if (typeof val === 'number') return val;
-                   const str = String(val).replace(/\s/g, '');
-                   if (str.includes(',') && str.includes('.')) {
-                       if (str.lastIndexOf(',') > str.lastIndexOf('.')) {
-                           return parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0;
+                   let s = String(val).trim();
+                   // Remove spaces and non-numeric symbols except , . and -
+                   s = s.replace(/[\s\u00A0]/g, '');
+                   s = s.replace(/[^0-9,\.\-]/g, '');
+
+                   const hasComma = s.indexOf(',') !== -1;
+                   const hasDot = s.indexOf('.') !== -1;
+
+                   if (hasComma && hasDot) {
+                       const lastComma = s.lastIndexOf(',');
+                       const lastDot = s.lastIndexOf('.');
+                       if (lastDot > lastComma) {
+                           // dot is decimal, remove commas
+                           s = s.replace(/,/g, '');
+                       } else {
+                           // comma is decimal
+                           s = s.replace(/\./g, '').replace(/,/g, '.');
                        }
-                       return parseFloat(str.replace(/,/g, '')) || 0;
+                   } else if (hasComma) {
+                       const parts = s.split(',');
+                       const lastPart = parts[parts.length - 1];
+                       if (lastPart.length === 3 && parts.length > 1) {
+                           // thousands grouping
+                           s = s.replace(/,/g, '');
+                       } else {
+                           s = s.replace(/,/g, '.');
+                       }
                    }
-                   if (str.includes(',')) return parseFloat(str.replace(',', '.')) || 0;
-                   return parseFloat(str) || 0;
+
+                   const n = parseFloat(s);
+                   return Number.isFinite(n) ? n : 0;
                },
                
                findColumnIndex(headers, aliases) {
@@ -6449,7 +5899,7 @@
                    
                    return this.masterData
                        .filter(item => item.diasStock > minDays)
-                       .reduce((sum, item) => sum + (item.stockGrafana * item.costo), 0);
+                       .reduce((sum, item) => sum + ((item.stockTotal || item.stockGrafana || 0) * item.costo), 0);
                },
                
                // 🧊 Obtener datos filtrados de stock viejo para la solapa inmovilizado
@@ -6467,7 +5917,7 @@
                    if(!this.masterData || this.masterData.length === 0) return 0;
                    if(this.stockSinVentaFilters.length === 0) {
                        // Por defecto mostrar todos los SKUs con stock > 0 y vtarTotal === 0
-                       return this.masterData.filter(i => i.stockGrafana > 0 && i.vtarTotal === 0 && this.getDiasSinVenta(i) > 0).length;
+                       return this.masterData.filter(i => (i.stockTotal || i.stockGrafana || 0) > 0 && i.vtarTotal === 0 && this.getDiasSinVenta(i) > 0).length;
                    }
                    return this.masterData.filter(i => {
                        if (!(i.stockGrafana > 0 && i.vtarTotal === 0 && this.getDiasSinVenta(i) > 0)) return false;
@@ -6555,7 +6005,7 @@
                     // 3. Lógica de Aging (Mantenemos lo que ya tenías)
                     const ag = { f0_30: 0, f31_60: 0, f61_90: 0, f91_180: 0, f180: 0 };
                     this.masterData.forEach(item => {
-                        if (item.stockGrafana > 0) {
+                        if ((item.stockTotal || item.stockGrafana || 0) > 0) {
                             const val = item.stockValorizado;
                             const d = item.diasStock;
                             if (d <= 30) ag.f0_30 += val;
