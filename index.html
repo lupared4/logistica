@@ -2172,6 +2172,15 @@
                     if(savedAuth === 'true') {
                         this.isAuthenticated = true;
                     }
+                    // Modo de prueba: auto-login via query param `?autologin=1`
+                    try {
+                        const params = new URLSearchParams(location.search);
+                        if(params.get('autologin') === '1') {
+                            this.isAuthenticated = true;
+                            sessionStorage.setItem('inventoryAuth', 'true');
+                            console.log('[AUTH] Auto-login activado por query param');
+                        }
+                    } catch(e) { /* noop en entornos sin location */ }
                     
                     // 🎨 Cargar tema guardado (por defecto: oscuro)
                     const savedTheme = localStorage.getItem('inventoryAppTheme');
