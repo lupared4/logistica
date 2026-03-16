@@ -266,7 +266,7 @@
                 <span x-text="dataReady ? '🔄 ACTUALIZAR' : '📂 CARGAR EXCEL'"></span>
                 <input type="file" class="hidden" accept=".xlsx, .xls, .xlsb" @change="handleFile">
             </label>
-            <button @click="loadLocalExcel" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1.5 px-3 rounded shadow text-xs flex gap-2 items-center transition" title="Cargar ENVIOS LUCIANO.xlsx o .xlsb desde carpeta local">
+            <button @click="loadLocalExcel" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1.5 px-3 rounded shadow text-xs flex gap-2 items-center transition" title="Cargar BASEAPP.xlsx o .xlsb desde carpeta local">
                 <span>📥 Traer Datos Directamente</span>
             </button>
             <button @click="resetApp" class="text-slate-400 hover:text-red-500 p-1.5 transition" title="Borrar datos y reiniciar">🗑️</button>
@@ -298,7 +298,7 @@
                 </template>
             </div>
 
-            <div class="bg-indigo-50 border-b px-4 py-2 flex justify-between items-center text-xs sticky top-0 z-20" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard' && currentTab !== 'simplex'">
+            <div class="bg-indigo-50 border-b px-4 py-2 flex justify-between items-center text-xs sticky top-0 z-20" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard' && currentTab !== 'presupuesto'">
                 <div class="font-bold text-indigo-800 uppercase tracking-wide flex items-center gap-2">
                     <span class="text-lg">📍</span> <span x-text="getHeaderTitle()"></span>
                 </div>
@@ -307,7 +307,7 @@
                 </div>
             </div>
 
-            <div class="p-2 border-b bg-white flex gap-3 items-center shrink-0" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard' && currentTab !== 'simplex'">
+            <div class="p-2 border-b bg-white flex gap-3 items-center shrink-0" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard' && currentTab !== 'presupuesto'">
                 <div class="relative">
                     <span class="absolute left-2 top-1.5 text-slate-400">🔍</span>
                     <input type="text" x-model="search" @input="clearTimeout(searchTimeout); searchTimeout = setTimeout(() => $nextTick(), 300)" placeholder="Buscar SKU, Nombre, Marca, Proveedor..." class="border rounded pl-7 pr-3 py-1.5 text-xs w-64 focus:outline-none focus:border-blue-400 shadow-sm">
@@ -404,6 +404,24 @@
                     </div>
                 </div>
 
+                <!-- 📦 BOTONES REPORTES ENVÍOS FULL -->
+                <div x-show="currentTab === 'dep80'" class="flex items-center gap-2 flex-wrap bg-purple-50 px-3 py-2 rounded border border-purple-200">
+                    <button @click="generateStockNegativoReport()" 
+                        class="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-2 rounded-lg font-bold text-xs hover:from-red-700 hover:to-red-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2">
+                        <span>🔴</span>
+                        <span>Reporte Stock Negativo (PBI)</span>
+                    </button>
+                    <button @click="generateStockD1SinD80Report()" 
+                        class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg font-bold text-xs hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2">
+                        <span>📋</span>
+                        <span>Stock en D1 sin Stock en D80</span>
+                    </button>
+                    <div class="text-[10px] text-purple-700 font-medium">
+                        <div>✓ Stock Negativo por Depósito</div>
+                        <div>✓ SKUs con Stock D1 sin D80</div>
+                    </div>
+                </div>
+
                 <div class="flex items-center gap-2 flex-wrap" x-show="Object.keys(activeFilters).length > 0">
                     <span class="text-[10px] text-slate-400 font-bold uppercase">Filtros Activos:</span>
                     <template x-for="(vals, key) in activeFilters" :key="key">
@@ -423,7 +441,7 @@
                 </div>
             </div>
 
-            <div class="flex-1 overflow-auto table-container relative bg-white" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard' && currentTab !== 'simplex'">
+            <div class="flex-1 overflow-auto table-container relative bg-white" x-show="currentTab !== 'metricas' && currentTab !== 'dashboard' && currentTab !== 'presupuesto'">
                 <div x-show="filterOpportunityCost" class="bg-red-50 text-red-800 px-4 py-2 text-xs font-bold border-b border-red-100 flex justify-between items-center animate-in slide-in-from-top duration-300">
                     <div class="flex items-center gap-2">
                         <span class="text-lg animate-pulse">🔥</span>
@@ -1363,247 +1381,579 @@
             </div>
         </div>
 
-        <!-- 📊 TAB SIMPLEX - Ventas por Mes (2025/2026) -->
-        <div class="flex-1 overflow-y-auto bg-gradient-to-b from-emerald-50 to-white p-4" x-show="currentTab === 'simplex'">
-            <div class="max-w-7xl mx-auto">
-                <!-- KPIs Compactos arriba -->
-                <div class="grid grid-cols-4 gap-2 mb-3">
-                    <div class="bg-white rounded-lg shadow-sm p-2 border-l-4 border-emerald-500 flex items-center justify-between">
-                        <div class="text-xs text-slate-500 font-bold">SKUs</div>
-                        <div class="text-lg font-bold text-emerald-700" x-text="(simplexData2025.length + simplexData2026.length) || 0"></div>
+        <!-- 📊 TAB CUMP VPD - Filtros Cascading + Resumen + Gráfico -->
+        <div x-show="currentTab === 'cump_vpd'" class="bg-gradient-to-b from-sky-50 to-white border-b" x-cloak>
+            <div class="max-w-full mx-auto px-4 py-3 max-h-[calc(100vh-180px)] overflow-y-auto scrollbar-thin" style="scrollbar-width: thin; scrollbar-color: #94a3b8 #f1f5f9;">
+                <!-- Filtros Cascading: Analista → Proveedor → Marca -->
+                <div class="bg-white rounded-lg shadow-sm border border-sky-200 p-3 mb-3">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-sm">🔎</span>
+                        <span class="text-xs font-bold text-sky-800 uppercase">Filtros Cascading</span>
+                        <button @click="cumpVpdFilterAnalista=[]; cumpVpdFilterProv=[]; cumpVpdFilterMarca=[]; $nextTick(() => { updateCumpVpdChart(); updateRangoDohChart(); updateCumplimientoChart() })"
+                            class="ml-auto bg-slate-200 hover:bg-slate-300 text-slate-600 px-3 py-1 rounded text-[10px] font-bold">
+                            ✕ Limpiar Todo
+                        </button>
                     </div>
-                    <div class="bg-white rounded-lg shadow-sm p-2 border-l-4 border-blue-500 flex items-center justify-between">
-                        <div class="text-xs text-slate-500 font-bold">Unidades</div>
-                        <div class="text-lg font-bold text-blue-700" x-text="[...simplexData2025, ...simplexData2026].reduce((a,d) => a + d.qTotal, 0).toLocaleString()"></div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow-sm p-2 border-l-4 border-purple-500 flex items-center justify-between">
-                        <div class="text-xs text-slate-500 font-bold">Venta</div>
-                        <div class="text-lg font-bold text-purple-700" x-text="formatMoney([...simplexData2025, ...simplexData2026].reduce((a,d) => a + d.ventaTotal, 0))"></div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow-sm p-2 border-l-4 border-orange-500 flex items-center justify-between">
-                        <div class="text-xs text-slate-500 font-bold">Marcas</div>
-                        <div class="text-lg font-bold text-orange-700" x-text="[...new Set([...simplexData2025, ...simplexData2026].map(d => d.marca))].length"></div>
-                    </div>
-                </div>
-
-                <!-- Barra de controles compacta -->
-                <div class="bg-white rounded-lg shadow-sm border border-emerald-200 p-3 mb-3">
-                    <div class="flex flex-wrap items-center gap-3">
-                        <!-- Buscar por -->
-                        <div class="flex items-center gap-1">
-                            <span class="text-xs font-bold text-slate-600">Buscar:</span>
-                            <label class="cursor-pointer px-2 py-1 rounded-full text-xs transition-colors"
-                                :class="simplexSearchType === 'sku' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="radio" x-model="simplexSearchType" value="sku" class="hidden"> SKU
-                            </label>
-                            <label class="cursor-pointer px-2 py-1 rounded-full text-xs transition-colors"
-                                :class="simplexSearchType === 'marca' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="radio" x-model="simplexSearchType" value="marca" class="hidden"> Marca
-                            </label>
-                            <label class="cursor-pointer px-2 py-1 rounded-full text-xs transition-colors"
-                                :class="simplexSearchType === 'proveedor' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="radio" x-model="simplexSearchType" value="proveedor" class="hidden"> Proveedor
-                            </label>
-                        </div>
-
-                        <div class="h-6 w-px bg-slate-300"></div>
-
-                        <!-- Años -->
-                        <div class="flex items-center gap-1">
-                            <span class="text-xs font-bold text-slate-600">Año:</span>
-                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors flex items-center gap-1"
-                                :class="simplexYears.y2025 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="checkbox" x-model="simplexYears.y2025" @change="updateSimplexActiveData()" class="hidden"> 2025
-                            </label>
-                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors flex items-center gap-1"
-                                :class="simplexYears.y2026 ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="checkbox" x-model="simplexYears.y2026" @change="updateSimplexActiveData()" class="hidden"> 2026
-                            </label>
-                        </div>
-
-                        <div class="h-6 w-px bg-slate-300"></div>
-
-                        <!-- Métrica -->
-                        <div class="flex items-center gap-1">
-                            <span class="text-xs font-bold text-slate-600">Mostrar:</span>
-                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors"
-                                :class="simplexMetric === 'unidades' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="radio" x-model="simplexMetric" value="unidades" class="hidden"> Unidades
-                            </label>
-                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors"
-                                :class="simplexMetric === 'importe' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="radio" x-model="simplexMetric" value="importe" class="hidden"> Importe
-                            </label>
-                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors"
-                                :class="simplexMetric === 'ambos' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="radio" x-model="simplexMetric" value="ambos" class="hidden"> Ambos
-                            </label>
-                        </div>
-
-                        <div class="h-6 w-px bg-slate-300"></div>
-
-                        <!-- Vista -->
-                        <div class="flex items-center gap-1">
-                            <span class="text-xs font-bold text-slate-600">Vista:</span>
-                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors"
-                                :class="simplexViewMode === 'horizontal' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="radio" x-model="simplexViewMode" value="horizontal" class="hidden"> ↔️ Tabla
-                            </label>
-                            <label class="cursor-pointer px-2 py-1 rounded text-xs transition-colors"
-                                :class="simplexViewMode === 'vertical' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                                <input type="radio" x-model="simplexViewMode" value="vertical" class="hidden"> ↕️ Cards
-                            </label>
-                        </div>
-
-                        <!-- Buscador -->
-                        <div class="flex-1 flex gap-2">
-                            <div class="relative flex-1">
-                                <span class="absolute left-2 top-1.5 text-emerald-400 text-sm">🔍</span>
-                                <input type="text" 
-                                    x-model="simplexSearchText"
-                                    @input="filterSimplexData(); updateSimplexChart()"
-                                    @keydown.enter="filterSimplexData(); updateSimplexChart()"
-                                    :placeholder="simplexSearchType === 'sku' ? 'Buscar SKU...' : simplexSearchType === 'marca' ? 'Buscar Marca...' : 'Buscar Proveedor...'"
-                                    class="w-full pl-7 pr-3 py-1.5 rounded border border-slate-300 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                    <div class="grid grid-cols-3 gap-3">
+                        <!-- Filtro Analista -->
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-600 mb-1 block">📋 ANALISTA</label>
+                            <div class="border rounded p-1.5 max-h-28 overflow-y-auto bg-slate-50 scrollbar-thin">
+                                <template x-for="a in getCumpVpdAnalistas()" :key="a">
+                                    <label class="flex items-center gap-1.5 cursor-pointer hover:bg-sky-50 px-1 py-0.5 rounded text-[11px]">
+                                        <input type="checkbox" :value="a" x-model="cumpVpdFilterAnalista"
+                                            @change="cumpVpdFilterProv = cumpVpdFilterProv.filter(p => getCumpVpdProveedores().includes(p)); cumpVpdFilterMarca = cumpVpdFilterMarca.filter(m => getCumpVpdMarcas().includes(m)); $nextTick(() => { updateCumpVpdChart(); updateRangoDohChart(); updateCumplimientoChart() })"
+                                            class="rounded border-slate-300 text-sky-600 focus:ring-0 w-3 h-3">
+                                        <span x-text="a" class="truncate"></span>
+                                    </label>
+                                </template>
+                                <div x-show="getCumpVpdAnalistas().length === 0" class="text-[10px] text-slate-400 italic p-1">Sin datos</div>
                             </div>
-                            <button @click="filterSimplexData(); updateSimplexChart()" 
-                                class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded font-bold text-xs">
-                                Buscar
-                            </button>
-                            <button @click="simplexSearchText=''; simplexFilteredData=[]; updateSimplexChart()" 
-                                class="bg-slate-200 hover:bg-slate-300 text-slate-600 px-2 py-1.5 rounded text-xs">
-                                ✕
-                            </button>
+                        </div>
+                        <!-- Filtro Proveedor -->
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-600 mb-1 block">🏭 PROVEEDOR</label>
+                            <div class="border rounded p-1.5 max-h-28 overflow-y-auto bg-slate-50 scrollbar-thin">
+                                <template x-for="p in getCumpVpdProveedores()" :key="p">
+                                    <label class="flex items-center gap-1.5 cursor-pointer hover:bg-sky-50 px-1 py-0.5 rounded text-[11px]">
+                                        <input type="checkbox" :value="p" x-model="cumpVpdFilterProv"
+                                            @change="cumpVpdFilterMarca = cumpVpdFilterMarca.filter(m => getCumpVpdMarcas().includes(m)); $nextTick(() => { updateCumpVpdChart(); updateRangoDohChart(); updateCumplimientoChart() })"
+                                            class="rounded border-slate-300 text-sky-600 focus:ring-0 w-3 h-3">
+                                        <span x-text="p" class="truncate"></span>
+                                    </label>
+                                </template>
+                                <div x-show="getCumpVpdProveedores().length === 0" class="text-[10px] text-slate-400 italic p-1">Seleccioná un Analista</div>
+                            </div>
+                        </div>
+                        <!-- Filtro Marca -->
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-600 mb-1 block">🏷️ MARCA</label>
+                            <div class="border rounded p-1.5 max-h-28 overflow-y-auto bg-slate-50 scrollbar-thin">
+                                <template x-for="m in getCumpVpdMarcas()" :key="m">
+                                    <label class="flex items-center gap-1.5 cursor-pointer hover:bg-sky-50 px-1 py-0.5 rounded text-[11px]">
+                                        <input type="checkbox" :value="m" x-model="cumpVpdFilterMarca"
+                                            @change="$nextTick(() => { updateCumpVpdChart(); updateRangoDohChart(); updateCumplimientoChart() })"
+                                            class="rounded border-slate-300 text-sky-600 focus:ring-0 w-3 h-3">
+                                        <span x-text="m" class="truncate"></span>
+                                    </label>
+                                </template>
+                                <div x-show="getCumpVpdMarcas().length === 0" class="text-[10px] text-slate-400 italic p-1">Seleccioná un Proveedor</div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Gráfico de evolución (arriba de resultados) -->
-                <div x-show="simplexFilteredData.length > 0" class="bg-white rounded-lg shadow-sm border border-slate-200 p-3 mb-3">
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="text-sm font-bold text-slate-700">📈 Evolución Mensual</h3>
-                        <div class="text-xs text-slate-500">
-                            <span x-show="simplexYears.y2025 && simplexYears.y2026">Comparando 2025 vs 2026</span>
-                            <span x-show="simplexYears.y2025 && !simplexYears.y2026">Año 2025</span>
-                            <span x-show="!simplexYears.y2025 && simplexYears.y2026">Año 2026</span>
+                <!-- Resumen Agrupado + Gráfico (solo con filtros activos) -->
+                <div class="grid grid-cols-2 gap-3 mb-3" x-show="cumpVpdFilterAnalista.length > 0 || cumpVpdFilterProv.length > 0 || cumpVpdFilterMarca.length > 0">
+                    <!-- Tabla Resumen -->
+                    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="bg-sky-100 px-3 py-1.5 border-b flex items-center gap-2">
+                            <span class="text-sm">📊</span>
+                            <span class="text-xs font-bold text-sky-800">Resumen Agrupado</span>
+                            <span class="text-[10px] text-sky-600 ml-auto" x-text="getCumpVpdSummary().length + ' grupos'"></span>
+                        </div>
+                        <div class="overflow-auto max-h-[240px] scrollbar-thin">
+                            <table class="w-full text-[11px]">
+                                <thead class="bg-slate-100 sticky top-0 z-10">
+                                    <tr>
+                                        <th class="p-1.5 text-left font-bold text-slate-700">Agrupación</th>
+                                        <th class="p-1.5 text-right font-bold text-slate-700">UNID*C_REP</th>
+                                        <th class="p-1.5 text-right font-bold text-slate-700">VPD*DSTK*C_REP</th>
+                                        <th class="p-1.5 text-center font-bold text-slate-700">CUMP %</th>
+                                        <th class="p-1.5 text-right font-bold text-slate-700">STOCK VAL.</th>
+                                        <th class="p-1.5 text-center font-bold text-slate-700">DOH VTAR</th>
+                                        <th class="p-1.5 text-center font-bold text-slate-700">DOH VPD</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <template x-for="(row, idx) in getCumpVpdSummary()" :key="idx">
+                                        <tr class="hover:bg-sky-50 transition-colors">
+                                            <td class="p-1.5 font-bold text-slate-800 truncate max-w-[180px]" x-text="row.label"></td>
+                                            <td class="p-1.5 text-right font-mono text-blue-700" x-text="formatMoney(row.unidCRep)"></td>
+                                            <td class="p-1.5 text-right font-mono text-amber-700" x-text="formatMoney(row.vpdDstkCRep)"></td>
+                                            <td class="p-1.5 text-center font-bold"
+                                                :class="row.cumpVpdPct >= 0.9 ? 'text-green-700 bg-green-50' : row.cumpVpdPct >= 0.7 ? 'text-yellow-700 bg-yellow-50' : 'text-red-700 bg-red-50'"
+                                                x-text="(row.cumpVpdPct * 100).toFixed(1) + '%'"></td>
+                                            <td class="p-1.5 text-right font-mono" x-text="formatMoney(row.stockValorizado)"></td>
+                                            <td class="p-1.5 text-center" x-text="row.dohVTAR.toFixed(1)"></td>
+                                            <td class="p-1.5 text-center" x-text="row.dohVPD.toFixed(1)"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    <div class="h-48">
-                        <canvas id="simplexEvolutionChart"></canvas>
+                    <!-- Gráfico de Barras -->
+                    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-3 flex flex-col">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-xs font-bold text-slate-700 flex items-center gap-1">📊 UNID*C_REP vs VPD*DSTK*C_REP</h3>
+                        </div>
+                        <div class="flex-1 min-h-[200px]">
+                            <canvas id="cumpVpdChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <!-- === RANGO DOH: Tabla + Gráfico === -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3" x-show="cumpVpdFilterAnalista.length > 0 || cumpVpdFilterProv.length > 0 || cumpVpdFilterMarca.length > 0">
+                    <!-- Tabla Rango DOH -->
+                    <div class="bg-white rounded-lg shadow-sm border border-teal-200 overflow-hidden">
+                        <div class="bg-teal-100 px-3 py-1.5 border-b flex items-center gap-2">
+                            <span class="text-sm">📦</span>
+                            <span class="text-xs font-bold text-teal-800">Rango DOH (Días de Inventario)</span>
+                            <span class="text-[10px] text-teal-600 ml-auto" x-text="getCumpVpdByRangoDOH().length + ' rangos'"></span>
+                        </div>
+                        <div class="overflow-auto max-h-[320px] scrollbar-thin">
+                            <table class="w-full text-[11px]">
+                                <thead class="bg-slate-100 sticky top-0 z-10">
+                                    <tr>
+                                        <th class="p-1.5 text-left font-bold text-slate-700">Rango DOH</th>
+                                        <th class="p-1.5 text-center font-bold text-slate-700">Prom. DSTK</th>
+                                        <th class="p-1.5 text-right font-bold text-slate-700">UNID*C_REP</th>
+                                        <th class="p-1.5 text-right font-bold text-slate-700">VPD*DSTK*C_REP</th>
+                                        <th class="p-1.5 text-right font-bold text-slate-700">Pérdida Venta</th>
+                                        <th class="p-1.5 text-center font-bold text-slate-700">CUMP VPD %</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <template x-for="(row, idx) in getCumpVpdByRangoDOH()" :key="idx">
+                                        <tr class="hover:bg-teal-50 transition-colors">
+                                            <td class="p-1.5 font-bold text-slate-800" x-text="row.label"></td>
+                                            <td class="p-1.5 text-center font-mono" x-text="row.promDSTK.toFixed(1)"></td>
+                                            <td class="p-1.5 text-right font-mono text-blue-700" x-text="formatMoney(row.unidCRep)"></td>
+                                            <td class="p-1.5 text-right font-mono text-amber-700" x-text="formatMoney(row.vpdDstkCRep)"></td>
+                                            <td class="p-1.5 text-right font-mono text-red-600" x-text="formatMoney(row.perdidaVenta)"></td>
+                                            <td class="p-1.5 text-center font-bold"
+                                                :class="row.cumpVpdPct >= 0.9 ? 'text-green-700 bg-green-50' : row.cumpVpdPct >= 0.7 ? 'text-yellow-700 bg-yellow-50' : 'text-red-700 bg-red-50'"
+                                                x-text="(row.cumpVpdPct * 100).toFixed(0) + '%'"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                                <tfoot class="bg-teal-50 border-t-2 border-teal-300 sticky bottom-0">
+                                    <tr>
+                                        <td class="p-1.5 font-black text-teal-900">Total general</td>
+                                        <td class="p-1.5 text-center font-bold text-teal-900" x-text="(() => { const d = getCumpVpdByRangoDOH(); const t = d.reduce((s,r) => s + r.sumDSTK, 0); const c = d.reduce((s,r) => s + r.count, 0); return c > 0 ? (t/c).toFixed(1) : '0'; })()"></td>
+                                        <td class="p-1.5 text-right font-bold text-blue-800" x-text="formatMoney(getCumpVpdByRangoDOH().reduce((s,r) => s + r.unidCRep, 0))"></td>
+                                        <td class="p-1.5 text-right font-bold text-amber-800" x-text="formatMoney(getCumpVpdByRangoDOH().reduce((s,r) => s + r.vpdDstkCRep, 0))"></td>
+                                        <td class="p-1.5 text-right font-bold text-red-700" x-text="formatMoney(getCumpVpdByRangoDOH().reduce((s,r) => s + r.perdidaVenta, 0))"></td>
+                                        <td class="p-1.5 text-center font-black text-teal-900"
+                                            x-text="(() => { const d = getCumpVpdByRangoDOH(); const u = d.reduce((s,r) => s + r.unidCRep, 0); const v = d.reduce((s,r) => s + r.vpdDstkCRep, 0); return v !== 0 ? ((u/v)*100).toFixed(0) + '%' : '0%'; })()"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- Gráfico Rango DOH -->
+                    <div class="bg-white rounded-lg shadow-sm border border-teal-200 p-3 flex flex-col">
+                        <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                            <h3 class="text-xs font-bold text-teal-800 flex items-center gap-1">📊 Rango DOH</h3>
+                            <div class="flex flex-wrap gap-1">
+                                <label class="flex items-center gap-1 text-[10px] cursor-pointer px-1.5 py-0.5 rounded border transition-colors"
+                                    :class="rangoDohChartMetrics.includes('unidCRep') ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-slate-50 border-slate-200 text-slate-500'">
+                                    <input type="checkbox" value="unidCRep" x-model="rangoDohChartMetrics" @change="$nextTick(() => updateRangoDohChart())" class="hidden">
+                                    UNID*C_REP
+                                </label>
+                                <label class="flex items-center gap-1 text-[10px] cursor-pointer px-1.5 py-0.5 rounded border transition-colors"
+                                    :class="rangoDohChartMetrics.includes('vpdDstkCRep') ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-slate-50 border-slate-200 text-slate-500'">
+                                    <input type="checkbox" value="vpdDstkCRep" x-model="rangoDohChartMetrics" @change="$nextTick(() => updateRangoDohChart())" class="hidden">
+                                    VPD*DSTK*C_REP
+                                </label>
+                                <label class="flex items-center gap-1 text-[10px] cursor-pointer px-1.5 py-0.5 rounded border transition-colors"
+                                    :class="rangoDohChartMetrics.includes('perdidaVenta') ? 'bg-red-100 border-red-300 text-red-800' : 'bg-slate-50 border-slate-200 text-slate-500'">
+                                    <input type="checkbox" value="perdidaVenta" x-model="rangoDohChartMetrics" @change="$nextTick(() => updateRangoDohChart())" class="hidden">
+                                    Pérdida Venta
+                                </label>
+                                <label class="flex items-center gap-1 text-[10px] cursor-pointer px-1.5 py-0.5 rounded border transition-colors"
+                                    :class="rangoDohChartMetrics.includes('cumpVpdPct') ? 'bg-green-100 border-green-300 text-green-800' : 'bg-slate-50 border-slate-200 text-slate-500'">
+                                    <input type="checkbox" value="cumpVpdPct" x-model="rangoDohChartMetrics" @change="$nextTick(() => updateRangoDohChart())" class="hidden">
+                                    CUMP VPD %
+                                </label>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-h-[260px]">
+                            <canvas id="cumpVpdRangoDohChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Resultados -->
-                <div x-show="simplexFilteredData.length > 0" class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="bg-slate-100 px-3 py-2 border-b flex justify-between items-center">
-                        <div class="text-sm font-bold text-slate-700">
-                            📊 <span class="text-emerald-600" x-text="simplexFilteredData.length"></span> registros
+                <!-- === CUMPLIMIENTO VPD: Tabla + Gráfico === -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3" x-show="cumpVpdFilterAnalista.length > 0 || cumpVpdFilterProv.length > 0 || cumpVpdFilterMarca.length > 0">
+                    <!-- Tabla Cumplimiento VPD -->
+                    <div class="bg-white rounded-lg shadow-sm border border-violet-200 overflow-hidden">
+                        <div class="bg-violet-100 px-3 py-1.5 border-b flex items-center gap-2">
+                            <span class="text-sm">✅</span>
+                            <span class="text-xs font-bold text-violet-800">Cumplimiento VPD</span>
+                            <span class="text-[10px] text-violet-600 ml-auto" x-text="getCumpVpdByCumplimiento().length + ' niveles'"></span>
                         </div>
-                        <div class="text-xs text-slate-500 flex items-center gap-2">
-                            <span x-show="simplexYears.y2025 && simplexYears.y2026">2025 + 2026</span>
-                            <span x-show="simplexYears.y2025 && !simplexYears.y2026">2025</span>
-                            <span x-show="!simplexYears.y2025 && simplexYears.y2026">2026</span>
-                            <span>|</span>
-                            <span x-text="simplexMetric === 'unidades' ? 'Unidades' : simplexMetric === 'importe' ? 'Importe' : 'Ambos'"></span>
+                        <div class="overflow-auto max-h-[320px] scrollbar-thin">
+                            <table class="w-full text-[11px]">
+                                <thead class="bg-slate-100 sticky top-0 z-10">
+                                    <tr>
+                                        <th class="p-1.5 text-left font-bold text-slate-700">Cumplimiento VPD</th>
+                                        <th class="p-1.5 text-center font-bold text-slate-700">Cuenta SKU</th>
+                                        <th class="p-1.5 text-center font-bold text-slate-700">% SKU</th>
+                                        <th class="p-1.5 text-right font-bold text-slate-700">UNID*C_REP</th>
+                                        <th class="p-1.5 text-right font-bold text-slate-700">VPD*DSTK*C_REP</th>
+                                        <th class="p-1.5 text-right font-bold text-slate-700">Pérdida Venta</th>
+                                        <th class="p-1.5 text-center font-bold text-slate-700">CUMP VPD %</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <template x-for="(row, idx) in getCumpVpdByCumplimiento()" :key="idx">
+                                        <tr class="hover:bg-violet-50 transition-colors">
+                                            <td class="p-1.5 font-bold text-slate-800" x-text="row.label"></td>
+                                            <td class="p-1.5 text-center font-bold" x-text="row.skuCount.toLocaleString()"></td>
+                                            <td class="p-1.5 text-center font-bold" x-text="row.pctSku.toFixed(2) + '%'"></td>
+                                            <td class="p-1.5 text-right font-mono text-blue-700" x-text="formatMoney(row.unidCRep)"></td>
+                                            <td class="p-1.5 text-right font-mono text-amber-700" x-text="formatMoney(row.vpdDstkCRep)"></td>
+                                            <td class="p-1.5 text-right font-mono text-red-600" x-text="formatMoney(row.perdidaVenta)"></td>
+                                            <td class="p-1.5 text-center font-bold"
+                                                :class="row.cumpVpdPct >= 0.9 ? 'text-green-700 bg-green-50' : row.cumpVpdPct >= 0.7 ? 'text-yellow-700 bg-yellow-50' : 'text-red-700 bg-red-50'"
+                                                x-text="(row.cumpVpdPct * 100).toFixed(0) + '%'"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                                <tfoot class="bg-violet-50 border-t-2 border-violet-300 sticky bottom-0">
+                                    <tr>
+                                        <td class="p-1.5 font-black text-violet-900">Total general</td>
+                                        <td class="p-1.5 text-center font-bold text-violet-900" x-text="getCumpVpdByCumplimiento().reduce((s,r) => s + r.skuCount, 0).toLocaleString()"></td>
+                                        <td class="p-1.5 text-center font-bold text-violet-900">100,00%</td>
+                                        <td class="p-1.5 text-right font-bold text-blue-800" x-text="formatMoney(getCumpVpdByCumplimiento().reduce((s,r) => s + r.unidCRep, 0))"></td>
+                                        <td class="p-1.5 text-right font-bold text-amber-800" x-text="formatMoney(getCumpVpdByCumplimiento().reduce((s,r) => s + r.vpdDstkCRep, 0))"></td>
+                                        <td class="p-1.5 text-right font-bold text-red-700" x-text="formatMoney(getCumpVpdByCumplimiento().reduce((s,r) => s + r.perdidaVenta, 0))"></td>
+                                        <td class="p-1.5 text-center font-black text-violet-900"
+                                            x-text="(() => { const d = getCumpVpdByCumplimiento(); const u = d.reduce((s,r) => s + r.unidCRep, 0); const v = d.reduce((s,r) => s + r.vpdDstkCRep, 0); return v !== 0 ? ((u/v)*100).toFixed(0) + '%' : '0%'; })()"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
                         </div>
                     </div>
+                    <!-- Gráfico Cumplimiento VPD -->
+                    <div class="bg-white rounded-lg shadow-sm border border-violet-200 p-3 flex flex-col">
+                        <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                            <h3 class="text-xs font-bold text-violet-800 flex items-center gap-1">📊 Cumplimiento VPD</h3>
+                            <div class="flex flex-wrap gap-1">
+                                <label class="flex items-center gap-1 text-[10px] cursor-pointer px-1.5 py-0.5 rounded border transition-colors"
+                                    :class="cumplChartMetrics.includes('skuCount') ? 'bg-purple-100 border-purple-300 text-purple-800' : 'bg-slate-50 border-slate-200 text-slate-500'">
+                                    <input type="checkbox" value="skuCount" x-model="cumplChartMetrics" @change="$nextTick(() => updateCumplimientoChart())" class="hidden">
+                                    SKU Count
+                                </label>
+                                <label class="flex items-center gap-1 text-[10px] cursor-pointer px-1.5 py-0.5 rounded border transition-colors"
+                                    :class="cumplChartMetrics.includes('unidCRep') ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-slate-50 border-slate-200 text-slate-500'">
+                                    <input type="checkbox" value="unidCRep" x-model="cumplChartMetrics" @change="$nextTick(() => updateCumplimientoChart())" class="hidden">
+                                    UNID*C_REP
+                                </label>
+                                <label class="flex items-center gap-1 text-[10px] cursor-pointer px-1.5 py-0.5 rounded border transition-colors"
+                                    :class="cumplChartMetrics.includes('vpdDstkCRep') ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-slate-50 border-slate-200 text-slate-500'">
+                                    <input type="checkbox" value="vpdDstkCRep" x-model="cumplChartMetrics" @change="$nextTick(() => updateCumplimientoChart())" class="hidden">
+                                    VPD*DSTK*C_REP
+                                </label>
+                                <label class="flex items-center gap-1 text-[10px] cursor-pointer px-1.5 py-0.5 rounded border transition-colors"
+                                    :class="cumplChartMetrics.includes('perdidaVenta') ? 'bg-red-100 border-red-300 text-red-800' : 'bg-slate-50 border-slate-200 text-slate-500'">
+                                    <input type="checkbox" value="perdidaVenta" x-model="cumplChartMetrics" @change="$nextTick(() => updateCumplimientoChart())" class="hidden">
+                                    Pérdida Venta
+                                </label>
+                                <label class="flex items-center gap-1 text-[10px] cursor-pointer px-1.5 py-0.5 rounded border transition-colors"
+                                    :class="cumplChartMetrics.includes('cumpVpdPct') ? 'bg-green-100 border-green-300 text-green-800' : 'bg-slate-50 border-slate-200 text-slate-500'">
+                                    <input type="checkbox" value="cumpVpdPct" x-model="cumplChartMetrics" @change="$nextTick(() => updateCumplimientoChart())" class="hidden">
+                                    CUMP VPD %
+                                </label>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-h-[260px]">
+                            <canvas id="cumpVpdCumplChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                    <!-- VISTA HORIZONTAL (meses en columnas) -->
-                    <div x-show="simplexViewMode === 'horizontal'" class="overflow-x-auto max-h-[400px]">
-                        <table class="w-full text-xs">
-                            <thead class="bg-emerald-100 sticky top-0 z-10">
+        <!-- 💰 TAB PRESUPUESTO - SIMPLEX 26 -->
+        <div x-show="currentTab === 'presupuesto'" class="bg-gradient-to-b from-emerald-50 to-white border-b" x-cloak>
+            <div class="max-w-full mx-auto px-4 py-3 max-h-[calc(100vh-180px)] overflow-y-auto scrollbar-thin" style="scrollbar-width: thin; scrollbar-color: #94a3b8 #f1f5f9;">
+
+                <!-- Filtros Cascading + Meses + Modo columnas -->
+                <div class="bg-white rounded-lg shadow-sm border border-emerald-200 p-3 mb-3">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-sm">🔎</span>
+                        <span class="text-xs font-bold text-emerald-800 uppercase">Filtros Presupuesto</span>
+                        <button @click="presupFilterAnalista=[]; presupFilterChief=[]; presupFilterMarca=[]; presupFilterProv=[]; $nextTick(() => updatePresupChart())"
+                            class="ml-auto bg-slate-200 hover:bg-slate-300 text-slate-600 px-3 py-1 rounded text-[10px] font-bold">
+                            ✕ Limpiar Todo
+                        </button>
+                    </div>
+                    <!-- Fila 1: Cascading -->
+                    <div class="grid grid-cols-4 gap-3 mb-3">
+                        <!-- Filtro Analista -->
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-600 mb-1 block">📋 ANALISTA</label>
+                            <div class="border rounded p-1.5 max-h-28 overflow-y-auto bg-slate-50 scrollbar-thin">
+                                <template x-for="a in getPresupAnalistas()" :key="a">
+                                    <label class="flex items-center gap-1.5 cursor-pointer hover:bg-emerald-50 px-1 py-0.5 rounded text-[11px]">
+                                        <input type="checkbox" :value="a" x-model="presupFilterAnalista"
+                                            @change="presupFilterChief = presupFilterChief.filter(c => getPresupChiefs().includes(c)); presupFilterMarca = presupFilterMarca.filter(m => getPresupMarcas().includes(m)); presupFilterProv = presupFilterProv.filter(p => getPresupProveedores().includes(p)); $nextTick(() => updatePresupChart())"
+                                            class="rounded border-slate-300 text-emerald-600 focus:ring-0 w-3 h-3">
+                                        <span x-text="a" class="truncate"></span>
+                                    </label>
+                                </template>
+                                <div x-show="getPresupAnalistas().length === 0" class="text-[10px] text-slate-400 italic p-1">Sin datos</div>
+                            </div>
+                        </div>
+                        <!-- Filtro Chief -->
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-600 mb-1 block">👑 CHIEF</label>
+                            <div class="border rounded p-1.5 max-h-28 overflow-y-auto bg-slate-50 scrollbar-thin">
+                                <template x-for="c in getPresupChiefs()" :key="c">
+                                    <label class="flex items-center gap-1.5 cursor-pointer hover:bg-emerald-50 px-1 py-0.5 rounded text-[11px]">
+                                        <input type="checkbox" :value="c" x-model="presupFilterChief"
+                                            @change="presupFilterMarca = presupFilterMarca.filter(m => getPresupMarcas().includes(m)); presupFilterProv = presupFilterProv.filter(p => getPresupProveedores().includes(p)); $nextTick(() => updatePresupChart())"
+                                            class="rounded border-slate-300 text-emerald-600 focus:ring-0 w-3 h-3">
+                                        <span x-text="c" class="truncate"></span>
+                                    </label>
+                                </template>
+                                <div x-show="getPresupChiefs().length === 0" class="text-[10px] text-slate-400 italic p-1">Seleccioná un Analista</div>
+                            </div>
+                        </div>
+                        <!-- Filtro Proveedor -->
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-600 mb-1 block">📦 PROVEEDOR</label>
+                            <div class="border rounded p-1.5 max-h-28 overflow-y-auto bg-slate-50 scrollbar-thin">
+                                <template x-for="p in getPresupProveedores()" :key="p">
+                                    <label class="flex items-center gap-1.5 cursor-pointer hover:bg-emerald-50 px-1 py-0.5 rounded text-[11px]">
+                                        <input type="checkbox" :value="p" x-model="presupFilterProv"
+                                            @change="presupFilterMarca = presupFilterMarca.filter(m => getPresupMarcas().includes(m)); $nextTick(() => updatePresupChart())"
+                                            class="rounded border-slate-300 text-emerald-600 focus:ring-0 w-3 h-3">
+                                        <span x-text="p" class="truncate"></span>
+                                    </label>
+                                </template>
+                                <div x-show="getPresupProveedores().length === 0" class="text-[10px] text-slate-400 italic p-1">Sin datos</div>
+                            </div>
+                        </div>
+                        <!-- Filtro Marca -->
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-600 mb-1 block">🏷️ MARCA</label>
+                            <div class="border rounded p-1.5 max-h-28 overflow-y-auto bg-slate-50 scrollbar-thin">
+                                <template x-for="m in getPresupMarcas()" :key="m">
+                                    <label class="flex items-center gap-1.5 cursor-pointer hover:bg-emerald-50 px-1 py-0.5 rounded text-[11px]">
+                                        <input type="checkbox" :value="m" x-model="presupFilterMarca"
+                                            @change="$nextTick(() => updatePresupChart())"
+                                            class="rounded border-slate-300 text-emerald-600 focus:ring-0 w-3 h-3">
+                                        <span x-text="m" class="truncate"></span>
+                                    </label>
+                                </template>
+                                <div x-show="getPresupMarcas().length === 0" class="text-[10px] text-slate-400 italic p-1">Seleccioná un Chief o Proveedor</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Fila 2: Meses + Modo columnas -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex items-center gap-1">
+                            <span class="text-[10px] font-bold text-slate-600">📅 MESES:</span>
+                            <template x-for="m in ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']" :key="m">
+                                <label class="cursor-pointer text-[9px] px-1.5 py-0.5 rounded border transition-colors"
+                                    :class="presupSelectedMonths.includes(m) ? 'bg-emerald-100 border-emerald-300 text-emerald-800 font-bold' : 'bg-slate-50 border-slate-200 text-slate-400'">
+                                    <input type="checkbox" :value="m" x-model="presupSelectedMonths" class="hidden">
+                                    <span x-text="m.toUpperCase()"></span>
+                                </label>
+                            </template>
+                        </div>
+                        <div class="flex items-center gap-1 ml-auto">
+                            <span class="text-[10px] font-bold text-slate-600">👁 VER:</span>
+                            <select x-model="presupColMode" class="text-[10px] border rounded px-2 py-1 bg-white">
+                                <option value="cumplimiento">Solo Cumplimiento %</option>
+                                <option value="cumpl_montos">Cumplimiento + Montos ($)</option>
+                                <option value="cumpl_unidades">Cumplimiento + Unidades</option>
+                                <option value="todo">Todo (Montos + Unidades + Cumpl.)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumen Agrupado + Gráfico -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3" x-show="presupFilterAnalista.length > 0 || presupFilterChief.length > 0 || presupFilterMarca.length > 0 || presupFilterProv.length > 0">
+                    <!-- Tabla Resumen -->
+                    <div class="bg-white rounded-lg shadow-sm border border-emerald-200 overflow-hidden">
+                        <div class="bg-emerald-100 px-3 py-1.5 border-b flex items-center gap-2">
+                            <span class="text-sm">📊</span>
+                            <span class="text-xs font-bold text-emerald-800">Resumen Presupuesto por Agrupación</span>
+                            <span class="text-[10px] text-emerald-600 ml-auto" x-text="getPresupSummary().length + ' grupos'"></span>
+                        </div>
+                        <div class="overflow-auto max-h-[320px] scrollbar-thin">
+                            <table class="w-full text-[11px]">
+                                <thead class="bg-slate-100 sticky top-0 z-10">
+                                    <tr>
+                                        <th class="p-1.5 text-left font-bold text-slate-700">Agrupación</th>
+                                        <th class="p-1.5 text-right font-bold text-slate-700">Presupuesto $</th>
+                                        <th class="p-1.5 text-right font-bold text-slate-700">Venta $</th>
+                                        <th class="p-1.5 text-center font-bold text-slate-700">Cumpl. $</th>
+                                        <th class="p-1.5 text-right font-bold text-slate-700">Unid. 25</th>
+                                        <th class="p-1.5 text-right font-bold text-slate-700">Unid. 26</th>
+                                        <th class="p-1.5 text-center font-bold text-slate-700">Cumpl. U</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <template x-for="(row, idx) in getPresupSummary()" :key="idx">
+                                        <tr class="hover:bg-emerald-50 transition-colors">
+                                            <td class="p-1.5 font-bold text-slate-800 truncate max-w-[180px]" x-text="row.label"></td>
+                                            <td class="p-1.5 text-right font-mono text-slate-600" x-text="formatMoney(row.totalPresup)"></td>
+                                            <td class="p-1.5 text-right font-mono text-blue-700" x-text="formatMoney(row.totalVenta)"></td>
+                                            <td class="p-1.5 text-center font-bold"
+                                                :class="row.cumpDinero >= 1 ? 'text-green-700 bg-green-50' : row.cumpDinero >= 0.8 ? 'text-yellow-700 bg-yellow-50' : 'text-red-700 bg-red-50'"
+                                                x-text="(row.cumpDinero * 100).toFixed(1) + '%'"></td>
+                                            <td class="p-1.5 text-right font-mono text-slate-600" x-text="row.totalUnid25.toLocaleString()"></td>
+                                            <td class="p-1.5 text-right font-mono text-blue-700" x-text="row.totalUnid26.toLocaleString()"></td>
+                                            <td class="p-1.5 text-center font-bold"
+                                                :class="row.cumpUnidades >= 1 ? 'text-green-700 bg-green-50' : row.cumpUnidades >= 0.8 ? 'text-yellow-700 bg-yellow-50' : 'text-red-700 bg-red-50'"
+                                                x-text="(row.cumpUnidades * 100).toFixed(1) + '%'"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                                <tfoot class="bg-emerald-50 border-t-2 border-emerald-300 sticky bottom-0">
+                                    <tr>
+                                        <td class="p-1.5 font-black text-emerald-900">Total general</td>
+                                        <td class="p-1.5 text-right font-bold text-slate-800" x-text="formatMoney(getPresupSummary().reduce((s,r) => s + r.totalPresup, 0))"></td>
+                                        <td class="p-1.5 text-right font-bold text-blue-800" x-text="formatMoney(getPresupSummary().reduce((s,r) => s + r.totalVenta, 0))"></td>
+                                        <td class="p-1.5 text-center font-black text-emerald-900"
+                                            x-text="(() => { const d = getPresupSummary(); const p = d.reduce((s,r) => s + r.totalPresup, 0); const v = d.reduce((s,r) => s + r.totalVenta, 0); return p > 0 ? ((v/p)*100).toFixed(1) + '%' : '0%'; })()"></td>
+                                        <td class="p-1.5 text-right font-bold text-slate-800" x-text="getPresupSummary().reduce((s,r) => s + r.totalUnid25, 0).toLocaleString()"></td>
+                                        <td class="p-1.5 text-right font-bold text-blue-800" x-text="getPresupSummary().reduce((s,r) => s + r.totalUnid26, 0).toLocaleString()"></td>
+                                        <td class="p-1.5 text-center font-black text-emerald-900"
+                                            x-text="(() => { const d = getPresupSummary(); const u25 = d.reduce((s,r) => s + r.totalUnid25, 0); const u26 = d.reduce((s,r) => s + r.totalUnid26, 0); return u25 > 0 ? ((u26/u25)*100).toFixed(1) + '%' : '0%'; })()"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- Gráfico -->
+                    <div class="bg-white rounded-lg shadow-sm border border-emerald-200 p-3 flex flex-col">
+                        <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                            <h3 class="text-xs font-bold text-emerald-800 flex items-center gap-1">📊 Cumplimiento Presupuesto</h3>
+                            <div class="flex flex-wrap gap-1">
+                                <label class="flex items-center gap-1 text-[10px] cursor-pointer px-1.5 py-0.5 rounded border transition-colors"
+                                    :class="presupChartMetrics.includes('cumpDinero') ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-slate-50 border-slate-200 text-slate-500'">
+                                    <input type="checkbox" value="cumpDinero" x-model="presupChartMetrics" @change="$nextTick(() => updatePresupChart())" class="hidden">
+                                    Cumpl. $ %
+                                </label>
+                                <label class="flex items-center gap-1 text-[10px] cursor-pointer px-1.5 py-0.5 rounded border transition-colors"
+                                    :class="presupChartMetrics.includes('cumpUnidades') ? 'bg-green-100 border-green-300 text-green-800' : 'bg-slate-50 border-slate-200 text-slate-500'">
+                                    <input type="checkbox" value="cumpUnidades" x-model="presupChartMetrics" @change="$nextTick(() => updatePresupChart())" class="hidden">
+                                    Cumpl. U %
+                                </label>
+                                <label class="flex items-center gap-1 text-[10px] cursor-pointer px-1.5 py-0.5 rounded border transition-colors"
+                                    :class="presupChartMetrics.includes('totalPresup') ? 'bg-slate-200 border-slate-400 text-slate-700' : 'bg-slate-50 border-slate-200 text-slate-500'">
+                                    <input type="checkbox" value="totalPresup" x-model="presupChartMetrics" @change="$nextTick(() => updatePresupChart())" class="hidden">
+                                    Presup. $
+                                </label>
+                                <label class="flex items-center gap-1 text-[10px] cursor-pointer px-1.5 py-0.5 rounded border transition-colors"
+                                    :class="presupChartMetrics.includes('totalVenta') ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-slate-50 border-slate-200 text-slate-500'">
+                                    <input type="checkbox" value="totalVenta" x-model="presupChartMetrics" @change="$nextTick(() => updatePresupChart())" class="hidden">
+                                    Venta $
+                                </label>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-h-[280px]">
+                            <canvas id="presupChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de datos detalle -->
+                <div class="bg-white rounded-lg shadow-sm border border-emerald-200 overflow-hidden mb-3" x-show="presupFilterAnalista.length > 0 || presupFilterChief.length > 0 || presupFilterMarca.length > 0 || presupFilterProv.length > 0">
+                    <div class="bg-emerald-100 px-3 py-1.5 border-b flex items-center gap-2">
+                        <span class="text-sm">💰</span>
+                        <span class="text-xs font-bold text-emerald-800">Detalle por Marca — Meses Seleccionados</span>
+                        <span class="text-[10px] text-emerald-600 ml-auto" x-text="getPresupFilteredData().length + ' marcas'"></span>
+                    </div>
+                    <div class="overflow-auto max-h-[400px] scrollbar-thin">
+                        <table class="w-full text-[11px]">
+                            <thead class="bg-slate-100 sticky top-0 z-10">
                                 <tr>
-                                    <template x-for="col in getSimplexColumns()" :key="col.key">
-                                        <th class="p-1.5 text-left font-bold text-emerald-800 border-b border-emerald-200 whitespace-nowrap"
-                                            :class="[...simplexMeses2025, ...simplexMeses2026].includes(col.key) ? 'bg-emerald-200 text-center min-w-[80px]' : ''">
-                                            <span x-text="col.label"></span>
-                                        </th>
+                                    <th class="p-1.5 text-left font-bold text-slate-700 sticky left-0 bg-slate-100 z-20">MARCA</th>
+                                    <th class="p-1.5 text-left font-bold text-slate-700">PROVEEDOR</th>
+                                    <th class="p-1.5 text-left font-bold text-slate-700">CHIEF</th>
+                                    <th class="p-1.5 text-left font-bold text-slate-700">ANALISTA</th>
+                                    <template x-for="m in presupSelectedMonths" :key="m + '_h'">
+                                        <template x-if="presupColMode === 'cumplimiento' || presupColMode === 'cumpl_montos' || presupColMode === 'todo'">
+                                            <th class="p-1.5 text-center font-bold text-blue-700 border-l border-slate-200" x-text="'$%' + ' ' + m.toUpperCase()"></th>
+                                        </template>
+                                    </template>
+                                    <template x-for="m in presupSelectedMonths" :key="m + '_hu'">
+                                        <template x-if="presupColMode === 'cumplimiento' || presupColMode === 'cumpl_unidades' || presupColMode === 'todo'">
+                                            <th class="p-1.5 text-center font-bold text-green-700 border-l border-slate-200" x-text="'U%' + ' ' + m.toUpperCase()"></th>
+                                        </template>
+                                    </template>
+                                    <template x-for="m in presupSelectedMonths" :key="m + '_hp'">
+                                        <template x-if="presupColMode === 'cumpl_montos' || presupColMode === 'todo'">
+                                            <th class="p-1.5 text-right font-bold text-slate-500 border-l border-slate-200" x-text="'PRESUP ' + m.toUpperCase()"></th>
+                                        </template>
+                                    </template>
+                                    <template x-for="m in presupSelectedMonths" :key="m + '_hv'">
+                                        <template x-if="presupColMode === 'cumpl_montos' || presupColMode === 'todo'">
+                                            <th class="p-1.5 text-right font-bold text-blue-600 border-l border-slate-200" x-text="'VENTA ' + m.toUpperCase()"></th>
+                                        </template>
+                                    </template>
+                                    <template x-for="m in presupSelectedMonths" :key="m + '_hu25'">
+                                        <template x-if="presupColMode === 'cumpl_unidades' || presupColMode === 'todo'">
+                                            <th class="p-1.5 text-right font-bold text-slate-500 border-l border-slate-200" x-text="'U.25 ' + m.toUpperCase()"></th>
+                                        </template>
+                                    </template>
+                                    <template x-for="m in presupSelectedMonths" :key="m + '_hu26'">
+                                        <template x-if="presupColMode === 'cumpl_unidades' || presupColMode === 'todo'">
+                                            <th class="p-1.5 text-right font-bold text-green-600 border-l border-slate-200" x-text="'U.26 ' + m.toUpperCase()"></th>
+                                        </template>
                                     </template>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
-                                <template x-for="(row, idx) in simplexFilteredData" :key="idx">
-                                    <tr class="hover:bg-emerald-50 transition-colors"
-                                        :class="row.year === 2026 ? 'bg-indigo-50/30' : ''">
-                                        <template x-for="col in getSimplexColumns()" :key="col.key">
-                                            <td class="p-1.5 border-b border-slate-100"
-                                                :class="{
-                                                    'font-bold text-slate-800': col.key === 'sku' || col.key === 'marca' || col.key === 'prov',
-                                                    'text-center bg-slate-50': [...simplexMeses2025, ...simplexMeses2026].includes(col.key),
-                                                    'text-right font-mono': col.key === 'qTotal' || col.key === 'ventaTotal',
-                                                    'text-center font-bold': col.key === 'year'
-                                                }">
-                                                <span x-text="getSimplexCellValue(row, col)"></span>
-                                            </td>
+                                <template x-for="(row, idx) in getPresupFilteredData()" :key="idx">
+                                    <tr class="hover:bg-emerald-50 transition-colors">
+                                        <td class="p-1.5 font-bold text-slate-800 sticky left-0 bg-white z-10 truncate max-w-[160px]" x-text="row.marca"></td>
+                                        <td class="p-1.5 text-slate-600 truncate max-w-[140px]" x-text="row.prov"></td>
+                                        <td class="p-1.5 text-slate-600" x-text="row.chief"></td>
+                                        <td class="p-1.5 text-slate-600" x-text="row.analista"></td>
+                                        <template x-for="m in presupSelectedMonths" :key="m + '_cd'">
+                                            <template x-if="presupColMode === 'cumplimiento' || presupColMode === 'cumpl_montos' || presupColMode === 'todo'">
+                                                <td class="p-1.5 text-center font-bold border-l border-slate-100"
+                                                    :class="(row.cumpDinero[m]||0) >= 1 ? 'text-green-700 bg-green-50' : (row.cumpDinero[m]||0) >= 0.8 ? 'text-yellow-700 bg-yellow-50' : 'text-red-700 bg-red-50'"
+                                                    x-text="((row.cumpDinero[m]||0)*100).toFixed(1) + '%'"></td>
+                                            </template>
+                                        </template>
+                                        <template x-for="m in presupSelectedMonths" :key="m + '_cu'">
+                                            <template x-if="presupColMode === 'cumplimiento' || presupColMode === 'cumpl_unidades' || presupColMode === 'todo'">
+                                                <td class="p-1.5 text-center font-bold border-l border-slate-100"
+                                                    :class="(row.cumpUnidades[m]||0) >= 1 ? 'text-green-700 bg-green-50' : (row.cumpUnidades[m]||0) >= 0.8 ? 'text-yellow-700 bg-yellow-50' : 'text-red-700 bg-red-50'"
+                                                    x-text="((row.cumpUnidades[m]||0)*100).toFixed(1) + '%'"></td>
+                                            </template>
+                                        </template>
+                                        <template x-for="m in presupSelectedMonths" :key="m + '_p'">
+                                            <template x-if="presupColMode === 'cumpl_montos' || presupColMode === 'todo'">
+                                                <td class="p-1.5 text-right font-mono text-slate-500 border-l border-slate-100" x-text="formatMoney(row.presup[m]||0)"></td>
+                                            </template>
+                                        </template>
+                                        <template x-for="m in presupSelectedMonths" :key="m + '_v'">
+                                            <template x-if="presupColMode === 'cumpl_montos' || presupColMode === 'todo'">
+                                                <td class="p-1.5 text-right font-mono text-blue-700 border-l border-slate-100" x-text="formatMoney(row.venta[m]||0)"></td>
+                                            </template>
+                                        </template>
+                                        <template x-for="m in presupSelectedMonths" :key="m + '_u25'">
+                                            <template x-if="presupColMode === 'cumpl_unidades' || presupColMode === 'todo'">
+                                                <td class="p-1.5 text-right font-mono text-slate-500 border-l border-slate-100" x-text="(row.unid25[m]||0).toLocaleString()"></td>
+                                            </template>
+                                        </template>
+                                        <template x-for="m in presupSelectedMonths" :key="m + '_u26'">
+                                            <template x-if="presupColMode === 'cumpl_unidades' || presupColMode === 'todo'">
+                                                <td class="p-1.5 text-right font-mono text-green-700 border-l border-slate-100" x-text="(row.unid26[m]||0).toLocaleString()"></td>
+                                            </template>
                                         </template>
                                     </tr>
                                 </template>
                             </tbody>
                         </table>
                     </div>
-
-                    <!-- VISTA VERTICAL (meses en filas) -->
-                    <div x-show="simplexViewMode === 'vertical'" class="overflow-y-auto max-h-[600px] p-4">
-                        <template x-for="(row, idx) in simplexFilteredData" :key="idx">
-                            <div class="mb-4 bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
-                                <!-- Header del registro -->
-                                <div class="text-white px-4 py-2 flex justify-between items-center"
-                                    :class="row.year === 2026 ? 'bg-indigo-600' : 'bg-emerald-600'">
-                                    <div class="flex items-center gap-2">
-                                        <span class="bg-white/20 px-2 py-0.5 rounded text-xs font-bold" x-text="row.year || '2025'"></span>
-                                        <span class="font-bold" x-text="row.sku || row.marca || row.prov"></span>
-                                        <span x-show="row.desc" class="text-white/70 text-sm" x-text="'- ' + row.desc"></span>
-                                    </div>
-                                    <div class="text-right text-sm">
-                                        <span class="font-bold" x-text="(row.qTotal || 0).toLocaleString() + ' u'"></span>
-                                        <span class="text-white/70 ml-2" x-text="formatMoney(row.ventaTotal || 0)"></span>
-                                    </div>
-                                </div>
-                                
-                                <!-- Tabla de meses vertical compacta -->
-                                <div class="p-2">
-                                    <table class="w-full text-xs">
-                                        <thead class="bg-slate-100">
-                                            <tr>
-                                                <th class="p-1.5 text-left font-bold text-slate-600">MES</th>
-                                                <th x-show="simplexMetric !== 'importe'" class="p-1.5 text-right font-bold text-slate-600">UNIDADES</th>
-                                                <th x-show="simplexMetric !== 'unidades'" class="p-1.5 text-right font-bold text-slate-600">VENTA ($)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y">
-                                            <template x-for="mes in (row.year === 2026 ? simplexMeses2026 : simplexMeses2025)" :key="mes">
-                                                <tr class="hover:bg-emerald-50" :class="(row[mes]?.q || 0) > 0 ? '' : 'opacity-40'">
-                                                    <td class="p-1.5 font-bold text-slate-700 uppercase" x-text="mes"></td>
-                                                    <td x-show="simplexMetric !== 'importe'" class="p-1.5 text-right font-mono" 
-                                                        :class="(row[mes]?.q || 0) > 0 ? 'text-emerald-700 font-bold' : 'text-slate-400'"
-                                                        x-text="(row[mes]?.q || 0).toLocaleString()"></td>
-                                                    <td x-show="simplexMetric !== 'unidades'" class="p-1.5 text-right font-mono"
-                                                        :class="(row[mes]?.venta || 0) > 0 ? 'text-blue-700 font-bold' : 'text-slate-400'"
-                                                        x-text="formatMoney(row[mes]?.venta || 0)"></td>
-                                                </tr>
-                                            </template>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
                 </div>
 
-                <!-- Sin resultados -->
-                <div x-show="simplexSearchText.length >= 2 && simplexFilteredData.length === 0" class="bg-yellow-50 rounded-lg shadow-sm p-6 text-center border border-yellow-200">
-                    <div class="text-3xl mb-2">🔍</div>
-                    <h3 class="text-sm font-bold text-yellow-700 mb-1">No se encontraron resultados</h3>
-                    <p class="text-yellow-600 text-xs">No hay datos para "<span x-text="simplexSearchText" class="font-bold"></span>"</p>
-                </div>
-
-                <!-- Estado inicial (sin búsqueda) -->
-                <div x-show="simplexSearchText.length < 2 && simplexFilteredData.length === 0" class="bg-slate-50 rounded-lg p-6 text-center border border-dashed border-slate-300">
-                    <div class="text-3xl mb-2">🔍</div>
-                    <p class="text-slate-500 text-sm">Ingresa al menos 2 caracteres para buscar</p>
-                </div>
             </div>
         </div>
+
     </main>
 
     <div x-show="showSeasonalityModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" x-cloak>
@@ -1824,6 +2174,7 @@
                         <div x-show="selectedRow?.dep" class="bg-blue-50 p-2 rounded mb-2 font-bold text-center">Datos del Depósito: <span x-text="selectedRow?.dep"></span></div>
                         <div class="flex justify-between p-2 bg-slate-50 rounded"><span>Depósito 1:</span><strong x-text="selectedRow?.pbi?.dep1"></strong></div>
                         <div class="flex justify-between p-2 bg-purple-50 rounded border-purple-100"><span>Depósito 80:</span><strong x-text="selectedRow?.pbi?.dep80"></strong></div>
+                        <div class="flex justify-between p-2 bg-yellow-50 rounded border-yellow-100 text-yellow-800"><span>Uds en Full (ML):</span><strong x-text="selectedRow?.udsFull || 0"></strong></div>
                         <div class="flex justify-between p-2 bg-blue-50 rounded border-blue-100 text-blue-700"><span>En Camino:</span><strong x-text="selectedRow?.comprasEnCamino"></strong></div>
 
                         <div class="flex justify-between p-2 rounded border mt-2 items-center"
@@ -2080,7 +2431,17 @@
                 kpiFilter: null, // 'criticos' | 'viejo' | null
 
                 modalOpen: false, selectedRow: null, selectedRowLotes: [],
-                rawData: {}, masterData: [], flatData: [], enviosData: [], lotesData: [], proveedoresData: [], otherDepositsData: [],
+                rawData: {}, masterData: [], flatData: [], enviosData: [], lotesData: [], proveedoresData: [], otherDepositsData: [], cumpVpdData: [],
+                cumpVpdFilterAnalista: [], cumpVpdFilterProv: [], cumpVpdFilterMarca: [], cumpVpdChartInstance: null, cumpVpdRangoDohChart: null, cumpVpdCumplChart: null,
+                rangoDohChartMetrics: ['unidCRep', 'vpdDstkCRep', 'cumpVpdPct'], cumplChartMetrics: ['skuCount', 'unidCRep', 'vpdDstkCRep'],
+
+                // 💰 PRESUPUESTO
+                presupData: [],
+                presupFilterAnalista: [], presupFilterChief: [], presupFilterMarca: [], presupFilterProv: [],
+                presupSelectedMonths: ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'],
+                presupColMode: 'cumplimiento', // 'cumplimiento' | 'cumpl_montos' | 'cumpl_unidades' | 'todo'
+                presupChartInstance: null,
+                presupChartMetrics: ['cumpDinero', 'cumpUnidades'],
                 uniqueEnvioFechas: [],
 
                 params: { diasSuc: 30, diasFull: 30, diasCompra: 30, diasOtros: 30, simulationDays: 30 },
@@ -2176,7 +2537,8 @@
                     { id: 'combos', label: '🎁 COMBOS' },
                     { id: 'dashboard', label: '⚡ Dashboard KPI' },
                     { id: 'metricas', label: '📊 Métricas' },
-                    { id: 'simplex', label: '📊 SIMPLEX' }
+                    { id: 'cump_vpd', label: '📊 CUMP VPD' },
+                    { id: 'presupuesto', label: '💰 PRESUPUESTO' }
                 ],
                 chartInstances: {},
 
@@ -2472,7 +2834,21 @@
 
                         // ========== HOJA 2: DETALLE POR ANALISTA (ÚLTIMA FECHA) ==========
                         const detalleUltimaFecha = cargosDetallados.filter(c => c.fecha === ultimaFecha);
-                        detalleUltimaFecha.sort((a, b) => {
+
+                        // Consolidar SKUs repetidos: sumar unidades e importe por analista+sku
+                        const mapaConsolidado = new Map();
+                        detalleUltimaFecha.forEach(item => {
+                            const clave = `${item.analista}||${item.sku}`;
+                            if (mapaConsolidado.has(clave)) {
+                                const exist = mapaConsolidado.get(clave);
+                                exist.unidades += item.unidades;
+                                exist.importe += item.importe;
+                            } else {
+                                mapaConsolidado.set(clave, { ...item });
+                            }
+                        });
+                        const detalleConsolidado = Array.from(mapaConsolidado.values());
+                        detalleConsolidado.sort((a, b) => {
                             if (a.analista !== b.analista) return a.analista.localeCompare(b.analista);
                             return b.importe - a.importe;
                         });
@@ -2488,7 +2864,7 @@
                         let subtotalUnidades = 0;
                         let subtotalImporte = 0;
 
-                        detalleUltimaFecha.forEach((item, idx) => {
+                        detalleConsolidado.forEach((item, idx) => {
                             if (currentAnalista && currentAnalista !== item.analista) {
                                 ws2Data.push(['', `► SUBTOTAL ${currentAnalista}`, '', '', '', '', subtotalUnidades, subtotalImporte]);
                                 ws2Data.push([]);
@@ -2515,8 +2891,8 @@
                             ws2Data.push(['', `► SUBTOTAL ${currentAnalista}`, '', '', '', '', subtotalUnidades, subtotalImporte]);
                         }
 
-                        const totalUnidadesDetalle = detalleUltimaFecha.reduce((a, b) => a + b.unidades, 0);
-                        const totalImportesDetalle = detalleUltimaFecha.reduce((a, b) => a + b.importe, 0);
+                        const totalUnidadesDetalle = detalleConsolidado.reduce((a, b) => a + b.unidades, 0);
+                        const totalImportesDetalle = detalleConsolidado.reduce((a, b) => a + b.importe, 0);
                         ws2Data.push([]);
                         ws2Data.push(['═══════', '════════════════════', '═══════', '═══════════════', '═══════', '═══════', '═══════', '════════════']);
                         ws2Data.push(['', '★ TOTAL GENERAL', '', '', '', '', totalUnidadesDetalle, totalImportesDetalle]);
@@ -2538,6 +2914,205 @@
 
                     } catch (error) {
                         console.error('[REPORTE CARGOS] ❌ Error:', error);
+                        alert(`❌ Error al generar reporte: ${error.message}`);
+                    }
+                },
+
+                // 🔴 REPORTE STOCK NEGATIVO (PBI)
+                generateStockNegativoReport() {
+                    if (!this.rawData.pbi || this.rawData.pbi.length <= 1) {
+                        alert('❌ No hay datos de PBI cargados. Por favor, importa un archivo Excel con la hoja "PBI".');
+                        return;
+                    }
+                    try {
+                        const hP = this.rawData.pbi[0];
+                        const idx = (headers, names) => this.findColumnIndex(headers, names);
+                        const num = (v) => this.parseNumber(v);
+                        const clean = (v) => String(v || '').trim().toUpperCase();
+
+                        const iSku = idx(hP, ['SKU']);
+                        const iDesc = idx(hP, ['DESCRIPCION']);
+                        const depCols = [
+                            { label: '01', idx: idx(hP, ['DEP 1']) },
+                            { label: '80', idx: idx(hP, ['DEP 80']) },
+                            { label: '81', idx: idx(hP, ['DEP 81']) },
+                            { label: '82', idx: idx(hP, ['DEP 82']) },
+                            { label: '83', idx: idx(hP, ['DEP 83']) },
+                            { label: '87', idx: idx(hP, ['DEP 87']) },
+                            { label: '89', idx: idx(hP, ['DEP 89']) }
+                        ];
+
+                        // Recopilar SKUs con stock negativo
+                        const negativos = [];
+                        this.rawData.pbi.slice(1).forEach(r => {
+                            const sku = clean(r[iSku]);
+                            if (!sku || sku === 'TOTAL') return;
+                            const desc = r[iDesc] || '';
+                            depCols.forEach(dep => {
+                                if (dep.idx > -1) {
+                                    const val = num(r[dep.idx]);
+                                    if (val < 0) {
+                                        negativos.push({
+                                            sku: sku,
+                                            desc: desc,
+                                            punto: dep.label,
+                                            valorNegativo: val,
+                                            observaciones: '',
+                                            movimiento: '',
+                                            causaRaiz: '',
+                                            stockDisponible: ''
+                                        });
+                                    }
+                                }
+                            });
+                        });
+
+                        if (negativos.length === 0) {
+                            alert('✅ No se encontraron SKUs con stock negativo en PBI.');
+                            return;
+                        }
+
+                        // Ordenar por valor (más negativo primero)
+                        negativos.sort((a, b) => a.valorNegativo - b.valorNegativo);
+
+                        // Tabla resumen por Punto
+                        const resumenPunto = {};
+                        negativos.forEach(n => {
+                            if (!resumenPunto[n.punto]) resumenPunto[n.punto] = 0;
+                            resumenPunto[n.punto]++;
+                        });
+
+                        // Crear Excel
+                        const wb = XLSX.utils.book_new();
+
+                        // Hoja 1: Detalle
+                        const detData = [['SKU', 'Descripcion del Articulo', 'Punto', 'Valor Negativo', 'Observaciones', 'Movimiento', 'Causa Raíz', 'Stock Disponible para Venta']];
+                        negativos.forEach(n => {
+                            detData.push([n.sku, n.desc, n.punto, n.valorNegativo, n.observaciones, n.movimiento, n.causaRaiz, n.stockDisponible]);
+                        });
+
+                        // Agregar espacio y tabla resumen al final a la derecha
+                        const maxRows = detData.length;
+                        // Resumen arriba a la derecha (columnas J, K)
+                        detData[0].push('', '', 'Punto', 'Cuenta de SKU');
+                        const puntosOrdenados = Object.entries(resumenPunto).sort((a, b) => a[0].localeCompare(b[0]));
+                        let rowIdx = 1;
+                        puntosOrdenados.forEach(([punto, count]) => {
+                            while (detData.length <= rowIdx) detData.push(new Array(10).fill(''));
+                            if (!detData[rowIdx]) detData[rowIdx] = new Array(10).fill('');
+                            while (detData[rowIdx].length < 10) detData[rowIdx].push('');
+                            detData[rowIdx][10] = punto;
+                            detData[rowIdx][11] = count;
+                            rowIdx++;
+                        });
+                        // Total general
+                        while (detData.length <= rowIdx) detData.push(new Array(10).fill(''));
+                        while (detData[rowIdx].length < 10) detData[rowIdx].push('');
+                        detData[rowIdx][10] = 'Total general';
+                        detData[rowIdx][11] = negativos.length;
+
+                        const ws = XLSX.utils.aoa_to_sheet(detData);
+
+                        // Ancho de columnas
+                        ws['!cols'] = [
+                            { wch: 16 }, // SKU
+                            { wch: 40 }, // Descripcion
+                            { wch: 8 },  // Punto
+                            { wch: 16 }, // Valor Negativo
+                            { wch: 20 }, // Observaciones
+                            { wch: 15 }, // Movimiento
+                            { wch: 20 }, // Causa Raíz
+                            { wch: 25 }, // Stock Disponible
+                            { wch: 3 },  // Espacio
+                            { wch: 3 },  // Espacio
+                            { wch: 15 }, // Punto resumen
+                            { wch: 15 }  // Cuenta de SKU
+                        ];
+
+                        XLSX.utils.book_append_sheet(wb, ws, 'Stock Negativo');
+
+                        const fechaHoy = new Date().toISOString().split('T')[0];
+                        XLSX.writeFile(wb, `Reporte_Stock_Negativo_${fechaHoy}.xlsx`);
+
+                        console.log('[STOCK NEGATIVO] ✅ Reporte generado:', negativos.length, 'SKUs negativos');
+                        alert(`✅ Reporte Stock Negativo generado!\n\n🔴 ${negativos.length} SKUs con stock negativo\n📊 Distribuidos en ${Object.keys(resumenPunto).length} depósitos\n\nColumnas para completar:\n• Observaciones\n• Movimiento\n• Causa Raíz\n• Stock Disponible para Venta`);
+
+                    } catch (error) {
+                        console.error('[STOCK NEGATIVO] ❌ Error:', error);
+                        alert(`❌ Error al generar reporte: ${error.message}`);
+                    }
+                },
+
+                // 📋 REPORTE STOCK EN D1 SIN STOCK EN D80
+                generateStockD1SinD80Report() {
+                    if (!this.masterData || this.masterData.length === 0) {
+                        alert('❌ No hay datos maestros cargados. Por favor, importa un archivo Excel primero.');
+                        return;
+                    }
+                    try {
+                        // Filtrar: Stock D1 > 0 Y Stock D80 <= 0
+                        const skus = this.masterData.filter(r => {
+                            const d1 = r.pbi?.dep1 || 0;
+                            const d80 = r.pbi?.dep80 || 0;
+                            return d1 > 0 && d80 <= 0;
+                        });
+
+                        if (skus.length === 0) {
+                            alert('✅ No se encontraron SKUs con Stock en D1 sin Stock en D80.');
+                            return;
+                        }
+
+                        // Ordenar por Stock D1 desc
+                        skus.sort((a, b) => (b.pbi?.dep1 || 0) - (a.pbi?.dep1 || 0));
+
+                        const wb = XLSX.utils.book_new();
+                        const data = [['SKU', 'DESCRIPCION', 'MARCA', 'PROVEEDOR', 'STOCK 01', 'STOCK 80', 'VTAR 01', 'VTAR 80', 'VTAR GENERAL', 'VTA 60D (D80)', 'A ENVIAR']];
+
+                        skus.forEach(r => {
+                            // Calcular VTA 60D solo del depósito 80 usando histDaily80
+                            const vta60d80 = (r.histDaily80 && r.histDaily80.length > 0)
+                                ? r.histDaily80.slice(0, 59).reduce((a, b) => a + b, 0)
+                                : 0;
+                            data.push([
+                                r.sku,
+                                r.desc || '',
+                                r.marca || '',
+                                r.prov || '',
+                                r.pbi?.dep1 || 0,
+                                r.pbi?.dep80 || 0,
+                                r.vtar1 ? parseFloat(r.vtar1.toFixed(2)) : 0,
+                                r.vtar80 ? parseFloat(r.vtar80.toFixed(2)) : 0,
+                                r.vtarTotal ? parseFloat(r.vtarTotal.toFixed(2)) : 0,
+                                Math.round(vta60d80),
+                                r.qEnviar || 0
+                            ]);
+                        });
+
+                        const ws = XLSX.utils.aoa_to_sheet(data);
+                        ws['!cols'] = [
+                            { wch: 16 }, // SKU
+                            { wch: 40 }, // DESCRIPCION
+                            { wch: 18 }, // MARCA
+                            { wch: 20 }, // PROVEEDOR
+                            { wch: 12 }, // STOCK 01
+                            { wch: 12 }, // STOCK 80
+                            { wch: 12 }, // VTAR 01
+                            { wch: 12 }, // VTAR 80
+                            { wch: 14 }, // VTAR GENERAL
+                            { wch: 16 }, // VTA 60D (D80)
+                            { wch: 12 }  // A ENVIAR
+                        ];
+
+                        XLSX.utils.book_append_sheet(wb, ws, 'Stock D1 sin D80');
+
+                        const fechaHoy = new Date().toISOString().split('T')[0];
+                        XLSX.writeFile(wb, `Stock_D1_sin_D80_${fechaHoy}.xlsx`);
+
+                        console.log('[D1 SIN D80] ✅ Reporte generado:', skus.length, 'SKUs');
+                        alert(`✅ Reporte generado!\n\n📋 ${skus.length} SKUs con Stock en Depósito 1 pero SIN Stock en Depósito 80\n\nIncluye: SKU, Descripción, Marca, Proveedor, Stock 01, Stock 80, VTAR 01, VTAR 80, VTAR General, VTA 60D (D80), A ENVIAR`);
+
+                    } catch (error) {
+                        console.error('[D1 SIN D80] ❌ Error:', error);
                         alert(`❌ Error al generar reporte: ${error.message}`);
                     }
                 },
@@ -2567,7 +3142,7 @@
                         if(main && main.length) {
                             const meta = await DB.load('meta');
                             this.fileName = meta?.fileName; this.lastUpdate = meta?.date;
-                            for(let k of ['grafana','pbi','sml','pml','cargos','enviados','vto','canasta','mla','sta19','simplex']) this.rawData[k] = await DB.load(k);
+                            for(let k of ['grafana','pbi','sml','pml','cargos','enviados','vto','canasta','mla','sta19','nomina','ltime','simplex','simplex2026','cumplimientoVpd','tabla']) this.rawData[k] = await DB.load(k);
                             this.strategyOverrides = await DB.load('strategyOverrides') || {};
                             this.historyData = await DB.getHistory();
                             this.debtHistory = await DB.getDebtHistory();
@@ -2617,7 +3192,7 @@
                 // 📥 Cargar Excel directamente desde carpeta local
                 async loadLocalExcel() {
                     // Prioridad: .xlsb primero (más actualizado), luego .xlsx
-                    const fileNames = ['ENVIOS LUCIANO.xlsb', 'ENVIOS LUCIANO.xlsx'];
+                    const fileNames = ['BASEAPP.xlsb', 'BASEAPP.xlsx'];
                     this.isLoading = true;
                     this.loadingMsg = 'BUSCANDO ARCHIVO LOCAL...';
                     
@@ -2643,7 +3218,7 @@
                     
                     try {
                         if (!response || !response.ok) {
-                            throw new Error(`No se encontró ningún archivo "ENVIOS LUCIANO" (.xlsb o .xlsx) en la carpeta del proyecto.`);
+                            throw new Error(`No se encontró ningún archivo "BASEAPP" (.xlsb o .xlsx) en la carpeta del proyecto.`);
                         }
                         
                         this.loadingMsg = 'LEYENDO EXCEL...';
@@ -2660,21 +3235,25 @@
                             return XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1 });
                         };
                         
-                        this.rawData.grafana = getSheet(['grafana', 'main']);
-                        this.rawData.pbi = getSheet(['pbi', 'powerbi']);
+                        this.rawData.grafana = getSheet(['grafana']);
+                        this.rawData.pbi = getSheet(['pbi']);
                         this.rawData.sml = getSheet(['stock ml', 'stock_ml']);
                         this.rawData.pml = getSheet(['plan ml', 'plan_ml']);
-                        this.rawData.cargos = getSheet(['cargos', 'deuda']);
-                        this.rawData.enviados = getSheet(['enviados', 'envios']);
-                        this.rawData.vto = getSheet(['vencimiento', 'vto']);
+                        this.rawData.cargos = getSheet(['cargos']);
+                        this.rawData.enviados = getSheet(['enviados']);
+                        this.rawData.vto = getSheet(['vencimiento']);
                         this.rawData.canasta = getSheet(['canasta']);
-                        this.rawData.mla = getSheet(['mla']);
-                        this.rawData.sta19 = getSheet(['sta19', 'sta 19']);
+                        this.rawData.mla = getSheet(['base mla', 'mla']);
+                        this.rawData.sta19 = getSheet(['sta19']);
+                        this.rawData.nomina = getSheet(['nomina']);
+                        this.rawData.ltime = getSheet(['l time', 'ltime']);
                         this.rawData.simplex = getSheet(['simplex2025', 'simplex']);
-                        this.rawData.simplex2026 = getSheet(['simplex2026']);
+                        this.rawData.simplex2026 = getSheet(['simplex 26', 'simplex2026']);
+                        this.rawData.cumplimientoVpd = getSheet(['cumplimiento de vpd', 'cumplimiento']);
+                        this.rawData.tabla = getSheet(['tabla']);
                         
                         if(this.rawData.grafana.length === 0) {
-                            throw new Error("❌ No se encontró la hoja 'Grafana' o está vacía.");
+                            throw new Error("❌ No se encontró la hoja 'GRAFANA' o está vacía.");
                         }
                         
                         this.fileName = fileName;
@@ -2686,7 +3265,7 @@
                         // Guardar después del procesamiento en segundo plano
                         setTimeout(async () => {
                             try {
-                                for(let k of ['grafana','pbi','sml','pml','cargos','enviados','vto','canasta','mla','sta19','simplex','simplex2026']) {
+                                for(let k of ['grafana','pbi','sml','pml','cargos','enviados','vto','canasta','mla','sta19','nomina','ltime','simplex','simplex2026','cumplimientoVpd','tabla']) {
                                     if(this.rawData[k] && this.rawData[k].length > 0) {
                                         // Clonar manualmente para evitar problemas
                                         const cleanData = this.rawData[k].map(row => 
@@ -2703,7 +3282,7 @@
                         
                     } catch (error) {
                         console.error('[ERROR] Carga local:', error);
-                        alert(`❌ Error al cargar archivo local:\n\n${error.message}\n\n📁 Asegúrate de que el archivo "ENVIOS LUCIANO.xlsx" esté en la misma carpeta que index.html`);
+                        alert(`❌ Error al cargar archivo local:\n\n${error.message}\n\n📁 Asegúrate de que el archivo "BASEAPP.xlsb" o "BASEAPP.xlsx" esté en la misma carpeta que index.html`);
                         this.isLoading = false;
                     }
                 },
@@ -2727,18 +3306,22 @@
                             const wb = XLSX.read(evt.target.result, { type: 'array' });
                             console.log('[INFO] Hojas encontradas:', wb.SheetNames.join(', '));
                             const getSheet = (keys) => { const name = wb.SheetNames.find(n => keys.some(k => n.toLowerCase().includes(k.toLowerCase()))); return name ? XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1 }) : []; };
-                            this.rawData.grafana = getSheet(['grafana', 'main']);
-                            this.rawData.pbi = getSheet(['pbi', 'powerbi']);
+                            this.rawData.grafana = getSheet(['grafana']);
+                            this.rawData.pbi = getSheet(['pbi']);
                             this.rawData.sml = getSheet(['stock ml', 'stock_ml']);
                             this.rawData.pml = getSheet(['plan ml', 'plan_ml']);
-                            this.rawData.cargos = getSheet(['cargos', 'deuda']);
-                            this.rawData.enviados = getSheet(['enviados', 'envios']);
-                            this.rawData.vto = getSheet(['vencimiento', 'vto']);
+                            this.rawData.cargos = getSheet(['cargos']);
+                            this.rawData.enviados = getSheet(['enviados']);
+                            this.rawData.vto = getSheet(['vencimiento']);
                             this.rawData.canasta = getSheet(['canasta']);
-                            this.rawData.mla = getSheet(['mla']);
-                            this.rawData.sta19 = getSheet(['sta19', 'sta 19']);
+                            this.rawData.mla = getSheet(['base mla', 'mla']);
+                            this.rawData.sta19 = getSheet(['sta19']);
+                            this.rawData.nomina = getSheet(['nomina']);
+                            this.rawData.ltime = getSheet(['l time', 'ltime']);
                             this.rawData.simplex = getSheet(['simplex2025', 'simplex']);
-                            this.rawData.simplex2026 = getSheet(['simplex2026']);
+                            this.rawData.simplex2026 = getSheet(['simplex 26', 'simplex2026']);
+                            this.rawData.cumplimientoVpd = getSheet(['cumplimiento de vpd', 'cumplimiento']);
+                            this.rawData.tabla = getSheet(['tabla']);
 
                             if(this.rawData.grafana.length === 0) {
                                 throw new Error("❌ No se encontró la hoja 'Grafana' o está vacía.\n\nVerifica que tu Excel tenga una hoja con ese nombre.");
@@ -3122,6 +3705,7 @@
                                 const iS=idx(h,['SKU']), iI=idx(h,['IMPULSAR']);
                                 const iEstado=idx(h,['ESTADO DE PUBLICACION']);
                                 const iCalidad=idx(h,['Calidad ok']);
+                                const iUdsFull=idx(h,['Uds en Full', 'UDS EN FULL', 'UDS_EN_FULL']);
 
                                 this.rawData.sml.slice(1).forEach(r=>{ 
                                     const s=clean(r[iS]); 
@@ -3129,7 +3713,8 @@
                                         this.lookups.mapML[s] = {
                                             impulsar: String(r[iI]).includes('SI'),
                                             estado: r[iEstado],
-                                            calidad: r[iCalidad]
+                                            calidad: r[iCalidad],
+                                            udsFull: num(r[iUdsFull])
                                         };
                                     } 
                                 });
@@ -3137,7 +3722,7 @@
 
                             if(this.rawData.cargos && this.rawData.cargos.length) {
                                 const h=this.rawData.cargos[0];
-                                const iS=idx(h,['SKU']), iU=idx(h,['Unidades']), iUCost=idx(h,['Cargo por unidad']), iDate=idx(h,['FECHA']);
+                                const iS=idx(h,['SKU']), iU=idx(h,['UNIDADES CON CARGO']), iUCost=idx(h,['Cargo por unidad']), iDate=idx(h,['FECHA']);
                                 const iAnt=idx(h,['Antigüedad']);
 
                                 let latestDate = 0;
@@ -3272,6 +3857,56 @@
                                 console.log('[INFO] Hoja STA19 no encontrada o vacía');
                             }
 
+                            // 📋 NOMINA - Datos maestros de productos (EAN, UXB, PERFIL, SUB PERFIL)
+                            this.lookups.mapNomina = {};
+                            if(this.rawData.nomina && this.rawData.nomina.length) {
+                                const hN = this.rawData.nomina[0];
+                                const iN_S = idx(hN, ['SKU']);
+                                const iN_Desc = idx(hN, ['DESCRIPCION']);
+                                const iN_Marca = idx(hN, ['MARCA']);
+                                const iN_Prov = idx(hN, ['PROV']);
+                                const iN_Perfil = idx(hN, ['PERFIL']);
+                                const iN_EAN = idx(hN, ['EAN']);
+                                const iN_UXB = idx(hN, ['UXB']);
+                                const iN_SubPerfil = idx(hN, ['SUB PERFIL', 'SUB_PERFIL']);
+
+                                this.rawData.nomina.slice(1).forEach(r => {
+                                    const s = clean(r[iN_S]);
+                                    if(s) {
+                                        this.lookups.mapNomina[s] = {
+                                            desc: r[iN_Desc] || '',
+                                            marca: r[iN_Marca] || '',
+                                            prov: r[iN_Prov] || '',
+                                            perfil: r[iN_Perfil] || '',
+                                            ean: String(r[iN_EAN] || '').trim(),
+                                            uxb: num(r[iN_UXB]),
+                                            subPerfil: r[iN_SubPerfil] || ''
+                                        };
+                                    }
+                                });
+                                console.log('[INFO] NOMINA cargada:', Object.keys(this.lookups.mapNomina).length, 'SKUs');
+                            } else {
+                                console.log('[INFO] Hoja NOMINA no encontrada o vacía');
+                            }
+
+                            // ⏱️ L TIME - Lead Time por Proveedor
+                            this.lookups.mapLTime = {};
+                            if(this.rawData.ltime && this.rawData.ltime.length) {
+                                const hLT = this.rawData.ltime[0];
+                                const iLT_Prov = idx(hLT, ['PROV']);
+                                const iLT_LT = idx(hLT, ['LEAD TIME', 'LEAD']);
+
+                                this.rawData.ltime.slice(1).forEach(r => {
+                                    const prov = clean(r[iLT_Prov]);
+                                    if(prov) {
+                                        this.lookups.mapLTime[prov] = num(r[iLT_LT]);
+                                    }
+                                });
+                                console.log('[INFO] L TIME cargada:', Object.keys(this.lookups.mapLTime).length, 'proveedores con Lead Time');
+                            } else {
+                                console.log('[INFO] Hoja L TIME no encontrada o vacía');
+                            }
+
                             const data = {}; const hG = this.rawData.grafana[0];
                             const iSku = idx(hG, ['SKU']), iDep = idx(hG, ['Deposito']), iVtar = idx(hG, ['VTAR']), iVpd = idx(hG, ['VPD_Cpra']);
                             const iDesc = idx(hG, ['Descripcion']), iMarca = idx(hG, ['Marca']), iProv = idx(hG, ['Proveedor', 'Prov']), iAnalista = idx(hG, ['Analista']);
@@ -3293,7 +3928,7 @@
                                 alert('❌ FALTA la columna COSTO o REPOSICIÓN en la hoja principal (Grafana). No se pueden calcular valores.');
                                 throw new Error('Columna de costo no encontrada en hoja principal');
                             }
-                            const iCamino = idx(hG, ['COMPRAS']), iVta59 = idx(hG, ['TOTAL VENDIDO', '59 DÍAS', 'VENDIDO 59']);
+                            const iCamino = idx(hG, ['COMPRAS']), iVta59 = idx(hG, ['VTA60', 'TOTAL VENDIDO', '59 DÍAS', 'VENDIDO 59']);
                             
                             const iPerfil = idx(hG, ['Perfil']);
                             const iSubPerfil = idx(hG, ['Sub_Perfil']);
@@ -3322,15 +3957,36 @@
                                 if(!data[sku]) {
                                     let costoGrafana = num(r[iCosto]);
                                     if (!costoGrafana && sta19CostMap[sku]) costoGrafana = sta19CostMap[sku];
+                                    
+                                    // 📋 Enriquecer con datos de NOMINA (fallback)
+                                    const nominaData = this.lookups.mapNomina ? this.lookups.mapNomina[sku] : null;
+                                    
+                                    // UXB: prioridad Grafana > NOMINA > 1
+                                    const uxbVal = num(r[iUxb]) || (nominaData?.uxb || 0) || 1;
+                                    
+                                    // PERFIL y SUB_PERFIL: prioridad Grafana > NOMINA
+                                    const perfilVal = (iPerfil > -1 ? r[iPerfil] : '') || (nominaData?.perfil || '') || 'Sin Clasificar';
+                                    const subPerfilVal = (iSubPerfil > -1 ? r[iSubPerfil] : '') || (nominaData?.subPerfil || '') || 'Sin Clasificar';
+                                    
+                                    // Lead Time: prioridad Grafana > L TIME por Proveedor > 30
+                                    const provClean = clean(r[iProv]);
+                                    let ltVal = num(r[iLt]);
+                                    if(!ltVal && this.lookups.mapLTime && provClean) {
+                                        ltVal = this.lookups.mapLTime[provClean] || 0;
+                                    }
+                                    if(!ltVal) ltVal = 30;
+                                    
                                     data[sku] = {
-                                        sku, desc: r[iDesc], marca: r[iMarca]||'-', prov: r[iProv]||'-',
+                                        sku, desc: r[iDesc] || (nominaData?.desc || '-'), 
+                                        marca: r[iMarca] || (nominaData?.marca || '-'), 
+                                        prov: r[iProv] || (nominaData?.prov || '-'),
                                         analista: r[iAnalista]||'-', costo: costoGrafana,
-                                        lt: num(r[iLt])||30,
+                                        lt: ltVal,
                                         dev: 0,
                                         vpdCpra: num(r[iVpd]),
-                                        uxb: num(r[iUxb])||1,
-                                        perfil: (iPerfil > -1 ? r[iPerfil] : '') || 'Sin Clasificar',
-                                        subPerfil: (iSubPerfil > -1 ? r[iSubPerfil] : '') || 'Sin Clasificar',
+                                        uxb: uxbVal,
+                                        perfil: perfilVal,
+                                        subPerfil: subPerfilVal,
                                         vtarTotal: 0, vtar80: 0, vtar1: 0, vtarSuc: 0,
                                         stockGrafana: 0, comprasEnCamino: 0, vta59Total: 0,
                                         vta30d: 0, vta30d_80: 0,
@@ -3425,11 +4081,19 @@
                                         }
                                         // Si no está en grafana, buscar en STA19
                                         if (!costoPrincipal && sta19CostMap[sku]) costoPrincipal = sta19CostMap[sku];
+                                        // 📋 Enriquecer con NOMINA
+                                        const nomPBI = this.lookups.mapNomina ? this.lookups.mapNomina[sku] : null;
+                                        const provPBI = nomPBI?.prov || 'S/D';
+                                        const provPBIClean = clean(provPBI);
+                                        const ltPBI = (this.lookups.mapLTime && provPBIClean ? this.lookups.mapLTime[provPBIClean] : 0) || 30;
                                         data[sku] = {
                                             sku, 
-                                            desc: r[iP_Desc] || 'Producto solo en PBI (Falta en Grafana)',
-                                            marca: 'S/D', prov: 'S/D', analista: 'S/D',
-                                            costo: costoPrincipal, lt: 30, dev: 0, vpdCpra: 0, uxb: 1,
+                                            desc: r[iP_Desc] || (nomPBI?.desc || 'Producto solo en PBI (Falta en Grafana)'),
+                                            marca: nomPBI?.marca || 'S/D', prov: provPBI, analista: 'S/D',
+                                            costo: costoPrincipal, lt: ltPBI, dev: 0, vpdCpra: 0, 
+                                            uxb: nomPBI?.uxb || 1,
+                                            perfil: nomPBI?.perfil || 'Sin Clasificar',
+                                            subPerfil: nomPBI?.subPerfil || 'Sin Clasificar',
                                             vtarTotal: 0, vtar80: 0, vtar1: 0, vtarSuc: 0,
                                             stockGrafana: 0, comprasEnCamino: 0, vta59Total: 0,
                                             histDaily: [], vtarBreakdown: {}, seasonalMult: 1,
@@ -3458,11 +4122,19 @@
                                         }
                                         // Si no está en grafana, buscar en STA19
                                         if (!costoPrincipal && sta19CostMap[sku]) costoPrincipal = sta19CostMap[sku];
+                                        // 📋 Enriquecer con NOMINA
+                                        const nomSML = this.lookups.mapNomina ? this.lookups.mapNomina[sku] : null;
+                                        const provSML = nomSML?.prov || 'S/D';
+                                        const provSMLClean = clean(provSML);
+                                        const ltSML = (this.lookups.mapLTime && provSMLClean ? this.lookups.mapLTime[provSMLClean] : 0) || 30;
                                         data[sku] = {
                                             sku, 
-                                            desc: r[iS_Desc] || r[iS_Pub] || 'Producto solo en ML (Falta en Grafana)',
-                                            marca: 'S/D', prov: 'S/D', analista: 'S/D',
-                                            costo: costoPrincipal, lt: 30, dev: 0, vpdCpra: 0, uxb: 1,
+                                            desc: r[iS_Desc] || r[iS_Pub] || (nomSML?.desc || 'Producto solo en ML (Falta en Grafana)'),
+                                            marca: nomSML?.marca || 'S/D', prov: provSML, analista: 'S/D',
+                                            costo: costoPrincipal, lt: ltSML, dev: 0, vpdCpra: 0, 
+                                            uxb: nomSML?.uxb || 1,
+                                            perfil: nomSML?.perfil || 'Sin Clasificar',
+                                            subPerfil: nomSML?.subPerfil || 'Sin Clasificar',
                                             vtarTotal: 0, vtar80: 0, vtar1: 0, vtarSuc: 0,
                                             stockGrafana: 0, comprasEnCamino: 0, vta59Total: 0,
                                             histDaily: [], vtarBreakdown: {}, seasonalMult: 1,
@@ -3546,6 +4218,9 @@
                                         desc: data[sku]?.desc||'-', 
                                         marca: data[sku]?.marca||'-', 
                                         prov: data[sku]?.prov||'-', 
+                                        dep1: data[sku]?.pbi?.dep1 || 0,
+                                        dep80: data[sku]?.pbi?.dep80 || 0,
+                                        analista: data[sku]?.analista || '-',
                                         recibido: num(r[iRec]), 
                                         fechaIngreso: fIn,
                                         fechaVto: fVtoStr, 
@@ -4316,8 +4991,14 @@
                             // 🛒 MÉTRICAS DE SHARE DE MERCADO - Calcular dinámicamente según mes seleccionado
                             this.updateShareMetrics();
 
-                            // 📊 SIMPLEX2025 - Procesar datos de ventas por mes
-                            this.processSimplexData();
+                            // 📊 SIMPLEX2025 - Procesar datos de ventas por mes (deshabilitado, tab removido)
+                            // this.processSimplexData();
+
+                            // 📊 CUMP VPD - Procesar datos de cumplimiento
+                            this.processCumpVpdData();
+
+                            // 💰 PRESUPUESTO - Procesar datos SIMPLEX 26
+                            this.processPresupuestoData();
 
                             this.updateKPIs();
                             this.calculateColumnMaxes();
@@ -4372,6 +5053,7 @@
                     const isImpulse = mlData ? mlData.impulsar : item.impulsar;
                     const statusML = mlData ? mlData.estado : 'S/D';
                     const qualityML = mlData ? mlData.calidad : 'S/D';
+                    const udsFull = mlData ? (mlData.udsFull || 0) : 0;
 
                     const cargoData = this.lookups.mapCargos && this.lookups.mapCargos[item.sku];
                     const deudaVal = cargoData ? cargoData.monto : (item.deuda||0);
@@ -4464,7 +5146,7 @@
                     }
 
                     return {
-                        ...item, impulsar: isImpulse, diasStock, diasStock80,
+                        ...item, impulsar: isImpulse, diasStock, diasStock80, udsFull,
                         stockRestante: disponibleParaEnviar, debugDemanda80: demanda80, debugReservaSuc: reservaSuc, debugReserva1: reservaDep1,
                         qEnviar: Math.min(disponibleParaEnviar, necesidad80), valorizado: Math.min(disponibleParaEnviar, necesidad80) * item.costo,
                         
@@ -4568,6 +5250,12 @@
                     if(this.currentTab === 'detalle') d = this.flatData;
                     else if(this.currentTab === 'enviados') d = this.enviosData;
                     else if(this.currentTab === 'vencimientos') d = this.lotesData;
+                    else if(this.currentTab === 'cump_vpd') {
+                        d = this.cumpVpdData;
+                        if(this.cumpVpdFilterAnalista.length > 0) d = d.filter(r => this.cumpVpdFilterAnalista.includes(r.analista));
+                        if(this.cumpVpdFilterProv.length > 0) d = d.filter(r => this.cumpVpdFilterProv.includes(r.prov));
+                        if(this.cumpVpdFilterMarca.length > 0) d = d.filter(r => this.cumpVpdFilterMarca.includes(r.marca));
+                    }
                     else if(this.currentTab === 'proveedores') d = this.proveedoresData;
                     else if(this.currentTab === 'otros_depositos') {
                         d = this.otherDepositsData.filter(i => this.selectedOtherDeps.includes(i.deposito));
@@ -5272,7 +5960,622 @@
                     }
                 },
 
-                // 📊 SIMPLEX - PROCESAR DATOS DE VENTAS POR MES (detecta año por MES)
+                // 📊 CUMP VPD - Procesar datos de CUMPLIMIENTO DE VPD
+                processCumpVpdData() {
+                    console.log('[CUMP VPD] Iniciando procesamiento...');
+                    
+                    if(!this.rawData.cumplimientoVpd || this.rawData.cumplimientoVpd.length < 2) {
+                        console.log('[CUMP VPD] ❌ Hoja no encontrada o vacía');
+                        this.cumpVpdData = [];
+                        return;
+                    }
+                    
+                    const clean = (s) => String(s||'').trim();
+                    const cleanUp = (s) => String(s||'').trim().toUpperCase();
+                    const num = (v) => { 
+                        if(typeof v === 'number') return v; 
+                        if(!v) return 0; 
+                        let s = String(v).replace(/[$\s%]/g,'');
+                        if(s.includes('.') && s.includes(',')) {
+                            s = s.replace(/\./g, '').replace(',', '.');
+                        } else if(s.includes(',')) {
+                            s = s.replace(',', '.');
+                        }
+                        return parseFloat(s) || 0; 
+                    };
+                    const idx = (row, keys) => row.findIndex(c => keys.some(k => String(c).trim().toUpperCase().includes(k.toUpperCase())));
+
+                    const h = this.rawData.cumplimientoVpd[0];
+                    
+                    // Mapeo de columnas
+                    const iSku = idx(h, ['SKU', 'COD_ARTICU']);
+                    const iDesc = idx(h, ['DESCRIPCION', 'DESCRIPCIO']);
+                    const iPerfil = idx(h, ['PERFIL']);
+                    const iSubPerfil = idx(h, ['SUB_PERFIL', 'SUBPERFIL']);
+                    const iProv = idx(h, ['PROV', 'PROVEEDOR']);
+                    const iMarca = idx(h, ['MARCA']);
+                    const iAnalista = idx(h, ['ANALISTA']);
+                    const iCRepo = idx(h, ['C_REPO', 'CREPO', 'C REPO', 'COSTO REPO']);
+                    const iStock = idx(h, ['SUMA DE STOCK', 'STOCK']);
+                    const iEC = idx(h, ['SUMA DE EC', 'EC']);
+                    const iCompras = idx(h, ['SUMA DE COMPRAS', 'COMPRAS']);
+                    const iVTAR = idx(h, ['SUMA DE VTAR', 'VTAR']);
+                    const iVPDCpra = idx(h, ['SUMA DE VPD_CPRA', 'VPD_CPRA', 'VPD CPRA']);
+                    const iDSTK = idx(h, ['PROMEDIO DE DSTK', 'DSTK']);
+                    const iTotal = idx(h, ['SUMA DE TOTAL', 'TOTAL']);
+                    const iDOHVTAR = idx(h, ['DOH VTAR', 'DOH_VTAR']);
+                    const iDOHVPD = idx(h, ['DOH VPD', 'DOH_VPD']);
+                    const iPerdida = idx(h, ['PERDIDA DE VENTA', 'PERDIDA']);
+                    const iUnidCRep = idx(h, ['UNID*C_REP', 'UNID*CREP', 'UNID C_REP']);
+                    const iVPDDSTK = idx(h, ['VPD*DSTK*C_REP', 'VPD*DSTK', 'VPD DSTK']);
+                    const iCumpPct = idx(h, ['CUMPLIMIENTO VPD %', 'CUMPLIMIENTO %', 'CUMP VPD %']);
+                    // iCumpVPD: buscar columna que sea exactamente "CUMPLIMIENTO VPD" (sin %)
+                    const iCumpVPD = h.findIndex((c, i) => {
+                        const val = String(c).trim().toUpperCase();
+                        return (val === 'CUMPLIMIENTO VPD' || val === 'CUMP VPD') && i !== iCumpPct;
+                    });
+                    const iRangoDOH = idx(h, ['RANGO DOH', 'RANGO_DOH']);
+
+                    console.log('[CUMP VPD] Índices - SKU:', iSku, 'DESC:', iDesc, 'STOCK:', iStock, 'VTAR:', iVTAR);
+
+                    if(iSku === -1) {
+                        console.warn('[CUMP VPD] ❌ Columna SKU no encontrada');
+                        this.cumpVpdData = [];
+                        return;
+                    }
+
+                    const rows = [];
+                    let rowIdx = 0;
+                    this.rawData.cumplimientoVpd.slice(1).forEach(r => {
+                        const sku = cleanUp(r[iSku]);
+                        if(!sku || sku === 'TOTAL' || sku === 'GRAN TOTAL') return;
+
+                        rows.push({
+                            id: 'cvpd_' + (rowIdx++),
+                            sku: sku,
+                            desc: iDesc !== -1 ? clean(r[iDesc]) : '-',
+                            perfil: iPerfil !== -1 ? clean(r[iPerfil]) : '-',
+                            subPerfil: iSubPerfil !== -1 ? clean(r[iSubPerfil]) : '-',
+                            prov: iProv !== -1 ? clean(r[iProv]) : '-',
+                            marca: iMarca !== -1 ? clean(r[iMarca]) : '-',
+                            analista: iAnalista !== -1 ? clean(r[iAnalista]) : '-',
+                            cRepo: iCRepo !== -1 ? num(r[iCRepo]) : 0,
+                            sumaStock: iStock !== -1 ? num(r[iStock]) : 0,
+                            sumaEC: iEC !== -1 ? num(r[iEC]) : 0,
+                            sumaCompras: iCompras !== -1 ? num(r[iCompras]) : 0,
+                            sumaVTAR: iVTAR !== -1 ? num(r[iVTAR]) : 0,
+                            sumaVPDCpra: iVPDCpra !== -1 ? num(r[iVPDCpra]) : 0,
+                            promDSTK: iDSTK !== -1 ? num(r[iDSTK]) : 0,
+                            sumaTotal: iTotal !== -1 ? num(r[iTotal]) : 0,
+                            dohVTAR: iDOHVTAR !== -1 ? num(r[iDOHVTAR]) : 0,
+                            dohVPD: iDOHVPD !== -1 ? num(r[iDOHVPD]) : 0,
+                            perdidaVenta: iPerdida !== -1 ? num(r[iPerdida]) : 0,
+                            unidCRep: iUnidCRep !== -1 ? num(r[iUnidCRep]) : 0,
+                            vpdDstkCRep: iVPDDSTK !== -1 ? num(r[iVPDDSTK]) : 0,
+                            cumpVpdPct: iCumpPct !== -1 ? num(r[iCumpPct]) : 0,
+                            cumpVpd: iCumpVPD !== -1 ? clean(r[iCumpVPD]) : '-',
+                            rangoDOH: iRangoDOH !== -1 ? clean(r[iRangoDOH]) : '-',
+                            stockValorizado: (iStock !== -1 && iCRepo !== -1) ? num(r[iStock]) * num(r[iCRepo]) : 0
+                        });
+                    });
+
+                    this.cumpVpdData = rows;
+                    console.log('[CUMP VPD] ✅ Procesados:', rows.length, 'registros');
+                },
+
+                // 📊 CUMP VPD - Cascading filter helpers
+                getCumpVpdAnalistas() {
+                    return [...new Set(this.cumpVpdData.map(r => r.analista).filter(a => a && a !== '-'))].sort();
+                },
+
+                getCumpVpdProveedores() {
+                    let d = this.cumpVpdData;
+                    if(this.cumpVpdFilterAnalista.length > 0) {
+                        d = d.filter(r => this.cumpVpdFilterAnalista.includes(r.analista));
+                    }
+                    return [...new Set(d.map(r => r.prov).filter(p => p && p !== '-'))].sort();
+                },
+
+                getCumpVpdMarcas() {
+                    let d = this.cumpVpdData;
+                    if(this.cumpVpdFilterAnalista.length > 0) {
+                        d = d.filter(r => this.cumpVpdFilterAnalista.includes(r.analista));
+                    }
+                    if(this.cumpVpdFilterProv.length > 0) {
+                        d = d.filter(r => this.cumpVpdFilterProv.includes(r.prov));
+                    }
+                    return [...new Set(d.map(r => r.marca).filter(m => m && m !== '-'))].sort();
+                },
+
+                getCumpVpdSummary() {
+                    let filtered = this.cumpVpdData;
+                    if(this.cumpVpdFilterAnalista.length > 0) filtered = filtered.filter(r => this.cumpVpdFilterAnalista.includes(r.analista));
+                    if(this.cumpVpdFilterProv.length > 0) filtered = filtered.filter(r => this.cumpVpdFilterProv.includes(r.prov));
+                    if(this.cumpVpdFilterMarca.length > 0) filtered = filtered.filter(r => this.cumpVpdFilterMarca.includes(r.marca));
+
+                    // Determinar agrupación según el filtro más granular activo
+                    let groupKey = 'analista';
+                    if(this.cumpVpdFilterMarca.length > 0) groupKey = 'marca';
+                    else if(this.cumpVpdFilterProv.length > 0) groupKey = 'prov';
+
+                    const groups = {};
+                    filtered.forEach(r => {
+                        const key = r[groupKey] || 'S/D';
+                        if(!groups[key]) {
+                            groups[key] = { label: key, unidCRep: 0, vpdDstkCRep: 0, stockValorizado: 0,
+                                            sumDohVtar: 0, sumDohVpd: 0, sumCumpPct: 0, count: 0 };
+                        }
+                        groups[key].unidCRep += r.unidCRep || 0;
+                        groups[key].vpdDstkCRep += r.vpdDstkCRep || 0;
+                        groups[key].stockValorizado += r.stockValorizado || 0;
+                        groups[key].sumDohVtar += r.dohVTAR || 0;
+                        groups[key].sumDohVpd += r.dohVPD || 0;
+                        groups[key].sumCumpPct += r.cumpVpdPct || 0;
+                        groups[key].count++;
+                    });
+
+                    return Object.values(groups).map(g => ({
+                        ...g,
+                        dohVTAR: g.count > 0 ? g.sumDohVtar / g.count : 0,
+                        dohVPD: g.count > 0 ? g.sumDohVpd / g.count : 0,
+                        cumpVpdPct: g.vpdDstkCRep !== 0 ? g.unidCRep / g.vpdDstkCRep : 0
+                    })).sort((a, b) => b.unidCRep - a.unidCRep);
+                },
+
+                // 📦 CUMP VPD - Agrupado por Rango DOH
+                getCumpVpdByRangoDOH() {
+                    let filtered = this.cumpVpdData;
+                    if(this.cumpVpdFilterAnalista.length > 0) filtered = filtered.filter(r => this.cumpVpdFilterAnalista.includes(r.analista));
+                    if(this.cumpVpdFilterProv.length > 0) filtered = filtered.filter(r => this.cumpVpdFilterProv.includes(r.prov));
+                    if(this.cumpVpdFilterMarca.length > 0) filtered = filtered.filter(r => this.cumpVpdFilterMarca.includes(r.marca));
+
+                    const groups = {};
+                    filtered.forEach(r => {
+                        const key = r.rangoDOH || 'S/D';
+                        if(!groups[key]) {
+                            groups[key] = { label: key, unidCRep: 0, vpdDstkCRep: 0, perdidaVenta: 0, sumDSTK: 0, count: 0 };
+                        }
+                        groups[key].unidCRep += r.unidCRep || 0;
+                        groups[key].vpdDstkCRep += r.vpdDstkCRep || 0;
+                        groups[key].perdidaVenta += r.perdidaVenta || 0;
+                        groups[key].sumDSTK += r.promDSTK || 0;
+                        groups[key].count++;
+                    });
+
+                    return Object.values(groups).map(g => ({
+                        ...g,
+                        promDSTK: g.count > 0 ? g.sumDSTK / g.count : 0,
+                        cumpVpdPct: g.vpdDstkCRep !== 0 ? g.unidCRep / g.vpdDstkCRep : 0
+                    })).sort((a, b) => a.label.localeCompare(b.label, 'es'));
+                },
+
+                // ✅ CUMP VPD - Agrupado por Cumplimiento VPD
+                getCumpVpdByCumplimiento() {
+                    let filtered = this.cumpVpdData;
+                    if(this.cumpVpdFilterAnalista.length > 0) filtered = filtered.filter(r => this.cumpVpdFilterAnalista.includes(r.analista));
+                    if(this.cumpVpdFilterProv.length > 0) filtered = filtered.filter(r => this.cumpVpdFilterProv.includes(r.prov));
+                    if(this.cumpVpdFilterMarca.length > 0) filtered = filtered.filter(r => this.cumpVpdFilterMarca.includes(r.marca));
+
+                    const totalSkus = filtered.length;
+                    const groups = {};
+                    filtered.forEach(r => {
+                        const key = r.cumpVpd || 'S/D';
+                        if(!groups[key]) {
+                            groups[key] = { label: key, unidCRep: 0, vpdDstkCRep: 0, perdidaVenta: 0, skuCount: 0 };
+                        }
+                        groups[key].unidCRep += r.unidCRep || 0;
+                        groups[key].vpdDstkCRep += r.vpdDstkCRep || 0;
+                        groups[key].perdidaVenta += r.perdidaVenta || 0;
+                        groups[key].skuCount++;
+                    });
+
+                    return Object.values(groups).map(g => ({
+                        ...g,
+                        pctSku: totalSkus > 0 ? (g.skuCount / totalSkus) * 100 : 0,
+                        cumpVpdPct: g.vpdDstkCRep !== 0 ? g.unidCRep / g.vpdDstkCRep : 0
+                    })).sort((a, b) => a.label.localeCompare(b.label, 'es'));
+                },
+
+                updateCumpVpdChart() {
+                    this.$nextTick(() => {
+                        const canvas = document.getElementById('cumpVpdChart');
+                        if(!canvas) return;
+                        if(this.cumpVpdChartInstance) {
+                            this.cumpVpdChartInstance.destroy();
+                            this.cumpVpdChartInstance = null;
+                        }
+                        const summary = this.getCumpVpdSummary();
+                        if(summary.length === 0) return;
+
+                        const labels = summary.map(s => s.label.length > 20 ? s.label.substring(0, 20) + '…' : s.label);
+                        const ctx = canvas.getContext('2d');
+
+                        this.cumpVpdChartInstance = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels,
+                                datasets: [
+                                    {
+                                        label: 'UNID*C_REP',
+                                        data: summary.map(s => s.unidCRep),
+                                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                                        borderColor: '#3b82f6',
+                                        borderWidth: 1,
+                                        borderRadius: 4
+                                    },
+                                    {
+                                        label: 'VPD*DSTK*C_REP',
+                                        data: summary.map(s => s.vpdDstkCRep),
+                                        backgroundColor: 'rgba(245, 158, 11, 0.7)',
+                                        borderColor: '#f59e0b',
+                                        borderWidth: 1,
+                                        borderRadius: 4
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: { mode: 'index', intersect: false },
+                                plugins: {
+                                    legend: { position: 'top', labels: { font: { size: 10 }, usePointStyle: true } },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: ctx => ctx.dataset.label + ': ' + this.formatMoney(ctx.parsed.y)
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: { callback: v => this.formatMoney(v), font: { size: 9 } },
+                                        grid: { color: 'rgba(0,0,0,0.05)' }
+                                    },
+                                    x: {
+                                        ticks: { font: { size: 9 }, maxRotation: 45, minRotation: 0 },
+                                        grid: { display: false }
+                                    }
+                                }
+                            }
+                        });
+                    });
+                },
+
+                // 📊 RANGO DOH Chart - Barras horizontales
+                updateRangoDohChart() {
+                    this.$nextTick(() => {
+                        const canvas = document.getElementById('cumpVpdRangoDohChart');
+                        if(!canvas) return;
+                        if(this.cumpVpdRangoDohChart) { this.cumpVpdRangoDohChart.destroy(); this.cumpVpdRangoDohChart = null; }
+                        const data = this.getCumpVpdByRangoDOH();
+                        if(data.length === 0) return;
+
+                        const labels = data.map(r => r.label.length > 25 ? r.label.substring(0,25) + '…' : r.label);
+                        const ctx = canvas.getContext('2d');
+
+                        const dsAll = [
+                            { id: 'unidCRep', label: 'UNID*C_REP', data: data.map(r => r.unidCRep), backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: '#3b82f6', borderWidth: 1, borderRadius: 3, yAxisID: 'y' },
+                            { id: 'vpdDstkCRep', label: 'VPD*DSTK*C_REP', data: data.map(r => r.vpdDstkCRep), backgroundColor: 'rgba(245, 158, 11, 0.7)', borderColor: '#f59e0b', borderWidth: 1, borderRadius: 3, yAxisID: 'y' },
+                            { id: 'perdidaVenta', label: 'Pérdida Venta', data: data.map(r => r.perdidaVenta), backgroundColor: 'rgba(239, 68, 68, 0.7)', borderColor: '#ef4444', borderWidth: 1, borderRadius: 3, yAxisID: 'y' },
+                            { id: 'cumpVpdPct', label: 'CUMP VPD %', data: data.map(r => (r.cumpVpdPct * 100)), type: 'line', borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.15)', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#10b981', fill: false, tension: 0.3, yAxisID: 'y1' }
+                        ];
+                        const sel = this.rangoDohChartMetrics || ['unidCRep', 'vpdDstkCRep', 'cumpVpdPct'];
+                        const datasets = dsAll.filter(d => sel.includes(d.id)).map(({id, ...rest}) => rest);
+                        const hasPct = sel.includes('cumpVpdPct');
+                        const hasMoney = sel.some(s => s !== 'cumpVpdPct');
+
+                        this.cumpVpdRangoDohChart = new Chart(ctx, {
+                            type: 'bar',
+                            data: { labels, datasets },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                indexAxis: 'x',
+                                interaction: { mode: 'index', intersect: false },
+                                plugins: {
+                                    legend: { position: 'top', labels: { font: { size: 9 }, usePointStyle: true, padding: 8 } },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: ctx => {
+                                                if(ctx.dataset.yAxisID === 'y1') return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(0) + '%';
+                                                return ctx.dataset.label + ': ' + this.formatMoney(ctx.parsed.y);
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    y:  { display: hasMoney, beginAtZero: true, position: 'left',  ticks: { callback: v => this.formatMoney(v), font: { size: 8 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                                    y1: { display: hasPct, beginAtZero: true, position: 'right', min: 0, max: 100, ticks: { callback: v => v + '%', font: { size: 8 } }, grid: { drawOnChartArea: false } },
+                                    x: { ticks: { font: { size: 8 }, maxRotation: 45, minRotation: 0 }, grid: { display: false } }
+                                }
+                            }
+                        });
+                    });
+                },
+
+                // 📊 CUMPLIMIENTO VPD Chart - Donut % SKU + Barras monetarias
+                updateCumplimientoChart() {
+                    this.$nextTick(() => {
+                        const canvas = document.getElementById('cumpVpdCumplChart');
+                        if(!canvas) return;
+                        if(this.cumpVpdCumplChart) { this.cumpVpdCumplChart.destroy(); this.cumpVpdCumplChart = null; }
+                        const data = this.getCumpVpdByCumplimiento();
+                        if(data.length === 0) return;
+
+                        const labels = data.map(r => r.label.length > 30 ? r.label.substring(0,30) + '…' : r.label);
+                        const ctx = canvas.getContext('2d');
+
+                        const dsAll2 = [
+                            { id: 'skuCount', label: 'SKU Count', data: data.map(r => r.skuCount), backgroundColor: 'rgba(139, 92, 246, 0.7)', borderColor: '#8b5cf6', borderWidth: 1, borderRadius: 3, yAxisID: 'y' },
+                            { id: 'unidCRep', label: 'UNID*C_REP', data: data.map(r => r.unidCRep), backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: '#3b82f6', borderWidth: 1, borderRadius: 3, yAxisID: 'y' },
+                            { id: 'vpdDstkCRep', label: 'VPD*DSTK*C_REP', data: data.map(r => r.vpdDstkCRep), backgroundColor: 'rgba(245, 158, 11, 0.7)', borderColor: '#f59e0b', borderWidth: 1, borderRadius: 3, yAxisID: 'y' },
+                            { id: 'perdidaVenta', label: 'Pérdida Venta', data: data.map(r => r.perdidaVenta), backgroundColor: 'rgba(239, 68, 68, 0.7)', borderColor: '#ef4444', borderWidth: 1, borderRadius: 3, yAxisID: 'y' },
+                            { id: 'cumpVpdPct', label: 'CUMP VPD %', data: data.map(r => (r.cumpVpdPct * 100)), type: 'line', borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.15)', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#10b981', fill: false, tension: 0.3, yAxisID: 'y1' }
+                        ];
+                        const sel2 = this.cumplChartMetrics || ['skuCount', 'unidCRep', 'vpdDstkCRep'];
+                        const datasets2 = dsAll2.filter(d => sel2.includes(d.id)).map(({id, ...rest}) => rest);
+                        const hasPct2 = sel2.includes('cumpVpdPct');
+                        const hasMoney2 = sel2.some(s => s !== 'cumpVpdPct');
+
+                        this.cumpVpdCumplChart = new Chart(ctx, {
+                            type: 'bar',
+                            data: { labels, datasets: datasets2 },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: { mode: 'index', intersect: false },
+                                plugins: {
+                                    legend: { position: 'top', labels: { font: { size: 9 }, usePointStyle: true, padding: 8 } },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: ctx => {
+                                                if(ctx.dataset.yAxisID === 'y1') return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(0) + '%';
+                                                if(ctx.dataset.label === 'SKU Count') return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString();
+                                                return ctx.dataset.label + ': ' + this.formatMoney(ctx.parsed.y);
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    y:  { display: hasMoney2, beginAtZero: true, position: 'left', ticks: { callback: v => { if(sel2.length === 1 && sel2[0] === 'skuCount') return v.toLocaleString(); return this.formatMoney(v); }, font: { size: 8 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                                    y1: { display: hasPct2, beginAtZero: true, position: 'right', min: 0, max: Math.max(100, ...data.map(r => (r.cumpVpdPct * 100))) + 20, ticks: { callback: v => v + '%', font: { size: 8 } }, grid: { drawOnChartArea: false } },
+                                    x: { ticks: { font: { size: 9 }, maxRotation: 45, minRotation: 0 }, grid: { display: false } }
+                                }
+                            }
+                        });
+                    });
+                },
+
+                // � PRESUPUESTO - Procesar hoja SIMPLEX 26
+                processPresupuestoData() {
+                    console.log('[PRESUPUESTO] Iniciando procesamiento...');
+                    if(!this.rawData.simplex2026 || this.rawData.simplex2026.length < 2) {
+                        console.log('[PRESUPUESTO] ❌ Hoja simplex 26 no encontrada o vacía');
+                        this.presupData = [];
+                        return;
+                    }
+
+                    const h = this.rawData.simplex2026[1];
+                    const idx = (headers, names) => this.findColumnIndex(headers, names);
+                    const num = (v) => this.parseNumber(v);
+                    const clean = (v) => String(v || '').trim().toUpperCase();
+                    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+                    const mesesFull = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+
+                    // Índices de columnas identificadoras
+                    const iMarca = idx(h, ['MARCA SIMPLEX', 'MARCA_SIMPLEX', 'MARCA']);
+                    const iChief = idx(h, ['CHIEF']);
+                    const iAnalista = idx(h, ['ANALISTA']);
+
+                    // Índices de presupuesto mensual (PRESUP MES 26)
+                    const iPresup = {};
+                    meses.forEach((m, mi) => {
+                        iPresup[m] = idx(h, ['PRESUP ' + mesesFull[mi] + ' 26', 'PRESUP_' + mesesFull[mi] + '_26']);
+                    });
+
+                    // Índices de venta mensual (VENTA MES 26)
+                    const iVenta = {};
+                    meses.forEach((m, mi) => {
+                        iVenta[m] = idx(h, ['VENTA ' + mesesFull[mi] + ' 26', 'VENTA_' + mesesFull[mi] + '_26']);
+                    });
+
+                    // Índices de cumplimiento $ ($ Mes 26 / Mes 25)
+                    const iCumpD = {};
+                    const mesAbrev = ['En','Fe','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                    meses.forEach((m, mi) => {
+                        iCumpD[m] = idx(h, ['$ ' + mesAbrev[mi] + ' 26 / ' + mesAbrev[mi] + ' 25',
+                                             '$ ' + mesAbrev[mi] + ' 26/' + mesAbrev[mi] + ' 25']);
+                    });
+
+                    // Índices de unidades 2025 (UNIDADES MES 25)
+                    const iUnid25 = {};
+                    meses.forEach((m, mi) => {
+                        iUnid25[m] = idx(h, ['UNIDADES ' + mesesFull[mi] + ' 25', 'UNIDADES_' + mesesFull[mi] + '_25']);
+                    });
+
+                    // Índices de unidades 2026 (UNIDADES MES 26)
+                    const iUnid26 = {};
+                    meses.forEach((m, mi) => {
+                        iUnid26[m] = idx(h, ['UNIDADES ' + mesesFull[mi] + ' 26', 'UNIDADES_' + mesesFull[mi] + '_26']);
+                    });
+
+                    // Índices de cumplimiento unidades (U Mes 26 / Mes 25)
+                    const iCumpU = {};
+                    meses.forEach((m, mi) => {
+                        iCumpU[m] = idx(h, ['U ' + mesAbrev[mi] + ' 26 / ' + mesAbrev[mi] + ' 25',
+                                             'U ' + mesAbrev[mi] + ' 26/' + mesAbrev[mi] + ' 25']);
+                    });
+
+                    // 📦 Construir mapa MARCA → PROVEEDOR cruzando con STA19
+                    const marcaProvMap = {};
+                    if(this.rawData.sta19 && this.rawData.sta19.length > 1) {
+                        const hSta = this.rawData.sta19[0];
+                        const iMarcaSta = idx(hSta, ['MARCA']);
+                        const iProvSta = idx(hSta, ['PROV', 'PROVEEDOR']);
+                        if(iMarcaSta > -1 && iProvSta > -1) {
+                            this.rawData.sta19.slice(1).forEach(r => {
+                                const m = clean(r[iMarcaSta]);
+                                const p = String(r[iProvSta] || '').trim().toUpperCase();
+                                if(m && p && p !== '' && !marcaProvMap[m]) {
+                                    marcaProvMap[m] = p;
+                                }
+                            });
+                        }
+                        console.log('[PRESUPUESTO] Mapa MARCA→PROV construido:', Object.keys(marcaProvMap).length, 'marcas con proveedor');
+                    }
+
+                    let rowIdx = 0;
+                    this.presupData = this.rawData.simplex2026.slice(2)
+                        .map(r => {
+                            const marca = clean(r[iMarca]);
+                            if(!marca || marca === 'TOTAL' || marca === '(VARIOS)' || marca === '' ) return null;
+
+                            const row = {
+                                id: 'pres_' + (rowIdx++),
+                                marca: marca,
+                                chief: String(r[iChief] || '').trim(),
+                                analista: String(r[iAnalista] || '').trim(),
+                                prov: marcaProvMap[marca] || 'S/PROV',
+                                presup: {}, venta: {}, cumpDinero: {},
+                                unid25: {}, unid26: {}, cumpUnidades: {}
+                            };
+
+                            meses.forEach(m => {
+                                row.presup[m] = num(r[iPresup[m]]);
+                                row.venta[m] = num(r[iVenta[m]]);
+                                // Cumplimiento $: si viene del excel usamos ese, sino calculamos
+                                const cDRaw = num(r[iCumpD[m]]);
+                                row.cumpDinero[m] = cDRaw !== 0 ? cDRaw : (row.presup[m] > 0 ? row.venta[m] / row.presup[m] : 0);
+
+                                row.unid25[m] = num(r[iUnid25[m]]);
+                                row.unid26[m] = num(r[iUnid26[m]]);
+                                // Cumplimiento U: si viene del excel usamos ese, sino calculamos
+                                const cURaw = num(r[iCumpU[m]]);
+                                row.cumpUnidades[m] = cURaw !== 0 ? cURaw : (row.unid25[m] > 0 ? row.unid26[m] / row.unid25[m] : 0);
+                            });
+
+                            return row;
+                        })
+                        .filter(Boolean);
+
+                    console.log('[PRESUPUESTO] ✅ Procesadas', this.presupData.length, 'marcas');
+                },
+
+                // 💰 PRESUPUESTO - Cascade filters
+                getPresupAnalistas() {
+                    return [...new Set(this.presupData.map(r => r.analista).filter(a => a && a !== '-'))].sort();
+                },
+                getPresupChiefs() {
+                    let d = this.presupData;
+                    if(this.presupFilterAnalista.length > 0) d = d.filter(r => this.presupFilterAnalista.includes(r.analista));
+                    return [...new Set(d.map(r => r.chief).filter(c => c && c !== '-'))].sort();
+                },
+                getPresupProveedores() {
+                    let d = this.presupData;
+                    if(this.presupFilterAnalista.length > 0) d = d.filter(r => this.presupFilterAnalista.includes(r.analista));
+                    if(this.presupFilterChief.length > 0) d = d.filter(r => this.presupFilterChief.includes(r.chief));
+                    return [...new Set(d.map(r => r.prov).filter(p => p && p !== '-'))].sort();
+                },
+                getPresupMarcas() {
+                    let d = this.presupData;
+                    if(this.presupFilterAnalista.length > 0) d = d.filter(r => this.presupFilterAnalista.includes(r.analista));
+                    if(this.presupFilterChief.length > 0) d = d.filter(r => this.presupFilterChief.includes(r.chief));
+                    if(this.presupFilterProv.length > 0) d = d.filter(r => this.presupFilterProv.includes(r.prov));
+                    return [...new Set(d.map(r => r.marca).filter(m => m && m !== '-'))].sort();
+                },
+
+                // 💰 PRESUPUESTO - Filtered data
+                getPresupFilteredData() {
+                    let filtered = this.presupData;
+                    if(this.presupFilterAnalista.length > 0) filtered = filtered.filter(r => this.presupFilterAnalista.includes(r.analista));
+                    if(this.presupFilterChief.length > 0) filtered = filtered.filter(r => this.presupFilterChief.includes(r.chief));
+                    if(this.presupFilterProv.length > 0) filtered = filtered.filter(r => this.presupFilterProv.includes(r.prov));
+                    if(this.presupFilterMarca.length > 0) filtered = filtered.filter(r => this.presupFilterMarca.includes(r.marca));
+                    return filtered;
+                },
+
+                // 💰 PRESUPUESTO - Summary grouped by most granular filter
+                getPresupSummary() {
+                    const filtered = this.getPresupFilteredData();
+                    let groupKey = 'analista';
+                    if(this.presupFilterMarca.length > 0) groupKey = 'marca';
+                    else if(this.presupFilterProv.length > 0) groupKey = 'prov';
+                    else if(this.presupFilterChief.length > 0) groupKey = 'chief';
+
+                    const selMonths = this.presupSelectedMonths || [];
+                    const groups = {};
+                    filtered.forEach(r => {
+                        const key = r[groupKey] || 'S/D';
+                        if(!groups[key]) {
+                            groups[key] = { label: key, totalPresup: 0, totalVenta: 0, totalUnid25: 0, totalUnid26: 0 };
+                        }
+                        selMonths.forEach(m => {
+                            groups[key].totalPresup += r.presup[m] || 0;
+                            groups[key].totalVenta += r.venta[m] || 0;
+                            groups[key].totalUnid25 += r.unid25[m] || 0;
+                            groups[key].totalUnid26 += r.unid26[m] || 0;
+                        });
+                    });
+
+                    return Object.values(groups).map(g => ({
+                        ...g,
+                        cumpDinero: g.totalPresup > 0 ? g.totalVenta / g.totalPresup : 0,
+                        cumpUnidades: g.totalUnid25 > 0 ? g.totalUnid26 / g.totalUnid25 : 0
+                    })).sort((a, b) => b.totalVenta - a.totalVenta);
+                },
+
+                // 💰 PRESUPUESTO - Chart
+                updatePresupChart() {
+                    this.$nextTick(() => {
+                        const canvas = document.getElementById('presupChart');
+                        if(!canvas) return;
+                        if(this.presupChartInstance) { this.presupChartInstance.destroy(); this.presupChartInstance = null; }
+                        const summary = this.getPresupSummary();
+                        if(summary.length === 0) return;
+
+                        const labels = summary.map(s => s.label.length > 20 ? s.label.substring(0,20) + '…' : s.label);
+                        const ctx = canvas.getContext('2d');
+
+                        const sel = this.presupChartMetrics || ['cumpDinero', 'cumpUnidades'];
+                        const dsAll = [
+                            { id: 'cumpDinero', label: 'Cumpl. $ %', data: summary.map(s => s.cumpDinero * 100), type: 'bar', backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: '#3b82f6', borderWidth: 1, borderRadius: 3, yAxisID: 'y1' },
+                            { id: 'cumpUnidades', label: 'Cumpl. U %', data: summary.map(s => s.cumpUnidades * 100), type: 'bar', backgroundColor: 'rgba(16, 185, 129, 0.7)', borderColor: '#10b981', borderWidth: 1, borderRadius: 3, yAxisID: 'y1' },
+                            { id: 'totalPresup', label: 'Presup. $', data: summary.map(s => s.totalPresup), type: 'bar', backgroundColor: 'rgba(148, 163, 184, 0.5)', borderColor: '#94a3b8', borderWidth: 1, borderRadius: 3, yAxisID: 'y' },
+                            { id: 'totalVenta', label: 'Venta $', data: summary.map(s => s.totalVenta), type: 'bar', backgroundColor: 'rgba(245, 158, 11, 0.7)', borderColor: '#f59e0b', borderWidth: 1, borderRadius: 3, yAxisID: 'y' }
+                        ];
+                        const datasets = dsAll.filter(d => sel.includes(d.id)).map(({id, ...rest}) => rest);
+                        const hasMoney = sel.includes('totalPresup') || sel.includes('totalVenta');
+                        const hasPct = sel.includes('cumpDinero') || sel.includes('cumpUnidades');
+
+                        this.presupChartInstance = new Chart(ctx, {
+                            type: 'bar',
+                            data: { labels, datasets },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: { mode: 'index', intersect: false },
+                                plugins: {
+                                    legend: { position: 'top', labels: { font: { size: 9 }, usePointStyle: true, padding: 8 } },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: ctx => {
+                                                if(ctx.dataset.yAxisID === 'y1') return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + '%';
+                                                return ctx.dataset.label + ': ' + this.formatMoney(ctx.parsed.y);
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    y: { display: hasMoney, beginAtZero: true, position: 'left', ticks: { callback: v => this.formatMoney(v), font: { size: 8 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                                    y1: { display: hasPct, beginAtZero: true, position: hasMoney ? 'right' : 'left', ticks: { callback: v => v + '%', font: { size: 8 } }, grid: { drawOnChartArea: !hasMoney } },
+                                    x: { ticks: { font: { size: 8 }, maxRotation: 45, minRotation: 0 }, grid: { display: false } }
+                                }
+                            }
+                        });
+                    });
+                },
+
+                // �📊 SIMPLEX - PROCESAR DATOS DE VENTAS POR MES (detecta año por MES)
                 processSimplexData() {
                     console.log('[SIMPLEX] Iniciando procesamiento...');
                     
@@ -6218,7 +7521,10 @@
                         {key:'fechaVto',label:'FECHA DE VENCIMIENTO'}, 
                         {key:'dias',label:'DIAS AL VENCIMIENTO'}, 
                         {key:'stockComprometido',label:'STOCK LOTE'},
-                        {key:'riesgoMonetario',label:'RIESGO ($) PROYECTADO'}
+                        {key:'riesgoMonetario',label:'RIESGO ($) PROYECTADO'},
+                        {key:'dep1',label:'DEPOSITO 01'},
+                        {key:'dep80',label:'DEPOSITO 80'},
+                        {key:'analista',label:'ANALISTA'}
                     ];
                     if(this.currentTab==='combos') return [
                         {key:'sku',label:'SKU'}, 
@@ -6230,6 +7536,32 @@
                         {key:'vtarTotal',label:'VTAR TOTAL (Tendencia)'}, 
                         {key:'diasStock',label:'DIAS STOCK'},
                         {key:'vta59Total',label:'VENTA 60 DÍAS'}
+                    ];
+                    if(this.currentTab==='cump_vpd') return [
+                        {key:'sku',label:'SKU'},
+                        {key:'desc',label:'DESCRIPCION'},
+                        {key:'perfil',label:'PERFIL'},
+                        {key:'subPerfil',label:'SUB PERFIL'},
+                        {key:'prov',label:'PROVEEDOR'},
+                        {key:'marca',label:'MARCA'},
+                        {key:'analista',label:'ANALISTA'},
+                        {key:'cRepo',label:'C_REPO'},
+                        {key:'sumaStock',label:'STOCK'},
+                        {key:'sumaEC',label:'EC'},
+                        {key:'sumaCompras',label:'COMPRAS'},
+                        {key:'sumaVTAR',label:'VTAR'},
+                        {key:'sumaVPDCpra',label:'VPD_CPRA'},
+                        {key:'promDSTK',label:'DSTK'},
+                        {key:'sumaTotal',label:'TOTAL'},
+                        {key:'dohVTAR',label:'DOH VTAR'},
+                        {key:'dohVPD',label:'DOH VPD'},
+                        {key:'perdidaVenta',label:'PERDIDA VENTA'},
+                        {key:'unidCRep',label:'UNID*C_REP'},
+                        {key:'vpdDstkCRep',label:'VPD*DSTK*C_REP'},
+                        {key:'cumpVpdPct',label:'CUMP VPD %'},
+                        {key:'cumpVpd',label:'CUMPLIMIENTO VPD'},
+                        {key:'rangoDOH',label:'RANGO DOH'},
+                        {key:'stockValorizado',label:'STOCK VALORIZADO'}
                     ];
                 },            
                     getCellClass(c,r) {
@@ -6296,6 +7628,37 @@
                     if(c.key==='vtarIa') return 'bg-indigo-50 font-bold text-indigo-700';
                     if(c.key==='deposito') return 'text-center font-bold bg-purple-50 text-purple-800';
                     if(c.key === 'runOutDate' && r.runOutCritical) return 'bg-red-500 text-white font-bold text-center';
+                    
+                    // 📊 Estilos CUMP VPD
+                    if(this.currentTab === 'cump_vpd') {
+                        if(c.key === 'cumpVpdPct') {
+                            const pct = r.cumpVpdPct || 0;
+                            if(pct >= 0.9) return 'bg-green-100 text-green-800 font-bold text-center';
+                            if(pct >= 0.7) return 'bg-yellow-100 text-yellow-800 font-bold text-center';
+                            if(pct >= 0.5) return 'bg-orange-100 text-orange-800 font-bold text-center';
+                            return 'bg-red-100 text-red-800 font-bold text-center';
+                        }
+                        if(c.key === 'rangoDOH') {
+                            const rango = (r.rangoDOH || '').toUpperCase();
+                            if(rango.includes('QUIEBRE') || rango.includes('SIN STOCK')) return 'bg-red-900 text-white font-bold text-center';
+                            if(rango.includes('BAJO') || rango.includes('CRITICO')) return 'bg-red-600 text-white font-bold text-center';
+                            if(rango.includes('NORMAL') || rango.includes('SALUDABLE')) return 'bg-green-100 text-green-800 font-bold text-center';
+                            if(rango.includes('ALTO') || rango.includes('SOBRE')) return 'bg-purple-100 text-purple-800 font-bold text-center';
+                            return 'text-center font-medium';
+                        }
+                        if(c.key === 'cumpVpd') {
+                            const val = (r.cumpVpd || '').toUpperCase();
+                            if(val.includes('SI') || val.includes('CUMPLE') || val === 'OK') return 'bg-green-100 text-green-700 font-bold text-center';
+                            if(val.includes('NO') || val.includes('INCUMPLE')) return 'bg-red-100 text-red-700 font-bold text-center';
+                            return 'text-center';
+                        }
+                        if(c.key === 'perdidaVenta') return 'font-mono text-right text-red-600 font-bold';
+                        if(c.key === 'cRepo' || c.key === 'unidCRep' || c.key === 'vpdDstkCRep') return 'font-mono text-right';
+                        if(c.key === 'dohVTAR' || c.key === 'dohVPD') return 'text-center font-bold';
+                        if(['sumaStock','sumaEC','sumaCompras','sumaVTAR','sumaVPDCpra','sumaTotal'].includes(c.key)) return 'text-right font-mono';
+                        if(c.key === 'stockValorizado') return 'font-mono font-bold text-right text-blue-700 bg-blue-50';
+                    }
+
                     return '';
                 },
                 
@@ -6374,6 +7737,24 @@
                        const pct = r.pctExcedente || 0;
                        if(pct === 0) return '-';
                        return pct.toFixed(1) + '%';
+                   }
+
+                   // 📊 Formato para columnas CUMP VPD
+                   if(this.currentTab === 'cump_vpd') {
+                       if(c.key === 'cRepo' || c.key === 'perdidaVenta' || c.key === 'unidCRep' || c.key === 'vpdDstkCRep' || c.key === 'stockValorizado') {
+                           return this.formatMoney(r[c.key] || 0);
+                       }
+                       if(c.key === 'cumpVpdPct') {
+                           const pct = r.cumpVpdPct || 0;
+                           if(pct === 0) return '-';
+                           return (pct * 100).toFixed(1) + '%';
+                       }
+                       if(c.key === 'dohVTAR' || c.key === 'dohVPD' || c.key === 'promDSTK') {
+                           return (r[c.key] || 0).toFixed(1);
+                       }
+                       if(['sumaStock','sumaEC','sumaCompras','sumaVTAR','sumaVPDCpra','sumaTotal'].includes(c.key)) {
+                           return (r[c.key] || 0).toLocaleString('es-AR');
+                       }
                    }
                    
                    let val = c.key.split('.').reduce((o,i)=>(o?o[i]:0), r);
