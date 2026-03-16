@@ -69,7 +69,10 @@ export function buildLookups(rawData) {
         mapEnvios: {},
         mapPlanML: {},
         mapCanasta: {},
-        mapMLA: {}
+        mapMLA: {},
+        mapNomina: {},
+        mapLTime: {},
+        mapSTA19: {}
     };
 
     // ML Stock
@@ -96,7 +99,7 @@ export function buildLookups(rawData) {
     if (rawData.cargos && rawData.cargos.length) {
         const h = rawData.cargos[0];
         const iS = findColumnIndex(h, ['SKU']);
-        const iU = findColumnIndex(h, ['Unidades']);
+        const iU = findColumnIndex(h, ['UNIDADES CON CARGO', 'Unidades']);
         const iUCost = findColumnIndex(h, ['Cargo por unidad']);
         const iDate = findColumnIndex(h, ['FECHA']);
         const iAnt = findColumnIndex(h, ['Antigüedad']);
@@ -197,6 +200,68 @@ export function buildLookups(rawData) {
         });
     }
 
+    // NOMINA - Datos maestros de productos (EAN, UXB, PERFIL, SUB PERFIL)
+    if (rawData.nomina && rawData.nomina.length) {
+        const h = rawData.nomina[0];
+        const iS = findColumnIndex(h, ['SKU']);
+        const iDesc = findColumnIndex(h, ['DESCRIPCION']);
+        const iMarca = findColumnIndex(h, ['MARCA']);
+        const iProv = findColumnIndex(h, ['PROV']);
+        const iPerfil = findColumnIndex(h, ['PERFIL']);
+        const iEAN = findColumnIndex(h, ['EAN']);
+        const iUXB = findColumnIndex(h, ['UXB']);
+        const iSubPerfil = findColumnIndex(h, ['SUB PERFIL', 'SUB_PERFIL']);
+
+        rawData.nomina.slice(1).forEach(r => {
+            const s = cleanString(r[iS]);
+            if (s) {
+                lookups.mapNomina[s] = {
+                    desc: r[iDesc] || '',
+                    marca: r[iMarca] || '',
+                    prov: r[iProv] || '',
+                    perfil: r[iPerfil] || '',
+                    ean: String(r[iEAN] || '').trim(),
+                    uxb: parseNumber(r[iUXB]),
+                    subPerfil: r[iSubPerfil] || ''
+                };
+            }
+        });
+        logger.info(`NOMINA cargada: ${Object.keys(lookups.mapNomina).length} SKUs`);
+    }
+
+    // L TIME - Lead Time por Proveedor
+    if (rawData.ltime && rawData.ltime.length) {
+        const h = rawData.ltime[0];
+        const iProv = findColumnIndex(h, ['PROV']);
+        const iLT = findColumnIndex(h, ['LEAD TIME', 'LEAD']);
+
+        rawData.ltime.slice(1).forEach(r => {
+            const prov = cleanString(r[iProv]);
+            if (prov) {
+                lookups.mapLTime[prov] = parseNumber(r[iLT]);
+            }
+        });
+        logger.info(`L TIME cargada: ${Object.keys(lookups.mapLTime).length} proveedores`);
+    }
+
+    // STA19 - EAN y datos maestros
+    if (rawData.sta19 && rawData.sta19.length) {
+        const h = rawData.sta19[0];
+        const iS = findColumnIndex(h, ['SKU']);
+        const iEAN = findColumnIndex(h, ['EAN']);
+
+        if (iS > -1 && iEAN > -1) {
+            rawData.sta19.slice(1).forEach(r => {
+                const s = cleanString(r[iS]);
+                if (s) {
+                    lookups.mapSTA19[s] = {
+                        ean: String(r[iEAN] || '').trim()
+                    };
+                }
+            });
+        }
+    }
+
     return lookups;
 }
 
@@ -231,7 +296,7 @@ export function processGrafanaData(rawGrafana) {
         stock: findColumnIndex(hG, ['Stock']),
         uxb: findColumnIndex(hG, ['UXB']),
         camino: findColumnIndex(hG, ['COMPRAS']),
-        vta59: findColumnIndex(hG, ['TOTAL VENDIDO', '59 DÍAS', 'VENDIDO 59']),
+        vta59: findColumnIndex(hG, ['VTA60', 'TOTAL VENDIDO', '59 DÍAS', 'VENDIDO 59']),
         perfil: findColumnIndex(hG, ['Perfil'])
     };
 
