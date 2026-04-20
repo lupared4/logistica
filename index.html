@@ -4966,8 +4966,10 @@
 
                     if(this._searchReady) {
                         const q = this._searchReady.toUpperCase();
-                        // ⚡ OPTIMIZACIÓN: Usar índice pre-computado siempre que esté disponible
-                        if (this._searchIndex) {
+                        if (this.currentTab === 'proveedores') {
+                            d = d.filter(i => String(i.prov||'').toUpperCase().includes(q));
+                        } else if (this._searchIndex) {
+                            // ⚡ OPTIMIZACIÓN: Usar índice pre-computado siempre que esté disponible
                             d = d.filter(i => {
                                 const idx = this._searchIndex.get(i.id || i.sku);
                                 return idx && idx.includes(q);
