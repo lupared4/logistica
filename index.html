@@ -407,21 +407,29 @@
                     </div>
                 </div>
 
-                <!-- 📦 BOTONES REPORTES ENVÍOS FULL -->
-                <div x-show="currentTab === 'dep80'" class="flex items-center gap-2 flex-wrap bg-purple-50 px-3 py-2 rounded border border-purple-200">
-                    <button @click="generateStockNegativoReport()" 
-                        class="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-2 rounded-lg font-bold text-xs hover:from-red-700 hover:to-red-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2">
-                        <span>🔴</span>
-                        <span>Reporte Stock Negativo (PBI)</span>
-                    </button>
-                    <button @click="generateStockD1SinD80Report()" 
-                        class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg font-bold text-xs hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2">
-                        <span>📋</span>
-                        <span>Stock en D1 sin Stock en D80</span>
+                <!-- 📦 REPORTES ENVÍOS FULL (SELECCIÓN MÚLTIPLE) -->
+                <div x-show="currentTab === 'dep80'" class="flex items-center gap-3 flex-wrap bg-purple-50 px-3 py-2 rounded border border-purple-200">
+                    <label class="flex items-center gap-1.5 text-[11px] font-bold text-red-700 bg-white border border-red-200 rounded px-2 py-1 cursor-pointer">
+                        <input type="checkbox" value="stockNegativo" x-model="selectedEnviosFullReports" class="accent-red-600">
+                        <span>🔴 Stock Negativo (PBI)</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 text-[11px] font-bold text-blue-700 bg-white border border-blue-200 rounded px-2 py-1 cursor-pointer">
+                        <input type="checkbox" value="stockD1SinD80" x-model="selectedEnviosFullReports" class="accent-blue-600">
+                        <span>📋 Stock en D1 sin D80</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-white border border-emerald-200 rounded px-2 py-1 cursor-pointer">
+                        <input type="checkbox" value="stockMeliVsPbi" x-model="selectedEnviosFullReports" class="accent-emerald-600">
+                        <span>🟢 Diferencia MELI vs PBI (D80)</span>
+                    </label>
+                    <button @click="generateSelectedEnviosFullReports()"
+                        class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-2 rounded-lg font-bold text-xs hover:from-purple-700 hover:to-purple-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2">
+                        <span>⬇️</span>
+                        <span>Descargar Seleccionados (1 Excel)</span>
                     </button>
                     <div class="text-[10px] text-purple-700 font-medium">
-                        <div>✓ Stock Negativo por Depósito</div>
-                        <div>✓ SKUs con Stock D1 sin D80</div>
+                        <div>✓ Podés combinar 1, 2 o 3 reportes</div>
+                        <div>✓ Cada reporte se descarga en su propia solapa</div>
+                        <div>✓ Incluye solapas de auditoría ejecutiva</div>
                     </div>
                 </div>
 
@@ -1036,7 +1044,7 @@
                     <!-- 🎯 NUEVA MÉTRICA: Sub_Perfil + Cobertura en Dep80 -->
                     <div class="bg-white p-4 rounded-lg shadow border border-emerald-200 mb-6">
                         <h3 class="text-sm font-bold text-emerald-700 uppercase border-b pb-2 mb-3 flex justify-between items-center">
-                            <span>🎯 Análisis Sub_Perfil + Cobertura Depósito 80</span>
+                            <span>🎯 Análisis Sub_Perfil + Cobertura Depósito 80 — Solo SKUs en MELI Full</span>
                             <div class="flex items-center gap-2">
                                 <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded border border-blue-200 font-black"
                                       x-text="'Promedio Dep80: ' + (metrics.promDiasStockDep80 || 0) + 'd'"></span>
@@ -1048,9 +1056,9 @@
                                 <thead class="bg-emerald-50 text-emerald-800 font-bold uppercase sticky top-0">
                                     <tr>
                                         <td class="p-2">Sub_Perfil</td>
-                                        <td class="p-2 text-center">SKUs</td>
+                                        <td class="p-2 text-center">SKUs (MELI)</td>
                                         <td class="p-2 text-center">%</td>
-                                        <td class="p-2 text-right">Stock Dep80</td>
+                                        <td class="p-2 text-right">Stock Dep80 (MELI)</td>
                                         <td class="p-2 text-right">VTASQ60 Total</td>
                                         <td class="p-2 text-center">Días Stock</td>
                                         <td class="p-2 text-center">Estado</td>
@@ -1070,13 +1078,13 @@
                                             <td class="p-2 text-right font-mono text-slate-600" x-text="parseFloat(sp.vtarTotal).toFixed(2)"></td>
                                             <td class="p-2 text-center">
                                                 <span class="font-bold text-base" 
-                                                      :class="sp.coberturaDias > 45 ? 'text-purple-600' : (sp.coberturaDias >= 30 ? 'text-green-600' : (sp.coberturaDias >= 15 ? 'text-yellow-600' : 'text-red-600'))"
+                                                      :class="sp.coberturaDias === 0 ? 'text-gray-900' : (sp.coberturaDias > 45 ? 'text-purple-600' : (sp.coberturaDias >= 31 ? 'text-orange-500' : (sp.coberturaDias >= 20 ? 'text-green-600' : (sp.coberturaDias >= 11 ? 'text-yellow-600' : 'text-red-600'))))"
                                                       x-text="sp.coberturaDias + 'd'"></span>
                                             </td>
                                             <td class="p-2 text-center">
                                                 <span class="px-2 py-1 rounded text-[10px] font-bold"
-                                                      :class="sp.coberturaDias > 45 ? 'bg-purple-100 text-purple-800' : (sp.coberturaDias >= 30 ? 'bg-green-100 text-green-800' : (sp.coberturaDias >= 15 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'))"
-                                                      x-text="sp.coberturaDias > 45 ? '🟣 Sobrestock' : (sp.coberturaDias >= 30 ? '✅ Saludable' : (sp.coberturaDias >= 15 ? '⚠️ Alerta' : '🔴 Crítico'))"></span>
+                                                      :class="sp.coberturaDias === 0 ? 'bg-gray-800 text-white' : (sp.coberturaDias > 45 ? 'bg-purple-100 text-purple-800' : (sp.coberturaDias >= 31 ? 'bg-orange-100 text-orange-800' : (sp.coberturaDias >= 20 ? 'bg-green-100 text-green-800' : (sp.coberturaDias >= 11 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'))))"
+                                                      x-text="sp.coberturaDias === 0 ? '⚫ Quiebre' : (sp.coberturaDias > 45 ? '🟣 Sobrestock' : (sp.coberturaDias >= 31 ? '🟠 Atención' : (sp.coberturaDias >= 20 ? '✅ Saludable' : (sp.coberturaDias >= 11 ? '⚠️ Alerta' : '🔴 Crítico'))))"></span>
                                             </td>
                                             <td class="p-2 text-right">
                                                 <template x-if="sp.unidadesSobrestock > 0">
@@ -1095,11 +1103,13 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div class="mt-3 text-[9px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-100 grid grid-cols-4 gap-2 text-center">
-                            <div><span class="inline-block w-3 h-3 rounded bg-red-500 mr-1"></span><strong class="text-red-600">&lt; 15d</strong> Crítico</div>
-                            <div><span class="inline-block w-3 h-3 rounded bg-yellow-500 mr-1"></span><strong class="text-yellow-600">15-30d</strong> Alerta</div>
-                            <div><span class="inline-block w-3 h-3 rounded bg-green-500 mr-1"></span><strong class="text-green-600">30-45d</strong> Saludable</div>
-                            <div><span class="inline-block w-3 h-3 rounded bg-purple-500 mr-1"></span><strong class="text-purple-600">> 45d</strong> Sobrestock</div>
+                        <div class="mt-3 text-[9px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-100 grid grid-cols-6 gap-2 text-center">
+                            <div><span class="inline-block w-3 h-3 rounded bg-gray-800 mr-1"></span><strong class="text-gray-800">0d</strong> Quiebre</div>
+                            <div><span class="inline-block w-3 h-3 rounded bg-red-500 mr-1"></span><strong class="text-red-600">1-10d</strong> Crítico</div>
+                            <div><span class="inline-block w-3 h-3 rounded bg-yellow-500 mr-1"></span><strong class="text-yellow-600">11-19d</strong> Alerta</div>
+                            <div><span class="inline-block w-3 h-3 rounded bg-green-500 mr-1"></span><strong class="text-green-600">20-30d</strong> Saludable</div>
+                            <div><span class="inline-block w-3 h-3 rounded bg-orange-500 mr-1"></span><strong class="text-orange-600">31-45d</strong> Atención</div>
+                            <div><span class="inline-block w-3 h-3 rounded bg-purple-500 mr-1"></span><strong class="text-purple-600">&gt; 45d</strong> Sobrestock</div>
                         </div>
                         <div class="mt-2 text-[9px] text-slate-500 bg-purple-50 p-2 rounded border border-purple-100">
                             <strong>📦 Sobrestock:</strong> Unidades que exceden los 45 días de cobertura. Fórmula: <code class="bg-white px-1 rounded">Stock - (VTASQ60 × 45)</code>
@@ -1849,6 +1859,7 @@
                 currentTab: 'consolidado', currentPage: 1, pageSize: 50, _tableVer: 0, search: '', sortCol: 'qEnviar', sortAsc: false,
 
                 filterLotesRanges: [], selectedEnvioFechas: [], activeFilters: {}, filterMenuOpen: null,
+                selectedEnviosFullReports: ['stockNegativo', 'stockD1SinD80', 'stockMeliVsPbi'],
                 editingCell: null, columnMaxValues: {}, copyFeedback: false, historyData: [], debtHistory: [],
 
                 availableOtherDeps: ['80', '82', '86', '87', '89'],
@@ -2281,203 +2292,707 @@
                     }
                 },
 
-                // 🔴 REPORTE STOCK NEGATIVO (PBI)
-                generateStockNegativoReport() {
-                    if (!this.rawData.pbi || this.rawData.pbi.length <= 1) {
-                        alert('❌ No hay datos de PBI cargados. Por favor, importa un archivo Excel con la hoja "PBI".');
+                generateSelectedEnviosFullReports() {
+                    if (!Array.isArray(this.selectedEnviosFullReports) || this.selectedEnviosFullReports.length === 0) {
+                        alert('⚠️ Seleccioná al menos un reporte para descargar.');
                         return;
                     }
+
                     try {
-                        const hP = this.rawData.pbi[0];
-                        const idx = (headers, names) => this.findColumnIndex(headers, names);
-                        const num = (v) => this.parseNumber(v);
-                        const clean = (v) => String(v || '').trim().toUpperCase();
+                        const builders = {
+                            stockNegativo: () => this._buildStockNegativoSheet(),
+                            stockD1SinD80: () => this._buildStockD1SinD80Sheet(),
+                            stockMeliVsPbi: () => this._buildStockMeliVsPbiSheet()
+                        };
 
-                        const iSku = idx(hP, ['SKU']);
-                        const iDesc = idx(hP, ['DESCRIPCION']);
-                        const depCols = [
-                            { label: '01', idx: idx(hP, ['DEP 1']) },
-                            { label: '80', idx: idx(hP, ['DEP 80']) },
-                            { label: '81', idx: idx(hP, ['DEP 81']) },
-                            { label: '82', idx: idx(hP, ['DEP 82']) },
-                            { label: '83', idx: idx(hP, ['DEP 83']) },
-                            { label: '87', idx: idx(hP, ['DEP 87']) },
-                            { label: '89', idx: idx(hP, ['DEP 89']) }
-                        ];
+                        const wb = XLSX.utils.book_new();
+                        const resumen = [];
 
-                        // Recopilar SKUs con stock negativo
-                        const negativos = [];
-                        this.rawData.pbi.slice(1).forEach(r => {
-                            const sku = clean(r[iSku]);
-                            if (!sku || sku === 'TOTAL') return;
-                            const desc = r[iDesc] || '';
-                            depCols.forEach(dep => {
-                                if (dep.idx > -1) {
-                                    const val = num(r[dep.idx]);
-                                    if (val < 0) {
-                                        negativos.push({
-                                            sku: sku,
-                                            desc: desc,
-                                            punto: dep.label,
-                                            valorNegativo: val,
-                                            observaciones: '',
-                                            movimiento: '',
-                                            causaRaiz: '',
-                                            stockDisponible: ''
-                                        });
-                                    }
+                        this.selectedEnviosFullReports.forEach(reportId => {
+                            const buildFn = builders[reportId];
+                            if (!buildFn) return;
+                            try {
+                                const rep = buildFn();
+                                if (!rep || !rep.data || rep.data.length <= 1) {
+                                    resumen.push(`• ${rep?.label || reportId}: sin datos`);
+                                    return;
                                 }
-                            });
+                                const ws = XLSX.utils.aoa_to_sheet(rep.data);
+                                if (rep.cols) ws['!cols'] = rep.cols;
+                                XLSX.utils.book_append_sheet(wb, ws, rep.sheetName);
+                                resumen.push(`• ${rep.label}: ${rep.count} filas`);
+                            } catch (errRep) {
+                                resumen.push(`• ${reportId}: error (${errRep.message})`);
+                            }
                         });
 
-                        if (negativos.length === 0) {
-                            alert('✅ No se encontraron SKUs con stock negativo en PBI.');
+                        // Auditoría ejecutiva (siempre incluida en el mismo archivo)
+                        try {
+                            const auditSheets = this._buildAuditSheets();
+                            auditSheets.forEach(rep => {
+                                if (!rep || !rep.data || rep.data.length <= 1) return;
+                                const ws = XLSX.utils.aoa_to_sheet(rep.data);
+                                if (rep.cols) ws['!cols'] = rep.cols;
+                                XLSX.utils.book_append_sheet(wb, ws, rep.sheetName);
+                                resumen.push(`• ${rep.label}: ${rep.count} filas`);
+                            });
+                        } catch (auditErr) {
+                            resumen.push(`• Auditoría: error (${auditErr.message})`);
+                        }
+
+                        if (wb.SheetNames.length === 0) {
+                            alert('✅ No hubo datos para generar en los reportes seleccionados.');
                             return;
                         }
 
-                        // Ordenar por valor (más negativo primero)
-                        negativos.sort((a, b) => a.valorNegativo - b.valorNegativo);
-
-                        // Tabla resumen por Punto
-                        const resumenPunto = {};
-                        negativos.forEach(n => {
-                            if (!resumenPunto[n.punto]) resumenPunto[n.punto] = 0;
-                            resumenPunto[n.punto]++;
-                        });
-
-                        // Crear Excel
-                        const wb = XLSX.utils.book_new();
-
-                        // Hoja 1: Detalle
-                        const detData = [['SKU', 'Descripcion del Articulo', 'Punto', 'Valor Negativo', 'Observaciones', 'Movimiento', 'Causa Raíz', 'Stock Disponible para Venta']];
-                        negativos.forEach(n => {
-                            detData.push([n.sku, n.desc, n.punto, n.valorNegativo, n.observaciones, n.movimiento, n.causaRaiz, n.stockDisponible]);
-                        });
-
-                        // Agregar espacio y tabla resumen al final a la derecha
-                        const maxRows = detData.length;
-                        // Resumen arriba a la derecha (columnas J, K)
-                        detData[0].push('', '', 'Punto', 'Cuenta de SKU');
-                        const puntosOrdenados = Object.entries(resumenPunto).sort((a, b) => a[0].localeCompare(b[0]));
-                        let rowIdx = 1;
-                        puntosOrdenados.forEach(([punto, count]) => {
-                            while (detData.length <= rowIdx) detData.push(new Array(10).fill(''));
-                            if (!detData[rowIdx]) detData[rowIdx] = new Array(10).fill('');
-                            while (detData[rowIdx].length < 10) detData[rowIdx].push('');
-                            detData[rowIdx][10] = punto;
-                            detData[rowIdx][11] = count;
-                            rowIdx++;
-                        });
-                        // Total general
-                        while (detData.length <= rowIdx) detData.push(new Array(10).fill(''));
-                        while (detData[rowIdx].length < 10) detData[rowIdx].push('');
-                        detData[rowIdx][10] = 'Total general';
-                        detData[rowIdx][11] = negativos.length;
-
-                        const ws = XLSX.utils.aoa_to_sheet(detData);
-
-                        // Ancho de columnas
-                        ws['!cols'] = [
-                            { wch: 16 }, // SKU
-                            { wch: 40 }, // Descripcion
-                            { wch: 8 },  // Punto
-                            { wch: 16 }, // Valor Negativo
-                            { wch: 20 }, // Observaciones
-                            { wch: 15 }, // Movimiento
-                            { wch: 20 }, // Causa Raíz
-                            { wch: 25 }, // Stock Disponible
-                            { wch: 3 },  // Espacio
-                            { wch: 3 },  // Espacio
-                            { wch: 15 }, // Punto resumen
-                            { wch: 15 }  // Cuenta de SKU
-                        ];
-
-                        XLSX.utils.book_append_sheet(wb, ws, 'Stock Negativo');
-
                         const fechaHoy = new Date().toISOString().split('T')[0];
-                        XLSX.writeFile(wb, `Reporte_Stock_Negativo_${fechaHoy}.xlsx`);
+                        XLSX.writeFile(wb, `Reportes_Envios_Full_${fechaHoy}.xlsx`);
 
-                        console.log('[STOCK NEGATIVO] ✅ Reporte generado:', negativos.length, 'SKUs negativos');
-                        alert(`✅ Reporte Stock Negativo generado!\n\n🔴 ${negativos.length} SKUs con stock negativo\n📊 Distribuidos en ${Object.keys(resumenPunto).length} depósitos\n\nColumnas para completar:\n• Observaciones\n• Movimiento\n• Causa Raíz\n• Stock Disponible para Venta`);
-
+                        alert(`✅ Archivo generado con ${wb.SheetNames.length} solapa(s).\n\n${resumen.join('\n')}`);
                     } catch (error) {
-                        console.error('[STOCK NEGATIVO] ❌ Error:', error);
-                        alert(`❌ Error al generar reporte: ${error.message}`);
+                        console.error('[REPORTES ENVÍOS FULL] ❌ Error:', error);
+                        alert(`❌ Error al generar reportes: ${error.message}`);
                     }
                 },
 
-                // 📋 REPORTE STOCK EN D1 SIN STOCK EN D80
+                // Compatibilidad: mantiene los botones/atajos individuales
+                generateStockNegativoReport() {
+                    this.selectedEnviosFullReports = ['stockNegativo'];
+                    this.generateSelectedEnviosFullReports();
+                },
+
                 generateStockD1SinD80Report() {
+                    this.selectedEnviosFullReports = ['stockD1SinD80'];
+                    this.generateSelectedEnviosFullReports();
+                },
+
+                generateStockMeliVsPbiReport() {
+                    this.selectedEnviosFullReports = ['stockMeliVsPbi'];
+                    this.generateSelectedEnviosFullReports();
+                },
+
+                _buildStockNegativoSheet() {
+                    if (!this.rawData.pbi || this.rawData.pbi.length <= 1) {
+                        throw new Error('No hay datos de PBI cargados.');
+                    }
+
+                    const hP = this.rawData.pbi[0];
+                    const idx = (headers, names) => this.findColumnIndex(headers, names);
+                    const num = (v) => this.parseNumber(v);
+                    const clean = (v) => String(v || '').trim().toUpperCase();
+
+                    const iSku = idx(hP, ['SKU']);
+                    const iDesc = idx(hP, ['DESCRIPCION']);
+                    const depCols = [
+                        { label: '01', idx: idx(hP, ['DEP 1']) },
+                        { label: '80', idx: idx(hP, ['DEP 80']) },
+                        { label: '81', idx: idx(hP, ['DEP 81']) },
+                        { label: '82', idx: idx(hP, ['DEP 82']) },
+                        { label: '83', idx: idx(hP, ['DEP 83']) },
+                        { label: '87', idx: idx(hP, ['DEP 87']) },
+                        { label: '89', idx: idx(hP, ['DEP 89']) }
+                    ];
+
+                    const negativos = [];
+                    this.rawData.pbi.slice(1).forEach(r => {
+                        const sku = clean(r[iSku]);
+                        if (!sku || sku === 'TOTAL') return;
+                        const desc = r[iDesc] || '';
+                        depCols.forEach(dep => {
+                            if (dep.idx > -1) {
+                                const val = num(r[dep.idx]);
+                                if (val < 0) {
+                                    negativos.push({
+                                        sku,
+                                        desc,
+                                        punto: dep.label,
+                                        valorNegativo: val,
+                                        observaciones: '',
+                                        movimiento: '',
+                                        causaRaiz: '',
+                                        stockDisponible: ''
+                                    });
+                                }
+                            }
+                        });
+                    });
+
+                    negativos.sort((a, b) => a.valorNegativo - b.valorNegativo);
+
+                    const resumenPunto = {};
+                    negativos.forEach(n => {
+                        if (!resumenPunto[n.punto]) resumenPunto[n.punto] = 0;
+                        resumenPunto[n.punto]++;
+                    });
+
+                    const data = [['SKU', 'Descripcion del Articulo', 'Punto', 'Valor Negativo', 'Observaciones', 'Movimiento', 'Causa Raiz', 'Stock Disponible para Venta']];
+                    negativos.forEach(n => {
+                        data.push([n.sku, n.desc, n.punto, n.valorNegativo, n.observaciones, n.movimiento, n.causaRaiz, n.stockDisponible]);
+                    });
+
+                    data[0].push('', '', 'Punto', 'Cuenta de SKU');
+                    const puntosOrdenados = Object.entries(resumenPunto).sort((a, b) => a[0].localeCompare(b[0]));
+                    let rowIdx = 1;
+                    puntosOrdenados.forEach(([punto, count]) => {
+                        while (data.length <= rowIdx) data.push(new Array(10).fill(''));
+                        if (!data[rowIdx]) data[rowIdx] = new Array(10).fill('');
+                        while (data[rowIdx].length < 10) data[rowIdx].push('');
+                        data[rowIdx][10] = punto;
+                        data[rowIdx][11] = count;
+                        rowIdx++;
+                    });
+                    while (data.length <= rowIdx) data.push(new Array(10).fill(''));
+                    while (data[rowIdx].length < 10) data[rowIdx].push('');
+                    data[rowIdx][10] = 'Total general';
+                    data[rowIdx][11] = negativos.length;
+
+                    return {
+                        label: 'Stock Negativo (PBI)',
+                        sheetName: 'Stock Negativo',
+                        count: negativos.length,
+                        data,
+                        cols: [
+                            { wch: 16 }, { wch: 40 }, { wch: 8 }, { wch: 16 },
+                            { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 25 },
+                            { wch: 3 }, { wch: 3 }, { wch: 15 }, { wch: 15 }
+                        ]
+                    };
+                },
+
+                _buildStockD1SinD80Sheet() {
                     if (!this.masterData || this.masterData.length === 0) {
-                        alert('❌ No hay datos maestros cargados. Por favor, importa un archivo Excel primero.');
-                        return;
+                        throw new Error('No hay datos maestros cargados.');
                     }
-                    try {
-                        // Filtrar: Stock D1 > 0 Y Stock D80 <= 0
-                        const skus = this.masterData.filter(r => {
-                            const d1 = r.pbi?.dep1 || 0;
-                            const d80 = r.pbi?.dep80 || 0;
-                            return d1 > 0 && d80 <= 0;
-                        });
 
-                        if (skus.length === 0) {
-                            alert('✅ No se encontraron SKUs con Stock en D1 sin Stock en D80.');
-                            return;
+                    const skus = this.masterData.filter(r => {
+                        const d1 = r.pbi?.dep1 || 0;
+                        const d80 = r.pbi?.dep80 || 0;
+                        return d1 > 0 && d80 <= 0;
+                    });
+
+                    skus.sort((a, b) => (b.pbi?.dep1 || 0) - (a.pbi?.dep1 || 0));
+
+                    const data = [['SKU', 'DESCRIPCION', 'MARCA', 'PROVEEDOR', 'STOCK 01', 'STOCK 80', 'VTAR 01', 'VTAR 80', 'VTAR GENERAL', 'VTA 60D (D80)', 'A ENVIAR']];
+                    skus.forEach(r => {
+                        const vta60d80 = (r.histDaily80 && r.histDaily80.length > 0)
+                            ? r.histDaily80.slice(0, 59).reduce((a, b) => a + b, 0)
+                            : 0;
+                        data.push([
+                            r.sku,
+                            r.desc || '',
+                            r.marca || '',
+                            r.prov || '',
+                            r.pbi?.dep1 || 0,
+                            r.pbi?.dep80 || 0,
+                            r.vtar1 ? parseFloat(r.vtar1.toFixed(2)) : 0,
+                            r.vtar80 ? parseFloat(r.vtar80.toFixed(2)) : 0,
+                            r.vtarTotal ? parseFloat(r.vtarTotal.toFixed(2)) : 0,
+                            Math.round(vta60d80),
+                            r.qEnviar || 0
+                        ]);
+                    });
+
+                    return {
+                        label: 'Stock en D1 sin D80',
+                        sheetName: 'Stock D1 sin D80',
+                        count: skus.length,
+                        data,
+                        cols: [
+                            { wch: 16 }, { wch: 40 }, { wch: 18 }, { wch: 20 }, { wch: 12 },
+                            { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 12 }
+                        ]
+                    };
+                },
+
+                _buildStockMeliVsPbiSheet() {
+                    if (!this.rawData.pbi || this.rawData.pbi.length <= 1) {
+                        throw new Error('No hay datos de PBI cargados.');
+                    }
+                    if (!this.rawData.sml || this.rawData.sml.length <= 1) {
+                        throw new Error('No hay datos de STOCK ML cargados.');
+                    }
+                    if (!this.rawData.sta19 || this.rawData.sta19.length <= 1) {
+                        throw new Error('No hay datos de STA19 cargados para calcular costo unitario.');
+                    }
+
+                    const idx = (headers, names) => this.findColumnIndex(headers, names);
+                    const num = (v) => this.parseNumber(v);
+                    const clean = (v) => String(v || '').trim().toUpperCase();
+
+                    const hP = this.rawData.pbi[0];
+                    const iPSku = idx(hP, ['SKU']);
+                    const iPDesc = idx(hP, ['DESCRIPCION']);
+                    const iPDep80 = idx(hP, ['DEP 80']);
+                    const mapPbi = {};
+                    this.rawData.pbi.slice(1).forEach(r => {
+                        const sku = clean(r[iPSku]);
+                        if (!sku || sku === 'TOTAL') return;
+                        mapPbi[sku] = {
+                            desc: r[iPDesc] || '',
+                            dep80: iPDep80 > -1 ? num(r[iPDep80]) : 0
+                        };
+                    });
+
+                    const hS = this.rawData.sml[0];
+                    const iSSku = idx(hS, ['SKU']);
+                    const iSUdsEnFull = idx(hS, ['UNIDADES EN FULL']);
+                    const mapSml = {};
+                    this.rawData.sml.slice(1).forEach(r => {
+                        const sku = clean(r[iSSku]);
+                        if (!sku) return;
+                        const val = iSUdsEnFull > -1 ? num(r[iSUdsEnFull]) : 0;
+                        if (mapSml[sku] !== undefined) mapSml[sku] += val;
+                        else mapSml[sku] = val;
+                    });
+
+                    const mapMaster = {};
+                    (this.masterData || []).forEach(item => {
+                        if (item.sku) {
+                            mapMaster[clean(item.sku)] = {
+                                desc: item.desc || '',
+                                prov: item.prov || '',
+                                subPerfil: item.subPerfil || ''
+                            };
                         }
+                    });
 
-                        // Ordenar por Stock D1 desc
-                        skus.sort((a, b) => (b.pbi?.dep1 || 0) - (a.pbi?.dep1 || 0));
+                    const hSTA = this.rawData.sta19[0];
+                    const iStaSku = idx(hSTA, ['SKU', 'COD_ARTICU']);
+                    const iStaCosto = idx(hSTA, ['Max. de Precio_Lista_900', 'Máx. de Precio_Lista_900']);
+                    if (iStaSku === -1 || iStaCosto === -1) {
+                        throw new Error('No se encontró SKU o Máx. de Precio_Lista_900 en STA19.');
+                    }
+                    const mapCostoSta19 = {};
+                    this.rawData.sta19.slice(1).forEach(r => {
+                        const sku = clean(r[iStaSku]);
+                        if (!sku || sku === 'TOTAL') return;
+                        mapCostoSta19[sku] = num(r[iStaCosto]);
+                    });
 
-                        const wb = XLSX.utils.book_new();
-                        const data = [['SKU', 'DESCRIPCION', 'MARCA', 'PROVEEDOR', 'STOCK 01', 'STOCK 80', 'VTAR 01', 'VTAR 80', 'VTAR GENERAL', 'VTA 60D (D80)', 'A ENVIAR']];
+                    const allSkus = new Set([...Object.keys(mapPbi), ...Object.keys(mapSml)]);
+                    const rows = [];
+                    allSkus.forEach(sku => {
+                        const pbiData = mapPbi[sku];
+                        const smlVal = mapSml[sku] !== undefined ? mapSml[sku] : null;
+                        if (!pbiData && smlVal === null) return;
+                        const stock80Pbi = pbiData ? pbiData.dep80 : 0;
+                        const stock80Meli = smlVal !== null ? smlVal : 0;
+                        const diferencia = stock80Pbi - stock80Meli;
+                        const observaciones = (smlVal === null && stock80Pbi > 0)
+                            ? 'SKU con stock identificado en PBI pero no en STOCK DE MELI'
+                            : '';
+                        const masterInfo = mapMaster[sku] || {};
+                        const costoUnitario = mapCostoSta19[sku] || 0;
+                        const difXCosto = diferencia * costoUnitario;
 
-                        skus.forEach(r => {
-                            // Calcular VTA 60D solo del depósito 80 usando histDaily80
-                            const vta60d80 = (r.histDaily80 && r.histDaily80.length > 0)
-                                ? r.histDaily80.slice(0, 59).reduce((a, b) => a + b, 0)
-                                : 0;
-                            data.push([
-                                r.sku,
-                                r.desc || '',
-                                r.marca || '',
-                                r.prov || '',
-                                r.pbi?.dep1 || 0,
-                                r.pbi?.dep80 || 0,
-                                r.vtar1 ? parseFloat(r.vtar1.toFixed(2)) : 0,
-                                r.vtar80 ? parseFloat(r.vtar80.toFixed(2)) : 0,
-                                r.vtarTotal ? parseFloat(r.vtarTotal.toFixed(2)) : 0,
-                                Math.round(vta60d80),
-                                r.qEnviar || 0
-                            ]);
+                        rows.push({
+                            sku,
+                            desc: pbiData?.desc || masterInfo.desc || '',
+                            prov: masterInfo.prov || '',
+                            subPerfil: masterInfo.subPerfil || '',
+                            stock80Pbi,
+                            stock80Meli,
+                            diferencia,
+                            costoUnitario,
+                            difXCosto,
+                            observaciones
+                        });
+                    });
+
+                    rows.sort((a, b) => Math.abs(b.diferencia) - Math.abs(a.diferencia));
+
+                    const data = [['SKU', 'DESCRIPCION', 'PROVEEDOR', 'SUB_PERFIL', 'STOCK 80 (PBI)', 'STOCK 80 (MELI)', 'DIFERENCIA', 'COSTO UNITARIO (STA19)', 'DIFERENCIA x COSTO', 'OBSERVACIONES']];
+                    rows.forEach(r => {
+                        data.push([
+                            r.sku,
+                            r.desc,
+                            r.prov,
+                            r.subPerfil,
+                            r.stock80Pbi,
+                            r.stock80Meli,
+                            r.diferencia,
+                            parseFloat(r.costoUnitario.toFixed(2)),
+                            parseFloat(r.difXCosto.toFixed(2)),
+                            r.observaciones || ''
+                        ]);
+                    });
+
+                    return {
+                        label: 'Diferencia MELI vs PBI (D80)',
+                        sheetName: 'Stock MELI vs PBI',
+                        count: rows.length,
+                        data,
+                        cols: [
+                            { wch: 16 }, { wch: 42 }, { wch: 22 }, { wch: 18 },
+                            { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 20 }, { wch: 18 }, { wch: 56 }
+                        ]
+                    };
+                },
+
+                _buildAuditSheets() {
+                    if (!this.masterData || this.masterData.length === 0) {
+                        throw new Error('No hay datos procesados para auditoría.');
+                    }
+
+                    const md = this.masterData;
+                    const num = v => (typeof v === 'number' && !isNaN(v) ? v : 0);
+                    const withStock = md.filter(i => num(i.stockGrafana) > 0);
+
+                    // 1) Resumen ejecutivo (sin detalle SKU)
+                    const totalSkus = md.length;
+                    const totalSkusConStock = withStock.length;
+                    const totalStockUnid = withStock.reduce((a, i) => a + num(i.stockGrafana), 0);
+                    const totalStockVal = withStock.reduce((a, i) => a + num(i.stockValorizado), 0);
+                    const totalSobrestockUnid = withStock.reduce((a, i) => a + num(i.unidadesExcedentes), 0);
+                    const totalSobrestockVal = withStock.reduce((a, i) => a + num(i.costoExcedente), 0);
+                    const totalCompraUnid = md.reduce((a, i) => a + num(i.comprarU), 0);
+                    const totalCompraVal = md.reduce((a, i) => a + num(i.inversion), 0);
+                    const totalEnvioUnid = md.reduce((a, i) => a + num(i.qEnviar), 0);
+                    const totalEnvioVal = md.reduce((a, i) => a + num(i.valorizado), 0);
+                    const totalVentaPerdida = md.reduce((a, i) => a + num(i.ventaPerdida), 0);
+                    const totalDeudaCargos = md.reduce((a, i) => a + num(i.deuda), 0);
+                    const diasProm = withStock.reduce((a, i) => a + num(i.diasStock), 0) / Math.max(1, withStock.length);
+
+                    const health = this.metrics.health || { q: 0, pq: 0, s: 0, a: 0, o: 0 };
+                    const hs = this.metrics.healthScore || {};
+                    const aging = this.metrics.aging || {};
+                    const cf = this.metrics.cashFlow || {};
+
+                    const resumenData = [
+                        ['METRICA', 'VALOR'],
+                        ['SKUs Totales', totalSkus],
+                        ['SKUs con Stock', totalSkusConStock],
+                        ['Stock Total (Unid)', Math.round(totalStockUnid)],
+                        ['Capital en Stock ($)', Math.round(totalStockVal)],
+                        ['Dias Promedio Stock', Math.round(diasProm * 10) / 10],
+                        ['Sobrestock (Unid >45d)', Math.round(totalSobrestockUnid)],
+                        ['Sobrestock ($ >45d)', Math.round(totalSobrestockVal)],
+                        ['Compra Necesaria (Unid)', Math.round(totalCompraUnid)],
+                        ['Compra Necesaria ($)', Math.round(totalCompraVal)],
+                        ['Envio Sugerido a Full (Unid)', Math.round(totalEnvioUnid)],
+                        ['Envio Sugerido a Full ($)', Math.round(totalEnvioVal)],
+                        ['Venta Perdida Estimada ($)', Math.round(totalVentaPerdida)],
+                        ['Deuda por Cargos ($)', Math.round(totalDeudaCargos)],
+                        ['', ''],
+                        ['SALUD INVENTARIO', 'CANTIDAD SKU'],
+                        ['Quiebre / Critico', health.q || 0],
+                        ['Por Quebrar', health.pq || 0],
+                        ['Saludable', health.s || 0],
+                        ['Alerta / Atencion', health.a || 0],
+                        ['Sobrestock', health.o || 0],
+                        ['', ''],
+                        ['HEALTH SCORE', 'VALOR'],
+                        ['Overall', hs.overall || 0],
+                        ['Tendencia', hs.trend || 'N/A'],
+                        ['Cobertura %', hs.components?.cobertura || 0],
+                        ['Rotacion %', hs.components?.rotacion || 0],
+                        ['Capital %', hs.components?.capital || 0],
+                        ['Deuda %', hs.components?.deuda || 0],
+                        ['', ''],
+                        ['AGING ($)', 'VALOR'],
+                        ['0-30', Math.round(num(aging.f0_30))],
+                        ['31-60', Math.round(num(aging.f31_60))],
+                        ['61-90', Math.round(num(aging.f61_90))],
+                        ['91-180', Math.round(num(aging.f91_180))],
+                        ['+180', Math.round(num(aging.f180))],
+                        ['', ''],
+                        ['CASH FLOW PROYECTADO ($)', 'VALOR'],
+                        ['Semana 1', Math.round(num(cf.w1))],
+                        ['Semana 2', Math.round(num(cf.w2))],
+                        ['Semana 3', Math.round(num(cf.w3))],
+                        ['Semana 4', Math.round(num(cf.w4))]
+                    ];
+
+                    // 2) Resumen por proveedor (sin detalle SKU)
+                    const provMap = {};
+                    md.forEach(i => {
+                        const prov = i.prov || 'S/D';
+                        if (!provMap[prov]) {
+                            provMap[prov] = {
+                                proveedor: prov,
+                                skus: 0,
+                                skusConStock: 0,
+                                stockUnid: 0,
+                                stockVal: 0,
+                                diasSum: 0,
+                                sobrestockUnid: 0,
+                                sobrestockVal: 0,
+                                compraUnid: 0,
+                                compraVal: 0,
+                                envioUnid: 0,
+                                envioVal: 0,
+                                ventaPerdida: 0,
+                                deuda: 0
+                            };
+                        }
+                        const p = provMap[prov];
+                        p.skus++;
+                        if (num(i.stockGrafana) > 0) {
+                            p.skusConStock++;
+                            p.diasSum += num(i.diasStock);
+                        }
+                        p.stockUnid += num(i.stockGrafana);
+                        p.stockVal += num(i.stockValorizado);
+                        p.sobrestockUnid += num(i.unidadesExcedentes);
+                        p.sobrestockVal += num(i.costoExcedente);
+                        p.compraUnid += num(i.comprarU);
+                        p.compraVal += num(i.inversion);
+                        p.envioUnid += num(i.qEnviar);
+                        p.envioVal += num(i.valorizado);
+                        p.ventaPerdida += num(i.ventaPerdida);
+                        p.deuda += num(i.deuda);
+                    });
+
+                    const provRows = Object.values(provMap)
+                        .map(p => ({
+                            ...p,
+                            diasPromedio: p.skusConStock > 0 ? p.diasSum / p.skusConStock : 0
+                        }))
+                        .sort((a, b) => b.sobrestockVal - a.sobrestockVal);
+
+                    const provData = [[
+                        'PROVEEDOR', 'SKUS', 'SKUS CON STOCK', 'DIAS PROMEDIO',
+                        'STOCK (UNID)', 'STOCK ($)', 'SOBRESTOCK (UNID)', 'SOBRESTOCK ($)',
+                        'COMPRA NECESARIA (UNID)', 'COMPRA NECESARIA ($)',
+                        'ENVIO A FULL (UNID)', 'ENVIO A FULL ($)', 'VENTA PERDIDA ($)', 'DEUDA CARGOS ($)'
+                    ]];
+                    provRows.forEach(p => {
+                        provData.push([
+                            p.proveedor,
+                            p.skus,
+                            p.skusConStock,
+                            parseFloat(p.diasPromedio.toFixed(1)),
+                            Math.round(p.stockUnid),
+                            Math.round(p.stockVal),
+                            Math.round(p.sobrestockUnid),
+                            Math.round(p.sobrestockVal),
+                            Math.round(p.compraUnid),
+                            Math.round(p.compraVal),
+                            Math.round(p.envioUnid),
+                            Math.round(p.envioVal),
+                            Math.round(p.ventaPerdida),
+                            Math.round(p.deuda)
+                        ]);
+                    });
+
+                    // 3) Top 20 referencias con más sobrestock
+                    const top20 = md
+                        .filter(i => num(i.costoExcedente) > 0)
+                        .sort((a, b) => num(b.costoExcedente) - num(a.costoExcedente))
+                        .slice(0, 20);
+
+                    const top20Data = [[
+                        'SKU', 'DESCRIPCION', 'PROVEEDOR', 'MARCA', 'SUB_PERFIL',
+                        'DIAS STOCK', 'STOCK (UNID)', 'VTAR TOTAL', 'EXCEDENTE (UNID)', 'EXCEDENTE ($)', '% EXCEDENTE',
+                        'COSTO UNITARIO', 'COMPRA SUGERIDA (UNID)', 'ENVIO FULL (UNID)'
+                    ]];
+                    top20.forEach(i => {
+                        top20Data.push([
+                            i.sku,
+                            i.desc || '',
+                            i.prov || '',
+                            i.marca || '',
+                            i.subPerfil || '',
+                            parseFloat(num(i.diasStock).toFixed(1)),
+                            Math.round(num(i.stockGrafana)),
+                            parseFloat(num(i.vtarTotal).toFixed(2)),
+                            Math.round(num(i.unidadesExcedentes)),
+                            Math.round(num(i.costoExcedente)),
+                            parseFloat(num(i.pctExcedente).toFixed(1)),
+                            parseFloat(num(i.costo).toFixed(2)),
+                            Math.round(num(i.comprarU)),
+                            Math.round(num(i.qEnviar))
+                        ]);
+                    });
+
+                    // 4) Logística y finanzas por depósito
+                    const depMap = {};
+                    md.forEach(i => {
+                        const pbi = i.pbi || {};
+                        Object.keys(pbi).forEach(k => {
+                            if (!k.startsWith('dep')) return;
+                            const dep = k.replace('dep', '');
+                            if (!depMap[dep]) depMap[dep] = { dep, unid: 0, val: 0, skus: 0 };
+                            const unid = num(pbi[k]);
+                            if (unid !== 0) depMap[dep].skus++;
+                            depMap[dep].unid += unid;
+                            depMap[dep].val += unid * num(i.costo);
+                        });
+                    });
+
+                    const totalValDeps = Object.values(depMap).reduce((a, d) => a + d.val, 0);
+                    const depRows = Object.values(depMap).sort((a, b) => b.val - a.val);
+
+                    const logFinData = [[
+                        'DEPOSITO', 'SKUS CON STOCK', 'STOCK (UNID)', 'STOCK ($)', '% CAPITAL'
+                    ]];
+                    depRows.forEach(d => {
+                        const pct = totalValDeps > 0 ? (d.val / totalValDeps) * 100 : 0;
+                        logFinData.push([
+                            d.dep,
+                            d.skus,
+                            Math.round(d.unid),
+                            Math.round(d.val),
+                            parseFloat(pct.toFixed(1))
+                        ]);
+                    });
+                    logFinData.push(['', '', '', '', '']);
+                    logFinData.push(['INDICADOR TRANSVERSAL', 'VALOR', '', '', '']);
+                    logFinData.push(['Capital Total Analizado ($)', Math.round(totalStockVal), '', '', '']);
+                    logFinData.push(['Compra Necesaria Total ($)', Math.round(totalCompraVal), '', '', '']);
+                    logFinData.push(['Transferencia Potencial a Full ($)', Math.round(totalEnvioVal), '', '', '']);
+                    logFinData.push(['Venta Perdida Estimada ($)', Math.round(totalVentaPerdida), '', '', '']);
+                    logFinData.push(['Deuda por Cargos ($)', Math.round(totalDeudaCargos), '', '', '']);
+                    logFinData.push(['Sobrestock Total ($)', Math.round(totalSobrestockVal), '', '', '']);
+
+                    // 5) Acciones recomendadas para decisión
+                    const acciones = [];
+                    const criticos = md.filter(i => num(i.vtarTotal) > 0 && num(i.diasStock) <= 10);
+                    acciones.push({
+                        prioridad: 1,
+                        accion: 'Recuperar quiebres/criticos',
+                        skus: criticos.length,
+                        unidades: Math.round(criticos.reduce((a, i) => a + num(i.comprarU), 0)),
+                        impacto: Math.round(criticos.reduce((a, i) => a + num(i.ventaPerdida), 0)),
+                        indicador: 'Minimiza venta perdida'
+                    });
+
+                    const comprasUrg = md.filter(i => num(i.comprarU) > 0 && num(i.diasStock) <= 17);
+                    acciones.push({
+                        prioridad: 2,
+                        accion: 'Ejecutar compra urgente',
+                        skus: comprasUrg.length,
+                        unidades: Math.round(comprasUrg.reduce((a, i) => a + num(i.comprarU), 0)),
+                        impacto: Math.round(comprasUrg.reduce((a, i) => a + num(i.inversion), 0)),
+                        indicador: 'Asegura cobertura minima'
+                    });
+
+                    const full = md.filter(i => num(i.qEnviar) > 0);
+                    acciones.push({
+                        prioridad: 3,
+                        accion: 'Transferir a Full',
+                        skus: full.length,
+                        unidades: Math.round(full.reduce((a, i) => a + num(i.qEnviar), 0)),
+                        impacto: Math.round(full.reduce((a, i) => a + num(i.valorizado), 0)),
+                        indicador: 'Mejora disponibilidad dep80'
+                    });
+
+                    const sobre = md.filter(i => num(i.unidadesExcedentes) > 0);
+                    acciones.push({
+                        prioridad: 4,
+                        accion: 'Plan de desagote sobrestock',
+                        skus: sobre.length,
+                        unidades: Math.round(sobre.reduce((a, i) => a + num(i.unidadesExcedentes), 0)),
+                        impacto: Math.round(sobre.reduce((a, i) => a + num(i.costoExcedente), 0)),
+                        indicador: 'Libera capital inmovilizado'
+                    });
+
+                    const deuda = md.filter(i => num(i.deuda) > 0);
+                    acciones.push({
+                        prioridad: 5,
+                        accion: 'Mitigar cargos y deuda',
+                        skus: deuda.length,
+                        unidades: Math.round(deuda.reduce((a, i) => a + num(i.unidadesCargo), 0)),
+                        impacto: Math.round(deuda.reduce((a, i) => a + num(i.deuda), 0)),
+                        indicador: 'Mejora resultado financiero'
+                    });
+
+                    const accionesData = [['PRIORIDAD', 'ACCION', 'SKUS', 'UNIDADES', 'IMPACTO ($)', 'INDICADOR']];
+                    acciones
+                        .sort((a, b) => a.prioridad - b.prioridad)
+                        .forEach(a => {
+                            accionesData.push([a.prioridad, a.accion, a.skus, a.unidades, a.impacto, a.indicador]);
                         });
 
-                        const ws = XLSX.utils.aoa_to_sheet(data);
-                        ws['!cols'] = [
-                            { wch: 16 }, // SKU
-                            { wch: 40 }, // DESCRIPCION
-                            { wch: 18 }, // MARCA
-                            { wch: 20 }, // PROVEEDOR
-                            { wch: 12 }, // STOCK 01
-                            { wch: 12 }, // STOCK 80
-                            { wch: 12 }, // VTAR 01
-                            { wch: 12 }, // VTAR 80
-                            { wch: 14 }, // VTAR GENERAL
-                            { wch: 16 }, // VTA 60D (D80)
-                            { wch: 12 }  // A ENVIAR
-                        ];
+                    // 6) Tablero Directorio (vista semáforo y prioridades)
+                    const semaforo = (estado) => {
+                        if (estado === 'critico') return 'ROJO';
+                        if (estado === 'moderado') return 'AMARILLO';
+                        return 'VERDE';
+                    };
 
-                        XLSX.utils.book_append_sheet(wb, ws, 'Stock D1 sin D80');
+                    const estadoCapital = totalSobrestockVal > (totalStockVal * 0.35) ? 'critico'
+                        : (totalSobrestockVal > (totalStockVal * 0.2) ? 'moderado' : 'saludable');
+                    const estadoCompras = totalCompraVal > (totalStockVal * 0.25) ? 'critico'
+                        : (totalCompraVal > (totalStockVal * 0.12) ? 'moderado' : 'saludable');
+                    const estadoRiesgo = totalVentaPerdida > (totalStockVal * 0.04) ? 'critico'
+                        : (totalVentaPerdida > (totalStockVal * 0.02) ? 'moderado' : 'saludable');
+                    const estadoDeuda = totalDeudaCargos > (totalStockVal * 0.015) ? 'critico'
+                        : (totalDeudaCargos > (totalStockVal * 0.007) ? 'moderado' : 'saludable');
+                    const hsOverall = num(hs.overall);
+                    const estadoSalud = hsOverall < 50 ? 'critico' : (hsOverall < 75 ? 'moderado' : 'saludable');
 
-                        const fechaHoy = new Date().toISOString().split('T')[0];
-                        XLSX.writeFile(wb, `Stock_D1_sin_D80_${fechaHoy}.xlsx`);
+                    const top3Acciones = [...acciones]
+                        .sort((a, b) => b.impacto - a.impacto)
+                        .slice(0, 3);
 
-                        console.log('[D1 SIN D80] ✅ Reporte generado:', skus.length, 'SKUs');
-                        alert(`✅ Reporte generado!\n\n📋 ${skus.length} SKUs con Stock en Depósito 1 pero SIN Stock en Depósito 80\n\nIncluye: SKU, Descripción, Marca, Proveedor, Stock 01, Stock 80, VTAR 01, VTAR 80, VTAR General, VTA 60D (D80), A ENVIAR`);
+                    const tableroData = [
+                        ['TABLERO DIRECTORIO', 'SEMAFORO', 'VALOR', 'LECTURA EJECUTIVA'],
+                        ['Health Score General', semaforo(estadoSalud), hsOverall, estadoSalud === 'critico' ? 'Riesgo alto de quiebres y capital inmovilizado' : (estadoSalud === 'moderado' ? 'Operacion estable con alertas relevantes' : 'Estado saludable y controlado')],
+                        ['Dias Promedio de Stock', semaforo(diasProm > 55 ? 'critico' : (diasProm > 38 ? 'moderado' : 'saludable')), parseFloat(diasProm.toFixed(1)), diasProm > 55 ? 'Cobertura excesiva, revisar compras y liquidacion' : (diasProm > 38 ? 'Cobertura por encima de objetivo' : 'Cobertura alineada')],
+                        ['Sobrestock ($)', semaforo(estadoCapital), Math.round(totalSobrestockVal), estadoCapital === 'critico' ? 'Capital inmovilizado elevado' : (estadoCapital === 'moderado' ? 'Sobrestock a monitorear por proveedor' : 'Sobrestock bajo control')],
+                        ['Compra Necesaria ($)', semaforo(estadoCompras), Math.round(totalCompraVal), estadoCompras === 'critico' ? 'Necesidad de caja alta para reposicion' : (estadoCompras === 'moderado' ? 'Compra relevante a programar' : 'Compra en rango gestionable')],
+                        ['Venta Perdida Estimada ($)', semaforo(estadoRiesgo), Math.round(totalVentaPerdida), estadoRiesgo === 'critico' ? 'Impacto comercial urgente' : (estadoRiesgo === 'moderado' ? 'Oportunidad de mejora' : 'Riesgo comercial acotado')],
+                        ['Deuda por Cargos ($)', semaforo(estadoDeuda), Math.round(totalDeudaCargos), estadoDeuda === 'critico' ? 'Costo financiero significativo' : (estadoDeuda === 'moderado' ? 'Controlar origen de cargos' : 'Deuda de cargos controlada')],
+                        ['Envio Sugerido a Full ($)', semaforo(totalEnvioVal > 0 ? 'moderado' : 'saludable'), Math.round(totalEnvioVal), totalEnvioVal > 0 ? 'Potencial de mejora de disponibilidad en Dep80' : 'Sin necesidad de transferencias relevantes'],
+                        ['', '', '', ''],
+                        ['TOP PRIORIDADES', 'IMPACTO ($)', 'SKUS', 'OBJETIVO'],
+                        [top3Acciones[0]?.accion || 'N/A', Math.round(top3Acciones[0]?.impacto || 0), top3Acciones[0]?.skus || 0, top3Acciones[0]?.indicador || 'N/A'],
+                        [top3Acciones[1]?.accion || 'N/A', Math.round(top3Acciones[1]?.impacto || 0), top3Acciones[1]?.skus || 0, top3Acciones[1]?.indicador || 'N/A'],
+                        [top3Acciones[2]?.accion || 'N/A', Math.round(top3Acciones[2]?.impacto || 0), top3Acciones[2]?.skus || 0, top3Acciones[2]?.indicador || 'N/A']
+                    ];
 
-                    } catch (error) {
-                        console.error('[D1 SIN D80] ❌ Error:', error);
-                        alert(`❌ Error al generar reporte: ${error.message}`);
-                    }
+                    return [
+                        {
+                            label: 'Tablero Directorio',
+                            sheetName: 'Tablero Directorio',
+                            count: Math.max(0, tableroData.length - 1),
+                            data: tableroData,
+                            cols: [{ wch: 36 }, { wch: 12 }, { wch: 18 }, { wch: 52 }]
+                        },
+                        {
+                            label: 'Auditoria Resumen',
+                            sheetName: 'Audit Resumen',
+                            count: Math.max(0, resumenData.length - 1),
+                            data: resumenData,
+                            cols: [{ wch: 36 }, { wch: 22 }]
+                        },
+                        {
+                            label: 'Auditoria Proveedores',
+                            sheetName: 'Audit Proveedores',
+                            count: Math.max(0, provData.length - 1),
+                            data: provData,
+                            cols: [
+                                { wch: 24 }, { wch: 10 }, { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 14 },
+                                { wch: 16 }, { wch: 16 }, { wch: 22 }, { wch: 20 }, { wch: 18 }, { wch: 16 }, { wch: 16 }, { wch: 16 }
+                            ]
+                        },
+                        {
+                            label: 'Top 20 Sobrestock',
+                            sheetName: 'Top 20 Sobrestock',
+                            count: Math.max(0, top20Data.length - 1),
+                            data: top20Data,
+                            cols: [
+                                { wch: 16 }, { wch: 38 }, { wch: 20 }, { wch: 16 }, { wch: 16 },
+                                { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 16 }, { wch: 16 },
+                                { wch: 12 }, { wch: 14 }, { wch: 20 }, { wch: 16 }
+                            ]
+                        },
+                        {
+                            label: 'Auditoria Logistica/Finanzas',
+                            sheetName: 'Audit LogFin',
+                            count: Math.max(0, logFinData.length - 1),
+                            data: logFinData,
+                            cols: [{ wch: 14 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 12 }]
+                        },
+                        {
+                            label: 'Auditoria Acciones',
+                            sheetName: 'Audit Acciones',
+                            count: Math.max(0, accionesData.length - 1),
+                            data: accionesData,
+                            cols: [{ wch: 10 }, { wch: 28 }, { wch: 10 }, { wch: 12 }, { wch: 14 }, { wch: 28 }]
+                        }
+                    ];
                 },
 
                 async initApp() {
@@ -3138,6 +3653,7 @@
                                 const iEstado=idx(h,['ESTADO DE PUBLICACION']);
                                 const iCalidad=idx(h,['Calidad ok']);
                                 const iUdsFull=idx(h,['Uds en Full', 'UDS EN FULL', 'UDS_EN_FULL']);
+                                const iUnidadesEnFull=idx(h,['UNIDADES EN FULL']);
 
                                 this.rawData.sml.slice(1).forEach(r=>{ 
                                     const s=clean(r[iS]); 
@@ -3146,7 +3662,8 @@
                                             impulsar: String(r[iI]).includes('SI'),
                                             estado: r[iEstado],
                                             calidad: r[iCalidad],
-                                            udsFull: num(r[iUdsFull])
+                                            udsFull: num(r[iUdsFull]),
+                                            unidadesEnFull: iUnidadesEnFull > -1 ? num(r[iUnidadesEnFull]) : 0
                                         };
                                     } 
                                 });
@@ -4004,7 +4521,7 @@
                             DB.save('vtasq60_history', updatedVtasq60);
                             console.log('[INFO] VTASQ60 History guardado:', Object.keys(updatedVtasq60).length, 'SKUs');
 
-                            // 🎯 MÉTRICA: Sub_Perfil + Cobertura en Dep80 (30 días)
+                            // 🎯 MÉTRICA: Sub_Perfil + Cobertura en Dep80 — solo SKUs en DEP 80 (MELI)
                             const subPerfilStats = {};
                             // Sub-perfiles que NO se envían al dep80, excluir del análisis
                             const excludedSubPerfiles = ['Solo Compra', 'Sampling', 'INH Simplex'];
@@ -4012,6 +4529,9 @@
                             const normStr = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
                             this.masterData.forEach(item => {
+                                // ✅ Solo SKUs que están en DEP 80 (MELI) — aparecen en STOCK ML
+                                const mlData = this.lookups.mapML && this.lookups.mapML[item.sku];
+                                if (!mlData) return;
                                 const sp = String(item.subPerfil || '').trim();
                                 if (!sp) return;
                                 const spNorm = normStr(sp);
@@ -4021,7 +4541,7 @@
                                 const key = matchedSp || sp;
                                 if (!subPerfilStats[key]) subPerfilStats[key] = { count: 0, stock: 0, vtar: 0 };
                                 subPerfilStats[key].count++;
-                                subPerfilStats[key].stock += (item.pbi?.dep80 || 0);
+                                subPerfilStats[key].stock += (mlData.unidadesEnFull || 0);
                                 subPerfilStats[key].vtar += (item.vtar80 || 0);
                             });
 
