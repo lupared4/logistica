@@ -1791,6 +1791,32 @@
                return serial;
            }
         }
+
+        function parseAppDate(value) {
+            if (!value) return null;
+
+            if (value instanceof Date && !isNaN(value.getTime())) {
+                const normalized = new Date(value);
+                normalized.setHours(0, 0, 0, 0);
+                return normalized;
+            }
+
+            const str = String(value).trim();
+            if (!str || str === '-') return null;
+
+            const parts = str.split('/');
+            let parsed = null;
+
+            if (parts.length === 3) {
+                parsed = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+            } else {
+                parsed = new Date(str);
+            }
+
+            if (isNaN(parsed.getTime())) return null;
+            parsed.setHours(0, 0, 0, 0);
+            return parsed;
+        }
 //--  ---
         window.inventoryApp = function() {
             return {
@@ -2464,6 +2490,16 @@
                         throw new Error('No hay datos maestros cargados.');
                     }
 
+                    const hoy = new Date();
+                    hoy.setHours(0, 0, 0, 0);
+
+                    const enviosPlanificadosPorSku = {};
+                    (this.enviosData || []).forEach(envio => {
+                        const fechaEnvio = parseAppDate(envio.fecha);
+                        if (!envio?.sku || !fechaEnvio || fechaEnvio < hoy) return;
+                        enviosPlanificadosPorSku[envio.sku] = (enviosPlanificadosPorSku[envio.sku] || 0) + (envio.cant || 0);
+                    });
+
                     const skus = this.masterData.filter(r => {
                         const d1 = r.pbi?.dep1 || 0;
                         const d80 = r.pbi?.dep80 || 0;
@@ -2472,7 +2508,7 @@
 
                     skus.sort((a, b) => (b.pbi?.dep1 || 0) - (a.pbi?.dep1 || 0));
 
-                    const data = [['SKU', 'DESCRIPCION', 'MARCA', 'PROVEEDOR', 'STOCK 01', 'STOCK 80', 'VTAR 01', 'VTAR 80', 'VTAR GENERAL', 'VTA 60D (D80)', 'A ENVIAR']];
+                    const data = [['SKU', 'DESCRIPCION', 'MARCA', 'PROVEEDOR', 'STOCK 01', 'STOCK 80', 'VTAR 01', 'VTAR 80', 'VTAR GENERAL', 'VTA 60D (D80)', 'A ENVIAR', 'PLANIF. ENVIO DESDE HOY']];
                     skus.forEach(r => {
                         const vta60d80 = (r.histDaily80 && r.histDaily80.length > 0)
                             ? r.histDaily80.slice(0, 59).reduce((a, b) => a + b, 0)
@@ -2488,7 +2524,8 @@
                             r.vtar80 ? parseFloat(r.vtar80.toFixed(2)) : 0,
                             r.vtarTotal ? parseFloat(r.vtarTotal.toFixed(2)) : 0,
                             Math.round(vta60d80),
-                            r.qEnviar || 0
+                            r.qEnviar || 0,
+                            enviosPlanificadosPorSku[r.sku] || 0
                         ]);
                     });
 
@@ -2499,7 +2536,7 @@
                         data,
                         cols: [
                             { wch: 16 }, { wch: 40 }, { wch: 18 }, { wch: 20 }, { wch: 12 },
-                            { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 12 }
+                            { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 22 }
                         ]
                     };
                 },
