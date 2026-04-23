@@ -2345,6 +2345,7 @@
                                 }
                                 const ws = XLSX.utils.aoa_to_sheet(rep.data);
                                 if (rep.cols) ws['!cols'] = rep.cols;
+                                this._formatReportWorksheet(ws, rep);
                                 XLSX.utils.book_append_sheet(wb, ws, rep.sheetName);
                                 resumen.push(`• ${rep.label}: ${rep.count} filas`);
                             } catch (errRep) {
@@ -2359,6 +2360,7 @@
                                 if (!rep || !rep.data || rep.data.length <= 1) return;
                                 const ws = XLSX.utils.aoa_to_sheet(rep.data);
                                 if (rep.cols) ws['!cols'] = rep.cols;
+                                this._formatReportWorksheet(ws, rep);
                                 XLSX.utils.book_append_sheet(wb, ws, rep.sheetName);
                                 resumen.push(`• ${rep.label}: ${rep.count} filas`);
                             });
@@ -2372,13 +2374,44 @@
                         }
 
                         const fechaHoy = new Date().toISOString().split('T')[0];
-                        XLSX.writeFile(wb, `Reportes_Envios_Full_${fechaHoy}.xlsx`);
+                        XLSX.writeFile(wb, `REPORTE INDICADORES_${fechaHoy}.xlsx`);
 
                         alert(`✅ Archivo generado con ${wb.SheetNames.length} solapa(s).\n\n${resumen.join('\n')}`);
                     } catch (error) {
                         console.error('[REPORTES ENVÍOS FULL] ❌ Error:', error);
                         alert(`❌ Error al generar reportes: ${error.message}`);
                     }
+                },
+
+                _formatReportWorksheet(ws, rep = {}) {
+                    if (!ws || !ws['!ref']) return;
+                    const range = XLSX.utils.decode_range(ws['!ref']);
+
+                    // Encabezados en negrita para la primera fila.
+                    for (let c = range.s.c; c <= range.e.c; c++) {
+                        const addr = XLSX.utils.encode_cell({ r: 0, c });
+                        if (!ws[addr]) continue;
+                        ws[addr].s = { font: { bold: true } };
+                    }
+
+                    (rep.extraHeaderRows || []).forEach(rIdx => {
+                        for (let c = range.s.c; c <= range.e.c; c++) {
+                            const addr = XLSX.utils.encode_cell({ r: rIdx, c });
+                            if (!ws[addr]) continue;
+                            ws[addr].s = { font: { bold: true } };
+                        }
+                    });
+
+                    // Formato monetario para columnas de importes.
+                    const moneyFmt = '"$"#,##0.00';
+                    (rep.currencyCols || []).forEach(colIndex => {
+                        for (let r = 1; r <= range.e.r; r++) {
+                            const addr = XLSX.utils.encode_cell({ r, c: colIndex });
+                            const cell = ws[addr];
+                            if (!cell || typeof cell.v !== 'number' || isNaN(cell.v)) continue;
+                            cell.z = moneyFmt;
+                        }
+                    });
                 },
 
                 // Compatibilidad: mantiene los botones/atajos individuales
@@ -2673,6 +2706,7 @@
 
                     const md = this.masterData;
                     const num = v => (typeof v === 'number' && !isNaN(v) ? v : 0);
+                    const money = v => `$ ${Math.round(num(v)).toLocaleString('es-AR')}`;
                     const withStock = md.filter(i => num(i.stockGrafana) > 0);
 
                     // 1) Resumen ejecutivo (sin detalle SKU)
@@ -2700,16 +2734,16 @@
                         ['SKUs Totales', totalSkus],
                         ['SKUs con Stock', totalSkusConStock],
                         ['Stock Total (Unid)', Math.round(totalStockUnid)],
-                        ['Capital en Stock ($)', Math.round(totalStockVal)],
+                        ['Capital en Stock ($)', money(totalStockVal)],
                         ['Dias Promedio Stock', Math.round(diasProm * 10) / 10],
                         ['Sobrestock (Unid >45d)', Math.round(totalSobrestockUnid)],
-                        ['Sobrestock ($ >45d)', Math.round(totalSobrestockVal)],
+                        ['Sobrestock ($ >45d)', money(totalSobrestockVal)],
                         ['Compra Necesaria (Unid)', Math.round(totalCompraUnid)],
-                        ['Compra Necesaria ($)', Math.round(totalCompraVal)],
+                        ['Compra Necesaria ($)', money(totalCompraVal)],
                         ['Envio Sugerido a Full (Unid)', Math.round(totalEnvioUnid)],
-                        ['Envio Sugerido a Full ($)', Math.round(totalEnvioVal)],
-                        ['Venta Perdida Estimada ($)', Math.round(totalVentaPerdida)],
-                        ['Deuda por Cargos ($)', Math.round(totalDeudaCargos)],
+                        ['Envio Sugerido a Full ($)', money(totalEnvioVal)],
+                        ['Venta Perdida Estimada ($)', money(totalVentaPerdida)],
+                        ['Cargo por Cargos ($)', money(totalDeudaCargos)],
                         ['', ''],
                         ['SALUD INVENTARIO', 'CANTIDAD SKU'],
                         ['Quiebre / Critico', health.q || 0],
@@ -2718,26 +2752,18 @@
                         ['Alerta / Atencion', health.a || 0],
                         ['Sobrestock', health.o || 0],
                         ['', ''],
-                        ['HEALTH SCORE', 'VALOR'],
-                        ['Overall', hs.overall || 0],
-                        ['Tendencia', hs.trend || 'N/A'],
-                        ['Cobertura %', hs.components?.cobertura || 0],
-                        ['Rotacion %', hs.components?.rotacion || 0],
-                        ['Capital %', hs.components?.capital || 0],
-                        ['Deuda %', hs.components?.deuda || 0],
-                        ['', ''],
                         ['AGING ($)', 'VALOR'],
-                        ['0-30', Math.round(num(aging.f0_30))],
-                        ['31-60', Math.round(num(aging.f31_60))],
-                        ['61-90', Math.round(num(aging.f61_90))],
-                        ['91-180', Math.round(num(aging.f91_180))],
-                        ['+180', Math.round(num(aging.f180))],
+                        ['0-30', money(aging.f0_30)],
+                        ['31-60', money(aging.f31_60)],
+                        ['61-90', money(aging.f61_90)],
+                        ['91-180', money(aging.f91_180)],
+                        ['+180', money(aging.f180)],
                         ['', ''],
                         ['CASH FLOW PROYECTADO ($)', 'VALOR'],
-                        ['Semana 1', Math.round(num(cf.w1))],
-                        ['Semana 2', Math.round(num(cf.w2))],
-                        ['Semana 3', Math.round(num(cf.w3))],
-                        ['Semana 4', Math.round(num(cf.w4))]
+                        ['Semana 1', money(cf.w1)],
+                        ['Semana 2', money(cf.w2)],
+                        ['Semana 3', money(cf.w3)],
+                        ['Semana 4', money(cf.w4)]
                     ];
 
                     // 2) Resumen por proveedor (sin detalle SKU)
@@ -2791,7 +2817,7 @@
                         'PROVEEDOR', 'SKUS', 'SKUS CON STOCK', 'DIAS PROMEDIO',
                         'STOCK (UNID)', 'STOCK ($)', 'SOBRESTOCK (UNID)', 'SOBRESTOCK ($)',
                         'COMPRA NECESARIA (UNID)', 'COMPRA NECESARIA ($)',
-                        'ENVIO A FULL (UNID)', 'ENVIO A FULL ($)', 'VENTA PERDIDA ($)', 'DEUDA CARGOS ($)'
+                        'ENVIO A FULL (UNID)', 'ENVIO A FULL ($)', 'VENTA PERDIDA ($)', 'CARGO CARGOS ($)'
                     ]];
                     provRows.forEach(p => {
                         provData.push([
@@ -2875,12 +2901,12 @@
                     });
                     logFinData.push(['', '', '', '', '']);
                     logFinData.push(['INDICADOR TRANSVERSAL', 'VALOR', '', '', '']);
-                    logFinData.push(['Capital Total Analizado ($)', Math.round(totalStockVal), '', '', '']);
-                    logFinData.push(['Compra Necesaria Total ($)', Math.round(totalCompraVal), '', '', '']);
-                    logFinData.push(['Transferencia Potencial a Full ($)', Math.round(totalEnvioVal), '', '', '']);
-                    logFinData.push(['Venta Perdida Estimada ($)', Math.round(totalVentaPerdida), '', '', '']);
-                    logFinData.push(['Deuda por Cargos ($)', Math.round(totalDeudaCargos), '', '', '']);
-                    logFinData.push(['Sobrestock Total ($)', Math.round(totalSobrestockVal), '', '', '']);
+                    logFinData.push(['Capital Total Analizado ($)', money(totalStockVal), '', '', '']);
+                    logFinData.push(['Compra Necesaria Total ($)', money(totalCompraVal), '', '', '']);
+                    logFinData.push(['Transferencia Potencial a Full ($)', money(totalEnvioVal), '', '', '']);
+                    logFinData.push(['Venta Perdida Estimada ($)', money(totalVentaPerdida), '', '', '']);
+                    logFinData.push(['Cargo por Cargos ($)', money(totalDeudaCargos), '', '', '']);
+                    logFinData.push(['Sobrestock Total ($)', money(totalSobrestockVal), '', '', '']);
 
                     // 5) Acciones recomendadas para decisión
                     const acciones = [];
@@ -2927,7 +2953,7 @@
                     const deuda = md.filter(i => num(i.deuda) > 0);
                     acciones.push({
                         prioridad: 5,
-                        accion: 'Mitigar cargos y deuda',
+                        accion: 'Mitigar cargos',
                         skus: deuda.length,
                         unidades: Math.round(deuda.reduce((a, i) => a + num(i.unidadesCargo), 0)),
                         impacto: Math.round(deuda.reduce((a, i) => a + num(i.deuda), 0)),
@@ -2964,25 +2990,25 @@
                         .slice(0, 3);
 
                     const tableroData = [
-                        ['TABLERO DIRECTORIO', 'SEMAFORO', 'VALOR', 'LECTURA EJECUTIVA'],
+                        ['TABLERO', 'SEMAFORO', 'VALOR', 'LECTURA EJECUTIVA'],
                         ['Health Score General', semaforo(estadoSalud), hsOverall, estadoSalud === 'critico' ? 'Riesgo alto de quiebres y capital inmovilizado' : (estadoSalud === 'moderado' ? 'Operacion estable con alertas relevantes' : 'Estado saludable y controlado')],
                         ['Dias Promedio de Stock', semaforo(diasProm > 55 ? 'critico' : (diasProm > 38 ? 'moderado' : 'saludable')), parseFloat(diasProm.toFixed(1)), diasProm > 55 ? 'Cobertura excesiva, revisar compras y liquidacion' : (diasProm > 38 ? 'Cobertura por encima de objetivo' : 'Cobertura alineada')],
-                        ['Sobrestock ($)', semaforo(estadoCapital), Math.round(totalSobrestockVal), estadoCapital === 'critico' ? 'Capital inmovilizado elevado' : (estadoCapital === 'moderado' ? 'Sobrestock a monitorear por proveedor' : 'Sobrestock bajo control')],
-                        ['Compra Necesaria ($)', semaforo(estadoCompras), Math.round(totalCompraVal), estadoCompras === 'critico' ? 'Necesidad de caja alta para reposicion' : (estadoCompras === 'moderado' ? 'Compra relevante a programar' : 'Compra en rango gestionable')],
-                        ['Venta Perdida Estimada ($)', semaforo(estadoRiesgo), Math.round(totalVentaPerdida), estadoRiesgo === 'critico' ? 'Impacto comercial urgente' : (estadoRiesgo === 'moderado' ? 'Oportunidad de mejora' : 'Riesgo comercial acotado')],
-                        ['Deuda por Cargos ($)', semaforo(estadoDeuda), Math.round(totalDeudaCargos), estadoDeuda === 'critico' ? 'Costo financiero significativo' : (estadoDeuda === 'moderado' ? 'Controlar origen de cargos' : 'Deuda de cargos controlada')],
-                        ['Envio Sugerido a Full ($)', semaforo(totalEnvioVal > 0 ? 'moderado' : 'saludable'), Math.round(totalEnvioVal), totalEnvioVal > 0 ? 'Potencial de mejora de disponibilidad en Dep80' : 'Sin necesidad de transferencias relevantes'],
+                        ['Sobrestock ($)', semaforo(estadoCapital), money(totalSobrestockVal), estadoCapital === 'critico' ? 'Capital inmovilizado elevado' : (estadoCapital === 'moderado' ? 'Sobrestock a monitorear por proveedor' : 'Sobrestock bajo control')],
+                        ['Compra Necesaria ($)', semaforo(estadoCompras), money(totalCompraVal), estadoCompras === 'critico' ? 'Necesidad de caja alta para reposicion' : (estadoCompras === 'moderado' ? 'Compra relevante a programar' : 'Compra en rango gestionable')],
+                        ['Venta Perdida Estimada ($)', semaforo(estadoRiesgo), money(totalVentaPerdida), estadoRiesgo === 'critico' ? 'Impacto comercial urgente' : (estadoRiesgo === 'moderado' ? 'Oportunidad de mejora' : 'Riesgo comercial acotado')],
+                        ['Cargo por Cargos ($)', semaforo(estadoDeuda), money(totalDeudaCargos), estadoDeuda === 'critico' ? 'Costo financiero significativo' : (estadoDeuda === 'moderado' ? 'Controlar origen de cargos' : 'Cargo de cargos controlado')],
+                        ['Envio Sugerido a Full ($)', semaforo(totalEnvioVal > 0 ? 'moderado' : 'saludable'), money(totalEnvioVal), totalEnvioVal > 0 ? 'Potencial de mejora de disponibilidad en Dep80' : 'Sin necesidad de transferencias relevantes'],
                         ['', '', '', ''],
                         ['TOP PRIORIDADES', 'IMPACTO ($)', 'SKUS', 'OBJETIVO'],
-                        [top3Acciones[0]?.accion || 'N/A', Math.round(top3Acciones[0]?.impacto || 0), top3Acciones[0]?.skus || 0, top3Acciones[0]?.indicador || 'N/A'],
-                        [top3Acciones[1]?.accion || 'N/A', Math.round(top3Acciones[1]?.impacto || 0), top3Acciones[1]?.skus || 0, top3Acciones[1]?.indicador || 'N/A'],
-                        [top3Acciones[2]?.accion || 'N/A', Math.round(top3Acciones[2]?.impacto || 0), top3Acciones[2]?.skus || 0, top3Acciones[2]?.indicador || 'N/A']
+                        [top3Acciones[0]?.accion || 'N/A', money(top3Acciones[0]?.impacto || 0), top3Acciones[0]?.skus || 0, top3Acciones[0]?.indicador || 'N/A'],
+                        [top3Acciones[1]?.accion || 'N/A', money(top3Acciones[1]?.impacto || 0), top3Acciones[1]?.skus || 0, top3Acciones[1]?.indicador || 'N/A'],
+                        [top3Acciones[2]?.accion || 'N/A', money(top3Acciones[2]?.impacto || 0), top3Acciones[2]?.skus || 0, top3Acciones[2]?.indicador || 'N/A']
                     ];
 
                     return [
                         {
-                            label: 'Tablero Directorio',
-                            sheetName: 'Tablero Directorio',
+                            label: 'Tablero',
+                            sheetName: 'Tablero',
                             count: Math.max(0, tableroData.length - 1),
                             data: tableroData,
                             cols: [{ wch: 36 }, { wch: 12 }, { wch: 18 }, { wch: 52 }]
@@ -3002,7 +3028,8 @@
                             cols: [
                                 { wch: 24 }, { wch: 10 }, { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 14 },
                                 { wch: 16 }, { wch: 16 }, { wch: 22 }, { wch: 20 }, { wch: 18 }, { wch: 16 }, { wch: 16 }, { wch: 16 }
-                            ]
+                            ],
+                            currencyCols: [5, 7, 9, 11, 12, 13]
                         },
                         {
                             label: 'Top 20 Sobrestock',
@@ -3013,7 +3040,8 @@
                                 { wch: 16 }, { wch: 38 }, { wch: 20 }, { wch: 16 }, { wch: 16 },
                                 { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 16 }, { wch: 16 },
                                 { wch: 12 }, { wch: 14 }, { wch: 20 }, { wch: 16 }
-                            ]
+                            ],
+                            currencyCols: [9, 11]
                         },
                         {
                             label: 'Auditoria Logistica/Finanzas',
@@ -3027,7 +3055,106 @@
                             sheetName: 'Audit Acciones',
                             count: Math.max(0, accionesData.length - 1),
                             data: accionesData,
-                            cols: [{ wch: 10 }, { wch: 28 }, { wch: 10 }, { wch: 12 }, { wch: 14 }, { wch: 28 }]
+                            cols: [{ wch: 10 }, { wch: 28 }, { wch: 10 }, { wch: 12 }, { wch: 14 }, { wch: 28 }],
+                            currencyCols: [4]
+                        },
+                        {
+                            label: 'Matriz Calidad ABC',
+                            sheetName: 'Matriz ABC Salud',
+                            count: 3,
+                            data: [
+                                ['CLASE ABC', 'QUIEBRE (1-10)', 'POR QUEBRAR (11-17)', 'SALUDABLE (18-30)', 'ALERTA (31-45)', 'SOBRESTOCK (>45)', 'TOTAL'],
+                                ['A', Math.round(num(this.metrics.matrix?.A?.q)), Math.round(num(this.metrics.matrix?.A?.pq)), Math.round(num(this.metrics.matrix?.A?.s)), Math.round(num(this.metrics.matrix?.A?.a)), Math.round(num(this.metrics.matrix?.A?.o)),
+                                    Math.round(num(this.metrics.matrix?.A?.q) + num(this.metrics.matrix?.A?.pq) + num(this.metrics.matrix?.A?.s) + num(this.metrics.matrix?.A?.a) + num(this.metrics.matrix?.A?.o))],
+                                ['B', Math.round(num(this.metrics.matrix?.B?.q)), Math.round(num(this.metrics.matrix?.B?.pq)), Math.round(num(this.metrics.matrix?.B?.s)), Math.round(num(this.metrics.matrix?.B?.a)), Math.round(num(this.metrics.matrix?.B?.o)),
+                                    Math.round(num(this.metrics.matrix?.B?.q) + num(this.metrics.matrix?.B?.pq) + num(this.metrics.matrix?.B?.s) + num(this.metrics.matrix?.B?.a) + num(this.metrics.matrix?.B?.o))],
+                                ['C', Math.round(num(this.metrics.matrix?.C?.q)), Math.round(num(this.metrics.matrix?.C?.pq)), Math.round(num(this.metrics.matrix?.C?.s)), Math.round(num(this.metrics.matrix?.C?.a)), Math.round(num(this.metrics.matrix?.C?.o)),
+                                    Math.round(num(this.metrics.matrix?.C?.q) + num(this.metrics.matrix?.C?.pq) + num(this.metrics.matrix?.C?.s) + num(this.metrics.matrix?.C?.a) + num(this.metrics.matrix?.C?.o))],
+                                ['TOTAL',
+                                    Math.round(num(this.metrics.matrix?.A?.q) + num(this.metrics.matrix?.B?.q) + num(this.metrics.matrix?.C?.q)),
+                                    Math.round(num(this.metrics.matrix?.A?.pq) + num(this.metrics.matrix?.B?.pq) + num(this.metrics.matrix?.C?.pq)),
+                                    Math.round(num(this.metrics.matrix?.A?.s) + num(this.metrics.matrix?.B?.s) + num(this.metrics.matrix?.C?.s)),
+                                    Math.round(num(this.metrics.matrix?.A?.a) + num(this.metrics.matrix?.B?.a) + num(this.metrics.matrix?.C?.a)),
+                                    Math.round(num(this.metrics.matrix?.A?.o) + num(this.metrics.matrix?.B?.o) + num(this.metrics.matrix?.C?.o)),
+                                    Math.round(totalStockVal)
+                                ]
+                            ],
+                            cols: [{ wch: 14 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 16 }, { wch: 18 }, { wch: 14 }],
+                            currencyCols: [1, 2, 3, 4, 5, 6]
+                        },
+                        {
+                            label: 'SubPerfil Cobertura D80',
+                            sheetName: 'SubPerfil Dep80',
+                            count: (this.metrics.subPerfilCoverage || []).length,
+                            data: [
+                                ['SUB_PERFIL', 'SKUS UNICOS', '% SKUS', 'STOCK DEP80 (UNID)', 'VTASQ60 TOTAL', 'DIAS COBERTURA', 'UNIDADES SOBRESTOCK', 'ESTADO'],
+                                ...(this.metrics.subPerfilCoverage || []).map(sp => [
+                                    sp.subPerfil,
+                                    sp.cantProductos,
+                                    parseFloat(sp.porcentajeProductos || 0),
+                                    Math.round(num(sp.stockDep80)),
+                                    parseFloat(sp.vtarTotal || 0),
+                                    Math.round(num(sp.coberturaDias)),
+                                    Math.round(num(sp.unidadesSobrestock)),
+                                    sp.coberturaDias === 0 ? 'Quiebre' : (sp.coberturaDias > 45 ? 'Sobrestock' : (sp.coberturaDias >= 31 ? 'Atencion' : (sp.coberturaDias >= 20 ? 'Saludable' : (sp.coberturaDias >= 11 ? 'Alerta' : 'Critico'))))
+                                ])
+                            ],
+                            cols: [{ wch: 22 }, { wch: 14 }, { wch: 10 }, { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 20 }, { wch: 14 }]
+                        },
+                        {
+                            label: 'Vencimientos 90 a 0 dias',
+                            sheetName: 'Vencimientos 90-0',
+                            count: (this.lotesData || []).length,
+                            data: (() => {
+                                const rows = (this.lotesData || [])
+                                    .filter(l => {
+                                        const dias = num(l?.dias);
+                                        if (dias < 0 || dias > 90) return false;
+                                        const f = String(l?.fechaVto || '').trim();
+                                        if (!f) return false;
+                                        if (f === '1/1/1900' || f === '01/01/1900') return false;
+                                        const parts = f.split('/');
+                                        if (parts.length === 3) {
+                                            const year = parseInt(parts[2], 10);
+                                            if (!isNaN(year) && year <= 1900) return false;
+                                        }
+                                        return true;
+                                    })
+                                    .map(l => {
+                                        const dias = Math.round(num(l.dias));
+                                        const rango = dias <= 15 ? '0-15' : (dias <= 30 ? '16-30' : (dias <= 60 ? '31-60' : '61-90'));
+                                        return {
+                                            sku: l.sku || '',
+                                            desc: l.desc || '',
+                                            marca: l.marca || '',
+                                            proveedor: l.prov || '',
+                                            analista: l.analista || '',
+                                            fechaVto: l.fechaVto || '',
+                                            dias,
+                                            rango,
+                                            stockComprometido: Math.round(num(l.stockComprometido)),
+                                            riesgoMonetario: Math.round(num(l.riesgoMonetario))
+                                        };
+                                    })
+                                    .sort((a, b) => a.dias - b.dias || b.riesgoMonetario - a.riesgoMonetario);
+
+                                const resumen = { '0-15': 0, '16-30': 0, '31-60': 0, '61-90': 0 };
+                                rows.forEach(r => { resumen[r.rango] = (resumen[r.rango] || 0) + 1; });
+
+                                return [
+                                    ['RANGO VENCIMIENTO', 'CANTIDAD LOTES'],
+                                    ['0-15', resumen['0-15']],
+                                    ['16-30', resumen['16-30']],
+                                    ['31-60', resumen['31-60']],
+                                    ['61-90', resumen['61-90']],
+                                    ['', ''],
+                                    ['SKU', 'DESCRIPCION', 'MARCA', 'PROVEEDOR', 'ANALISTA', 'FECHA VTO', 'DIAS AL VTO', 'RANGO', 'STOCK COMPROMETIDO', 'RIESGO MONETARIO ($)'],
+                                    ...rows.map(r => [r.sku, r.desc, r.marca, r.proveedor, r.analista, r.fechaVto, r.dias, r.rango, r.stockComprometido, r.riesgoMonetario])
+                                ];
+                            })(),
+                            cols: [{ wch: 16 }, { wch: 38 }, { wch: 18 }, { wch: 20 }, { wch: 16 }, { wch: 14 }, { wch: 12 }, { wch: 10 }, { wch: 18 }, { wch: 20 }],
+                            currencyCols: [9],
+                            extraHeaderRows: [6]
                         }
                     ];
                 },
@@ -4560,6 +4687,7 @@
 
                             // 🎯 MÉTRICA: Sub_Perfil + Cobertura en Dep80 — solo SKUs en DEP 80 (MELI)
                             const subPerfilStats = {};
+                            const subPerfilSkuSets = {};
                             // Sub-perfiles que NO se envían al dep80, excluir del análisis
                             const excludedSubPerfiles = ['Solo Compra', 'Sampling', 'INH Simplex'];
                             const subPerfilNames = ['Killer', 'Normal', 'Min Basket', 'Baja Rotacion', 'Curva A', 'Verano', 'Inflamables', 'Invierno', 'INH Proveedor'];
@@ -4577,6 +4705,12 @@
                                 const matchedSp = subPerfilNames.find(name => spNorm === normStr(name) || spNorm.includes(normStr(name)));
                                 const key = matchedSp || sp;
                                 if (!subPerfilStats[key]) subPerfilStats[key] = { count: 0, stock: 0, vtar: 0 };
+                                if (!subPerfilSkuSets[key]) subPerfilSkuSets[key] = new Set();
+
+                                const skuKey = String(item.sku || '').trim().toUpperCase();
+                                if (!skuKey || subPerfilSkuSets[key].has(skuKey)) return;
+
+                                subPerfilSkuSets[key].add(skuKey);
                                 subPerfilStats[key].count++;
                                 subPerfilStats[key].stock += (mlData.unidadesEnFull || 0);
                                 subPerfilStats[key].vtar += (item.vtar80 || 0);
