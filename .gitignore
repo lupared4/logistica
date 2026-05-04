@@ -1,0 +1,42 @@
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Entorno virtual ──
+venv/
+env/
+.venv/
+.env.local
+.env.production
+
+# ── Variables de entorno (DATOS SENSIBLES) ──
+.env
+
+# ── Archivos de datos (privados / pesados) ──
+*.xlsb
+*.xlsx
+*.xls
+*.csv
+DATA.xlsx
+BASEAPP.xlsb
+APP\ INDICACIONES.xlsx
+
+# ── Carpeta prototipo viejo ──
+A/
+
+# ── Sistema ──
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE / Editor ──
+.vscode/
+.idea/
+*.suo
+*.user
